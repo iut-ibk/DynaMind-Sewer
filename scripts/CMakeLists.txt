@@ -17,9 +17,9 @@ ENDMACRO()
 LIST_SUBDIRECTORIES(DIRS ${dynamind-sewer_SOURCE_DIR}/scripts/ 1)
 
 FOREACH(DIR ${DIRS})
-    FILE(GLOB SCRIPTFILES "${dynamind-basicmodules_SOURCE_DIR}/scripts/${DIR}/*.py")
+    FILE(GLOB SCRIPTFILES "${dynamind-sewer_SOURCE_DIR}/scripts/${DIR}/*.py")
     INSTALL(FILES ${SCRIPTFILES} DESTINATION "lib/DynaMind/scripts/${DIR}")
 ENDFOREACH(DIR)
 
-FILE(GLOB BASESCRIPTS "${dynamind-basicmodules_SOURCE_DIR}/scripts/*.py")
+FILE(GLOB BASESCRIPTS "${dynamind-sewer_SOURCE_DIR}/scripts/*.py")
 INSTALL(FILES ${BASESCRIPTS} DESTINATION "lib/DynaMind/scripts")
