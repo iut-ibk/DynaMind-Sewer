@@ -1,6 +1,7 @@
 /**
  * @file
  * @author  Chrisitan Urich <christian.urich@gmail.com>
+ * @author Michael Mair <michael.mair@gmail.com>
  * @version 1.0
  * @section LICENSE
  *
@@ -31,6 +32,9 @@
 #include <QProcess>
 #include <QTextStream>
 #include <QSettings>
+#include <algorithm>
+#include <complex>
+
 using namespace DM;
 DM_DECLARE_NODE_NAME(DMSWMM, Sewer)
 DMSWMM::DMSWMM()
@@ -452,8 +456,8 @@ void DMSWMM::writeSubcatchments(std::fstream &inp)
             continue;
         }
         double area = catchment_attr->getAttribute("Area")->getDouble()/10000.;// node->area/10000.;
-        double with = sqrt(area*10000.);
-        double gradient = abs(catchment_attr->getAttribute("Gradient")->getDouble());
+        double with = std::sqrt(area*10000.);
+        double gradient = std::abs(catchment_attr->getAttribute("Gradient")->getDouble());
         double imp = catchment_attr->getAttribute("Impervious")->getDouble();
         if (imp < 0.2)
             imp = 0.2;
@@ -660,7 +664,7 @@ void DMSWMM::writeConduits(std::fstream &inp) {
             double x = nStartNode->getX()  - nEndNode->getX();
             double y = nStartNode->getY() - nEndNode->getY();
 
-            double length = sqrt(x*x +y*y);
+            double length = std::sqrt(x*x +y*y);
 
             if (UUIDtoINT[nStartNode->getName()] == 0) {
                 UUIDtoINT[nStartNode->getName()] = GLOBAL_Counter++;

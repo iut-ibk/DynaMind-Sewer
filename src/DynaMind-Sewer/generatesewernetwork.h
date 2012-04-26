@@ -1,6 +1,7 @@
 /**
  * @file
  * @author  Chrisitan Urich <christian.urich@gmail.com>
+ * @author Michael Mair <michael.mair@gmail.com>
  * @version 1.0
  * @section LICENSE
  *
@@ -31,9 +32,6 @@
 #include "dmmodule.h"
 #include "dm.h"
 #include <vector>
-#include <boost/numeric/ublas/matrix.hpp>
-#include <boost/numeric/ublas/io.hpp>
-namespace   ublas = boost::numeric::ublas;
 
 using namespace DM;
 
@@ -100,9 +98,9 @@ public:
         int lastdir;
         Agent(Pos);
     protected:
-        ublas::vector<double> neigh;
-        ublas::vector<double> decissionVector;
-        ublas::vector<double> ProbabilityVector;
+        std::vector<double> neigh;
+        std::vector<double> decissionVector;
+        std::vector<double> ProbabilityVector;
 
 
     };
@@ -150,7 +148,7 @@ public:
     void MarkPathWithField(const std::vector<Pos> & path, RasterData * ConnectivityField, int ConnectivityWidth);
     void addRadiusValueADD(int x, int y, RasterData * layer, int rmax, double value);
     void addRadiusValue(int x, int y, RasterData * layer, int rmax, double value, double **);
-    static int indexOfMinValue(const ublas::vector<double> & vec);
+    static int indexOfMinValue(const std::vector<double> & vec);
 };
 
 #endif // GENERATESEWERNETWORK_H

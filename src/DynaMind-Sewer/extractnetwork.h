@@ -1,6 +1,7 @@
 /**
  * @file
  * @author  Chrisitan Urich <christian.urich@gmail.com>
+ * @author Michael Mair <michael.mair@gmail.com>
  * @version 1.0
  * @section LICENSE
  *
@@ -28,10 +29,10 @@
 #define EXTRACTNETWORK_H
 #include <dmmodule.h>
 #include <dm.h>
-#include <boost/numeric/ublas/matrix.hpp>
-#include <boost/numeric/ublas/io.hpp>
 #include "generatesewernetwork.h"
+
 using namespace DM;
+
 class DM_HELPER_DLL_EXPORT ExtractNetwork : public  Module {
     DM_DECLARE_NODE ( ExtractNetwork )
     public:

@@ -1,6 +1,7 @@
 /**
  * @file
  * @author  Chrisitan Urich <christian.urich@gmail.com>
+ * @author Michael Mair <michael.mair@gmail.com>
  * @version 1.0
  * @section LICENSE
  *
@@ -25,6 +26,7 @@
  */
 #include "timeareamethod.h"
 #include "tbvectordata.h"
+#include <complex>
 
 DM_DECLARE_NODE_NAME(TimeAreaMethod, Sewer)
 TimeAreaMethod::TimeAreaMethod()

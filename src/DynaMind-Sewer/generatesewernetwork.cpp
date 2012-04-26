@@ -1,6 +1,7 @@
 /**
  * @file
  * @author  Chrisitan Urich <christian.urich@gmail.com>
+ * @author Michael Mair <michael.mair@gmail.com>
  * @version 1.0
  * @section LICENSE
  *
@@ -38,9 +39,9 @@ GenerateSewerNetwork::Agent::Agent(Pos StartPos) {
     this->currentPos.z = 0;
     this->currentPos.h = 3;
     this->lastdir = -1;
-    this->neigh = ublas::vector<double>(9);
-    this->decissionVector = ublas::vector<double>(9);
-    this->ProbabilityVector = ublas::vector<double>(9);
+    this->neigh = std::vector<double>(9);
+    this->decissionVector = std::vector<double>(9);
+    this->ProbabilityVector = std::vector<double>(9);
 
 }
 
@@ -107,7 +108,17 @@ void GenerateSewerNetwork::Agent::run() {
         }*/
 
 
-        ProbabilityVector = decissionVector / ublas::sum(decissionVector) * 100;
+        double vecsum = 0.0;
+        for(int index=0; index < decissionVector.size(); index++)
+            vecsum+=decissionVector[index];
+
+
+        std::vector<double> tmpvec;
+        for(int index=0; index < decissionVector.size(); index++)
+            tmpvec.push_back(decissionVector[index]/vecsum * 100);
+
+
+        ProbabilityVector = tmpvec;
 
         int ra = rand()%100;
         // Logger(vibens::Standard) << ra;
@@ -301,7 +312,7 @@ void GenerateSewerNetwork::MarkPathWithField(const std::vector<Pos> & path, Rast
     }
 }
 
-int GenerateSewerNetwork::indexOfMinValue(const ublas::vector<double> &vec) {
+int GenerateSewerNetwork::indexOfMinValue(const std::vector<double> &vec) {
     double val = vec[0];
     int index = 0;
     for (int i = 1; i < 9; i++) {

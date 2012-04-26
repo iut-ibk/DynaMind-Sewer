@@ -1,6 +1,7 @@
 /**
  * @file
  * @author  Chrisitan Urich <christian.urich@gmail.com>
+ * @author Michael Mair <michael.mair@gmail.com>
  * @version 1.0
  * @section LICENSE
  *
@@ -25,7 +26,10 @@
  */
 #include "outfallplacement.h"
 #include <dmhelper.h>
+#include <algorithm>
+
 DM_DECLARE_NODE_NAME(OutfallPlacement, Sewer)
+
 OutfallPlacement::OutfallPlacement()
 {
     Junction = DM::View("JUNCTION", DM::NODE, DM::READ);
@@ -172,7 +176,7 @@ void OutfallPlacement::run() {
 
             if (currentStrahler > prevStrahler
                     && Strahler_Max - deltaStrahler <= currentStrahler && deltaStrahler > -1) {
-                if (find(New_Outfalls.begin(), New_Outfalls.end(), p) == New_Outfalls.end()) {
+                if (std::find(New_Outfalls.begin(), New_Outfalls.end(), p) == New_Outfalls.end()) {
                     DM::Logger(DM::Debug) << "Place Outfall";
                     //Check if Outfall Exists
                     if (p->getAttribute("Outfall")->getDouble() < 1) {
@@ -196,7 +200,7 @@ void OutfallPlacement::run() {
 
             if (currentStrahler > prevStrahler
                     && deltaStrahler <= currentStrahler-prevStrahler && deltaStrahler > -1 ) {
-                if (find(New_Outfalls.begin(), New_Outfalls.end(), p) == New_Outfalls.end()) {
+                if (std::find(New_Outfalls.begin(), New_Outfalls.end(), p) == New_Outfalls.end()) {
                     DM::Logger(DM::Debug) << "Place Outfall";
                     //Check if Outfall Exists
                     if (p->getAttribute("Outfall")->getDouble() < 1) {
