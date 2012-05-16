@@ -1,7 +1,6 @@
 /**
  * @file
  * @author  Chrisitan Urich <christian.urich@gmail.com>
- * @author Michael Mair <michael.mair@gmail.com>
  * @version 1.0
  * @section LICENSE
  *

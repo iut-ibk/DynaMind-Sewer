@@ -294,7 +294,7 @@ void GenerateSewerNetwork::MarkPathWithField(const std::vector<Pos> & path, Rast
     }
 }
 
-int GenerateSewerNetwork::indexOfMinValue(const ublas::vector<double> &vec) {
+int GenerateSewerNetwork::indexOfMinValue(const vector<double> &vec) {
     double val = vec[0];
     int index = 0;
     for (int i = 1; i < 9; i++) {
