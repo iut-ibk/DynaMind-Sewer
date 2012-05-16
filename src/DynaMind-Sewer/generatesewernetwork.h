@@ -150,7 +150,7 @@ public:
     void MarkPathWithField(const std::vector<Pos> & path, RasterData * ConnectivityField, int ConnectivityWidth);
     void addRadiusValueADD(int x, int y, RasterData * layer, int rmax, double value);
     void addRadiusValue(int x, int y, RasterData * layer, int rmax, double value, double **);
-    static int indexOfMinValue(const vector<double> & vec);
+    static int indexOfMinValue(const std::vector<double> & vec);
 };
 
 #endif // GENERATESEWERNETWORK_H

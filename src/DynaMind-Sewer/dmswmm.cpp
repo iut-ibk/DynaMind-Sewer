@@ -1,6 +1,7 @@
 /**
  * @file
  * @author  Chrisitan Urich <christian.urich@gmail.com>
+ * @author Michael Mair <michael.mair@gmail.com>
  * @version 1.0
  * @section LICENSE
  *
@@ -31,8 +32,13 @@
 #include <QProcess>
 #include <QTextStream>
 #include <QSettings>
+<<<<<<< HEAD
 #include <math.h>
 
+=======
+#include <algorithm>
+#include <complex>
+>>>>>>> fb71f712d4ec6c20b736241e8c88ba03c2b01f97
 
 using namespace DM;
 DM_DECLARE_NODE_NAME(DMSWMM, Sewer)
@@ -455,8 +461,13 @@ void DMSWMM::writeSubcatchments(std::fstream &inp)
             continue;
         }
         double area = catchment_attr->getAttribute("Area")->getDouble()/10000.;// node->area/10000.;
+<<<<<<< HEAD
         double with = sqrt(area*10000.);
         double gradient = fabs(catchment_attr->getAttribute("Gradient")->getDouble());
+=======
+        double with = std::sqrt(area*10000.);
+        double gradient = std::abs(catchment_attr->getAttribute("Gradient")->getDouble());
+>>>>>>> fb71f712d4ec6c20b736241e8c88ba03c2b01f97
         double imp = catchment_attr->getAttribute("Impervious")->getDouble();
         if (imp < 0.2)
             imp = 0.2;
@@ -663,7 +674,7 @@ void DMSWMM::writeConduits(std::fstream &inp) {
             double x = nStartNode->getX()  - nEndNode->getX();
             double y = nStartNode->getY() - nEndNode->getY();
 
-            double length = sqrt(x*x +y*y);
+            double length = std::sqrt(x*x +y*y);
 
             if (UUIDtoINT[nStartNode->getUUID()] == 0) {
                 UUIDtoINT[nStartNode->getUUID()] = GLOBAL_Counter++;

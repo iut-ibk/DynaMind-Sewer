@@ -1,6 +1,7 @@
 /**
  * @file
  * @author  Chrisitan Urich <christian.urich@gmail.com>
+ * @author Michael Mair <michael.mair@gmail.com>
  * @version 1.0
  * @section LICENSE
  *
@@ -25,6 +26,8 @@
  */
 
 #include "directnetwork.h"
+#include <algorithm>
+
 DM_DECLARE_NODE_NAME(DirectNetwork, Sewer)
 DirectNetwork::DirectNetwork()
 {
@@ -79,7 +82,7 @@ void DirectNetwork::NextEdge(std::string startnode) {
         sys->addComponentToView(sys->getNode(startnode), this->startpoints);
     }
     foreach (std::string s, ConnectionList[startnode]) {
-        if (find(visitedEdges.begin(), visitedEdges.end(), s) ==   visitedEdges.end()) {
+        if (std::find(visitedEdges.begin(), visitedEdges.end(), s) ==   visitedEdges.end()) {
             connected.push_back(s);
         }
     }
@@ -99,7 +102,7 @@ void DirectNetwork::NextEdge(std::string startnode) {
             }
 
         }
-        connected.erase(find(connected.begin(), connected.end(), maxID));
+        connected.erase(std::find(connected.begin(), connected.end(), maxID));
         connected_new.push_back(maxID);
     }
 
