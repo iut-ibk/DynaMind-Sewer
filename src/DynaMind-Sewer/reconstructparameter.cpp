@@ -38,7 +38,7 @@ ReconstructParameter::ReconstructParameter()
 void ReconstructParameter::run() {
     DM::System * city = this->getData("City");
 
-    std::vector<std::string> names = city->getNamesOfComponentsInView(this->network);
+    std::vector<std::string> names = city->getUUIDsOfComponentsInView(this->network);
     double offset = 10;
 
     std::map<DM::Node *, std::vector<DM::Edge*> > StartNodeSortedEdges;

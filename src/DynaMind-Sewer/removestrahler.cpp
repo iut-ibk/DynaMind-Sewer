@@ -21,7 +21,7 @@ void RemoveStrahler::run()
 {
     DM::System * sys = this->getData("SEWER");
 
-    std::vector<std::string> condis = sys->getNamesOfComponentsInView(conduits);
+    std::vector<std::string> condis = sys->getUUIDsOfComponentsInView(conduits);
 
     foreach (std::string s, condis) {
         DM::Edge * c = sys->getEdge(s);

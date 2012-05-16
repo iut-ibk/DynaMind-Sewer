@@ -100,7 +100,7 @@ void OutfallPlacement::run() {
     this->city = this->getData("city");
 
     std::vector<std::string> ConduitNames;
-    ConduitNames = city->getNamesOfComponentsInView(Conduit);
+    ConduitNames = city->getUUIDsOfComponentsInView(Conduit);
 
     //Create Connection List
     foreach(std::string name , ConduitNames)  {
@@ -144,11 +144,11 @@ void OutfallPlacement::run() {
     //names = VectorDataHelper::findElementsWithIdentifier(this->Identifier_Inlet, this->Network->getPointsNames());
 
     std::vector<DM::Node * > New_Outfalls;
-    foreach (std::string s, this->city->getNamesOfComponentsInView(WWTP)) {
+    foreach (std::string s, this->city->getUUIDsOfComponentsInView(WWTP)) {
         New_Outfalls.push_back(this->city->getNode(s));
     }
 
-    foreach ( std::string name, this->city->getNamesOfComponentsInView(Inlet)) {
+    foreach ( std::string name, this->city->getUUIDsOfComponentsInView(Inlet)) {
         DM::Node * p = this->city->getNode(name);
         //Get Downstream Node
         std::vector<DM::Edge*> connectedConduits = this->StartNodeSortedEdges[p];
@@ -279,7 +279,7 @@ void OutfallPlacement::run() {
     }
 
     //Conduit to WWTP
-    std::vector<std::string> wwtps = this->city->getNamesOfComponentsInView(WWTP);
+    std::vector<std::string> wwtps = this->city->getUUIDsOfComponentsInView(WWTP);
     foreach(std::string wwtp, wwtps) {
         DM::Node * p = this->city->getNode(wwtp);
         DM::Node OffestPoint(-30,-30,0);

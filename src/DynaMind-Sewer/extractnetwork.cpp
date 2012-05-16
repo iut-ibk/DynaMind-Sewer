@@ -164,7 +164,7 @@ void ExtractNetwork::run() {
     std::vector<AgentExtraxtor * > agents;
 
     std::vector<DM::Node*> StartPos;
-    foreach (std::string inlet, city->getNamesOfComponentsInView(Inlets))  {
+    foreach (std::string inlet, city->getUUIDsOfComponentsInView(Inlets))  {
         DM::Node * n = city->getNode(inlet);
         if (n->getAttribute("New")->getDouble() > -1) {
             StartPos.push_back(n);
@@ -197,14 +197,14 @@ void ExtractNetwork::run() {
 
     //Extract Conduits
 
-    foreach(std::string name, city->getNamesOfComponentsInView(Conduits)) {
+    foreach(std::string name, city->getUUIDsOfComponentsInView(Conduits)) {
         DM::Component * c = city->getComponent(name);
         c->changeAttribute(DM::Attribute("New", 1));
     }
 
     //CreateEndPointList
     std::vector<DM::Node*> EndPointList;
-    foreach(std::string name, this->city->getNamesOfComponentsInView(Junction)) {
+    foreach(std::string name, this->city->getUUIDsOfComponentsInView(Junction)) {
         EndPointList.push_back(this->city->getNode(name));
         DM::Node * tmp_n = city->getNode(name);
         std::stringstream id;
@@ -307,7 +307,7 @@ void ExtractNetwork::run() {
 
     agents.clear();
 
-    foreach (std::string name, this->city->getNamesOfComponentsInView(Junction)) {
+    foreach (std::string name, this->city->getUUIDsOfComponentsInView(Junction)) {
         DM::Node * n =this->city->getNode(name);
         int x = n->getX()/cellSize;
         int y = n->getY()/cellSize;
@@ -315,7 +315,7 @@ void ExtractNetwork::run() {
         n->changeAttribute("Z", z);
 
     }
-    foreach (std::string name, this->city->getNamesOfComponentsInView(EndPoint)) {
+    foreach (std::string name, this->city->getUUIDsOfComponentsInView(EndPoint)) {
         DM::Node * n =this->city->getNode(name);
         int x = n->getX()/cellSize;
         int y = n->getY()/cellSize;
@@ -326,7 +326,7 @@ void ExtractNetwork::run() {
 
 }
 
-DM::Node * ExtractNetwork::addNode(System *sys, DM::Node tmp_n, DM::View v,double offset) {
+DM::Node * ExtractNetwork::addNode(System & sys, DM::Node tmp_n, DM::View v,double offset) {
     //CreateID
     std::stringstream id;
     id << (long) tmp_n.getX()/100.;
@@ -339,7 +339,7 @@ DM::Node * ExtractNetwork::addNode(System *sys, DM::Node tmp_n, DM::View v,doubl
             return n;
     }
 
-    Node * n = sys->addNode(tmp_n, v);
+    Node * n = sys.addNode(tmp_n, v);
 
 
     existingPoints.push_back(n);
@@ -351,13 +351,12 @@ DM::Node * ExtractNetwork::addNode(System *sys, DM::Node tmp_n, DM::View v,doubl
 
 std::vector<std::vector<DM::Node> >  ExtractNetwork::SimplifyNetwork(std::vector<std::vector<DM::Node> > &points, int PReduction, double offset) {
 
-    DM::System sys_tmp("");
+    DM::System sys_tmp;
     DM::View dummy;
     foreach (std::vector<Node> pl, points) {
         bool hitExisting= false;
         foreach (Node node, pl) {
-            //Node * n = TBVectorData::addNodeToSystem2D(&sys_tmp, dummy, node, offset);
-            Node * n = this->addNode(&sys_tmp, node, dummy, offset);
+            Node * n = this->addNode(sys_tmp, node, dummy, offset);
             if (n->getAttribute("Counter")->getDouble() > 0.01) {
                 hitExisting = true;
                 n->changeAttribute("Counter",100);
@@ -387,7 +386,7 @@ std::vector<std::vector<DM::Node> >  ExtractNetwork::SimplifyNetwork(std::vector
         for (int i  = 0; i < pl.size(); i++) {
             counter++;
             bool placePoint = false;
-            Node * n = this->addNode(&sys_tmp, pl[i], dummy, offset);
+            Node * n = this->addNode(sys_tmp, pl[i], dummy, offset);
             if (n->getAttribute("Counter")->getDouble() > 99) {
                 n->changeAttribute("Counter", n->getAttribute("Counter")->getDouble()+100);
                 placePoint = true;
@@ -420,9 +419,9 @@ void ExtractNetwork::smoothNetwork() {
     std::map<DM::Node *, std::vector<DM::Edge*> > EndNodeSortedEdges;
     std::map<DM::Node *, std::vector<DM::Edge*> > ConnectedEdges;
     std::vector<std::string> InletNames;
-    InletNames = city->getNamesOfComponentsInView(this->Inlets);
+    InletNames = city->getUUIDsOfComponentsInView(this->Inlets);
     std::vector<std::string> ConduitNames;
-    ConduitNames = city->getNamesOfComponentsInView(this->Conduits);
+    ConduitNames = city->getUUIDsOfComponentsInView(this->Conduits);
     //Create Connection List
     foreach(std::string name , ConduitNames)  {
         DM::Edge * e = city->getEdge(name);
@@ -461,7 +460,7 @@ void ExtractNetwork::smoothNetwork() {
     Logger(Debug) << "Endpoint Thing";
 
     std::vector<DM::Node *> EndPoints;
-    foreach (std::string n, this->city->getNamesOfComponentsInView(this->EndPoint))
+    foreach (std::string n, this->city->getUUIDsOfComponentsInView(this->EndPoint))
         EndPoints.push_back(this->city->getNode(n));
     while (EndPoints.size() > 0) {
         std::vector<DM::Node*> new_endPointList;

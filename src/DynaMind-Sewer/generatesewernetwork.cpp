@@ -38,9 +38,9 @@ GenerateSewerNetwork::Agent::Agent(Pos StartPos) {
     this->currentPos.z = 0;
     this->currentPos.h = 3;
     this->lastdir = -1;
-    this->neigh = ublas::vector<double>(9);
-    this->decissionVector = ublas::vector<double>(9);
-    this->ProbabilityVector = ublas::vector<double>(9);
+    this->neigh = std::vector<double>(9);
+    this->decissionVector = std::vector<double>(9);
+    this->ProbabilityVector = std::vector<double>(9);
 
 }
 
@@ -92,22 +92,15 @@ void GenerateSewerNetwork::Agent::run() {
             decissionVector[lastdir]= decissionVector[lastdir]* StablizierLastDir;
         }
 
-        /*double neumann[9];
-        neumann[0] = 0;
-        neumann[1] = 1;
-        neumann[2] = 0;
-        neumann[3] = 1;
-        neumann[4] = 1;
-        neumann[5] = 1;
-        neumann[6] = 0;
-        neumann[7] = 1;
-        neumann[8] = 0;
+        double sumVec = 0;
         for (int i = 0; i < 9; i++) {
-            decissionVector[i]*=neumann[i];
-        }*/
+            sumVec+=decissionVector[i];
+        }
 
+        for (int i = 0; i < 9; i++) {
+            ProbabilityVector[i] = decissionVector[i] /sumVec * 100;
+        }
 
-        ProbabilityVector = decissionVector / ublas::sum(decissionVector) * 100;
 
         int ra = rand()%100;
         // Logger(vibens::Standard) << ra;
@@ -301,7 +294,7 @@ void GenerateSewerNetwork::MarkPathWithField(const std::vector<Pos> & path, Rast
     }
 }
 
-int GenerateSewerNetwork::indexOfMinValue(const ublas::vector<double> &vec) {
+int GenerateSewerNetwork::indexOfMinValue(const vector<double> &vec) {
     double val = vec[0];
     int index = 0;
     for (int i = 1; i < 9; i++) {
@@ -427,7 +420,7 @@ void GenerateSewerNetwork::run() {
 
 
     std::vector<DM::Node*> StartPos;
-    foreach (std::string inlet, city->getNamesOfComponentsInView(Inlets))  {
+    foreach (std::string inlet, city->getUUIDsOfComponentsInView(Inlets))  {
         DM::Node * n = city->getNode(inlet);
         std::string ID_CA = n->getAttribute("ID_CATCHMENT")->getString();
         //DM::Face * catchment = city->getFace(ID_CA);

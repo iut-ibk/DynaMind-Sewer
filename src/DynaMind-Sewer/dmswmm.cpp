@@ -31,6 +31,9 @@
 #include <QProcess>
 #include <QTextStream>
 #include <QSettings>
+#include <math.h>
+
+
 using namespace DM;
 DM_DECLARE_NODE_NAME(DMSWMM, Sewer)
 DMSWMM::DMSWMM()
@@ -139,7 +142,7 @@ void DMSWMM::run() {
     this->SWMMPath.setPath(tmpPath.absolutePath() + "/" + UUIDPath);
     //CreatePointList and ConduitList
 
-    foreach(std::string name , city->getNamesOfComponentsInView(conduit))
+    foreach(std::string name , city->getUUIDsOfComponentsInView(conduit))
     {
 
 
@@ -148,13 +151,13 @@ void DMSWMM::run() {
         DM::Node * p2 = city->getNode(e->getEndpointName());
 
 
-        if (UUIDtoINT[p1->getName()] == 0) {
-            UUIDtoINT[p1->getName()] = GLOBAL_Counter++;
+        if (UUIDtoINT[p1->getUUID()] == 0) {
+            UUIDtoINT[p1->getUUID()] = GLOBAL_Counter++;
             this->PointList.push_back(p1);
         }
 
-        if (UUIDtoINT[p2->getName()] == 0) {
-            UUIDtoINT[p2->getName()] = GLOBAL_Counter++;
+        if (UUIDtoINT[p2->getUUID()] == 0) {
+            UUIDtoINT[p2->getUUID()] = GLOBAL_Counter++;
             this->PointList.push_back(p2);
         }
 
@@ -309,7 +312,7 @@ void DMSWMM::readInReportFile() {
 
     years++;
 
-    foreach (std::string s, this->city->getNamesOfComponentsInView(globals)) {
+    foreach (std::string s, this->city->getUUIDsOfComponentsInView(globals)) {
         DM::Component * c = this->city->getComponent(s);
         c->addAttribute("Vr", SurfaceRunOff);
         c->addAttribute("Vwwtp", Vwwtp);
@@ -364,7 +367,7 @@ void DMSWMM::writeJunctions(std::fstream &inp)
 {
 
     QStringList l;
-    std::vector<std::string> names = city->getNamesOfComponentsInView(shaft);
+    std::vector<std::string> names = city->getUUIDsOfComponentsInView(shaft);
 
     foreach (std::string name, names) {
         QString s = QString::fromStdString(name);
@@ -390,7 +393,7 @@ void DMSWMM::writeJunctions(std::fstream &inp)
         //SewerTree::Node *node = this->sewerTree.getNodes().at(i);
 
         double depht = p->getZ();
-        int id = UUIDtoINT[p->getName()];
+        int id = UUIDtoINT[p->getUUID()];
 
         if (std::find(checkForduplicatedNodes.begin(), checkForduplicatedNodes.end(), id) != checkForduplicatedNodes.end())
             continue;
@@ -434,7 +437,7 @@ void DMSWMM::writeSubcatchments(std::fstream &inp)
     //	inp<<"  sub"<<i<<"\tRG01"<<"\t\tnode"<<i<<"\t20\t80.0\t100.0\t1.0\t1\n";
     //}
 
-    std::vector<std::string> InletNames = city->getNamesOfComponentsInView(inlet);
+    std::vector<std::string> InletNames = city->getUUIDsOfComponentsInView(inlet);
 
     foreach(std::string name, InletNames) {
         DM::Node * inlet_attr = city->getNode(name);
@@ -447,13 +450,13 @@ void DMSWMM::writeSubcatchments(std::fstream &inp)
 
         Component * catchment_attr = city->getComponent(id_catchment);
 
-        int id = this->UUIDtoINT[inlet_attr->getName()];
+        int id = this->UUIDtoINT[inlet_attr->getUUID()];
         if (id == 0) {
             continue;
         }
         double area = catchment_attr->getAttribute("Area")->getDouble()/10000.;// node->area/10000.;
         double with = sqrt(area*10000.);
-        double gradient = abs(catchment_attr->getAttribute("Gradient")->getDouble());
+        double gradient = fabs(catchment_attr->getAttribute("Gradient")->getDouble());
         double imp = catchment_attr->getAttribute("Impervious")->getDouble();
         if (imp < 0.2)
             imp = 0.2;
@@ -504,7 +507,7 @@ void DMSWMM::writeSubcatchments(std::fstream &inp)
     foreach(std::string name, InletNames) {
         DM::Node * inlet_attr = city->getNode(name);
         std::string id_catchment = inlet_attr->getAttribute("ID_CATCHMENT")->getString();
-        int id = this->UUIDtoINT[inlet_attr->getName()];
+        int id = this->UUIDtoINT[inlet_attr->getUUID()];
         if (id == 0) {
             continue;
         }
@@ -522,7 +525,7 @@ void DMSWMM::writeSubcatchments(std::fstream &inp)
     inp<<";;============================================================================\n";
     foreach(std::string name, InletNames) {
         DM::Node * inlet_attr = city->getNode(name);
-        int id = this->UUIDtoINT[inlet_attr->getName()];
+        int id = this->UUIDtoINT[inlet_attr->getUUID()];
         if (id == 0) {
             continue;
         }
@@ -534,7 +537,7 @@ void DMSWMM::writeSubcatchments(std::fstream &inp)
 }
 
 void DMSWMM::writeDWF(std::fstream &inp) {
-    std::vector<std::string> InletNames = city->getNamesOfComponentsInView(inlet);
+    std::vector<std::string> InletNames = city->getUUIDsOfComponentsInView(inlet);
     //DWF Dry Weather Flow
     //-------------------------//
 
@@ -582,11 +585,11 @@ void DMSWMM::writeStorage(std::fstream &inp) {
     inp<<";;Name           Elev.    Depth    Depth    Curve      Params                     Area     Frac. \n"  ;
     inp<<";;-------------- -------- -------- -------- ---------- -------- -------- -------- -------- --------\n";
     //\nODE85           93.7286  6.35708  0        FUNCTIONAL 1000     0        22222    1000     0
-    std::vector<std::string> storages = this->city->getNamesOfComponentsInView(storage);
+    std::vector<std::string> storages = this->city->getUUIDsOfComponentsInView(storage);
     foreach(std::string name, storages) {
         Node * p = this->city->getNode(name);
 
-        int id = this->UUIDtoINT[p->getName()];
+        int id = this->UUIDtoINT[p->getUUID()];
 
         inp << "NODE";
         inp << id;
@@ -622,17 +625,17 @@ void DMSWMM:: writeOutfalls(std::fstream &inp) {
     inp<<";;Name	Elev	Stage	Gate\n";
     inp<<";;============================================================================\n";
 
-    std::vector<std::string> OutfallNames = city->getNamesOfComponentsInView(outfalls);
+    std::vector<std::string> OutfallNames = city->getUUIDsOfComponentsInView(outfalls);
     for ( int i = 0; i < OutfallNames.size(); i++ ) {
         DM::Node * p = city->getNode(OutfallNames[i]);
 
-        if (UUIDtoINT[p->getName()] == 0) {
-            UUIDtoINT[p->getName()] = GLOBAL_Counter++;
+        if (UUIDtoINT[p->getUUID()] == 0) {
+            UUIDtoINT[p->getUUID()] = GLOBAL_Counter++;
             this->PointList.push_back(p);
         }
 
         double z = p->getAttribute("Z")->getDouble();
-        inp<<"NODE"<<this->UUIDtoINT[p->getName()]<<"\t"<< z <<"\tFREE\tNO\n";
+        inp<<"NODE"<<this->UUIDtoINT[p->getUUID()]<<"\t"<< z <<"\tFREE\tNO\n";
     }
 
 }
@@ -646,7 +649,7 @@ void DMSWMM::writeConduits(std::fstream &inp) {
     conduits.push_back(conduit);
 
     foreach(DM::View con, conduits)  {
-        std::vector<std::string> ConduitNames = city->getNamesOfComponentsInView(con);
+        std::vector<std::string> ConduitNames = city->getUUIDsOfComponentsInView(con);
         int counter = 0;
         foreach(std::string name, ConduitNames) {
             DM::Edge * link = city->getEdge(name);
@@ -662,21 +665,21 @@ void DMSWMM::writeConduits(std::fstream &inp) {
 
             double length = sqrt(x*x +y*y);
 
-            if (UUIDtoINT[nStartNode->getName()] == 0) {
-                UUIDtoINT[nStartNode->getName()] = GLOBAL_Counter++;
+            if (UUIDtoINT[nStartNode->getUUID()] == 0) {
+                UUIDtoINT[nStartNode->getUUID()] = GLOBAL_Counter++;
             }
-            if (UUIDtoINT[nEndNode->getName()] == 0) {
-                UUIDtoINT[nEndNode->getName()] = GLOBAL_Counter++;
+            if (UUIDtoINT[nEndNode->getUUID()] == 0) {
+                UUIDtoINT[nEndNode->getUUID()] = GLOBAL_Counter++;
             }
-            if (UUIDtoINT[link->getName()] == 0) {
-                UUIDtoINT[link->getName()] = GLOBAL_Counter++;
+            if (UUIDtoINT[link->getUUID()] == 0) {
+                UUIDtoINT[link->getUUID()] = GLOBAL_Counter++;
             }
 
-            int EndNode = UUIDtoINT[nEndNode->getName()];
-            int StartNode =  UUIDtoINT[nStartNode->getName()];
+            int EndNode = UUIDtoINT[nEndNode->getUUID()];
+            int StartNode =  UUIDtoINT[nStartNode->getUUID()];
             double offest = 0;
             if (EndNode != -1 && StartNode != -1 && EndNode != StartNode)
-                inp<<"LINK"<< UUIDtoINT[link->getName()]<<"\tNODE"<<EndNode<<"\tNODE"<<StartNode<<"\t"<<length<<"\t"<<"0.01	" << offest  <<"\t"	<< offest << "\n";
+                inp<<"LINK"<< UUIDtoINT[link->getUUID()]<<"\tNODE"<<EndNode<<"\tNODE"<<StartNode<<"\t"<<length<<"\t"<<"0.01	" << offest  <<"\t"	<< offest << "\n";
 
         }
     }
@@ -759,9 +762,9 @@ void DMSWMM::writeConduits(std::fstream &inp) {
 //}
 
 void DMSWMM::writeXSection(std::fstream &inp) {
-    std::vector<std::string> OutfallNames = city->getNamesOfComponentsInView(weir);
+    std::vector<std::string> OutfallNames = city->getUUIDsOfComponentsInView(weir);
 
-    std::vector<std::string> WWTPNames = city->getNamesOfComponentsInView(wwtp);
+    std::vector<std::string> WWTPNames = city->getUUIDsOfComponentsInView(wwtp);
     //XSection
     inp<<"\n";
     inp<<"[XSECTIONS]\n";
@@ -779,7 +782,7 @@ void DMSWMM::writeXSection(std::fstream &inp) {
     foreach (DM::View condie, condies) {
 
 
-        std::vector<std::string> ConduitNames = city->getNamesOfComponentsInView(condie);
+        std::vector<std::string> ConduitNames = city->getUUIDsOfComponentsInView(condie);
         foreach(std::string name, ConduitNames) {
             DM::Edge * link = city->getEdge(name);
 
@@ -791,15 +794,15 @@ void DMSWMM::writeXSection(std::fstream &inp) {
             double x = nStartNode->getX()  - nEndNode->getX();
             double y = nStartNode->getY() - nEndNode->getY();
 
-            if (UUIDtoINT[nStartNode->getName()] == 0) {
-                UUIDtoINT[nStartNode->getName()] = GLOBAL_Counter++;
+            if (UUIDtoINT[nStartNode->getUUID()] == 0) {
+                UUIDtoINT[nStartNode->getUUID()] = GLOBAL_Counter++;
             }
-            if (UUIDtoINT[nEndNode->getName()] == 0) {
-                UUIDtoINT[nEndNode->getName()] = GLOBAL_Counter++;
+            if (UUIDtoINT[nEndNode->getUUID()] == 0) {
+                UUIDtoINT[nEndNode->getUUID()] = GLOBAL_Counter++;
             }
 
-            int EndNode = UUIDtoINT[nEndNode->getName()];
-            int StartNode =  UUIDtoINT[nStartNode->getName()];
+            int EndNode = UUIDtoINT[nEndNode->getUUID()];
+            int StartNode =  UUIDtoINT[nStartNode->getUUID()];
 
             if (nStartNode->isInView(wwtp)) {
                 int i = 0;
@@ -807,10 +810,10 @@ void DMSWMM::writeXSection(std::fstream &inp) {
 
             double d = link->getAttribute("Diameter")->getDouble()/1000;
             if (condie.getName().compare(conduit.getName()) == 0)
-                inp << "LINK" << UUIDtoINT[link->getName()] << "\tCIRCULAR\t"<< d <<" \t0\t0\t0\n";
+                inp << "LINK" << UUIDtoINT[link->getUUID()] << "\tCIRCULAR\t"<< d <<" \t0\t0\t0\n";
 
             if (condie.getName().compare(weir.getName()) == 0)
-                inp << "WEIR" << UUIDtoINT[link->getName()] << "\tRECT_OPEN\t"<< "10" <<" \t6\t0\t0\n";
+                inp << "WEIR" << UUIDtoINT[link->getUUID()] << "\tRECT_OPEN\t"<< "10" <<" \t6\t0\t0\n";
 
         }
     }
@@ -827,7 +830,7 @@ void DMSWMM::writeWeir(std::fstream &inp)
     inp<<";;Name           Node             Node             Type         Height     Coeff.     Gate Con.     Coeff.\n";
     inp<<";;-------------- ---------------- ---------------- ------------ ---------- ---------- ---- -------- ----------\n";
     //LINK984          NODE109          NODE985          TRANSVERSE   0          1.80       NO   0        0
-    std::vector<std::string> namesWeir = this->city->getNamesOfComponentsInView(weir);
+    std::vector<std::string> namesWeir = this->city->getUUIDsOfComponentsInView(weir);
     for ( int i = 0; i < namesWeir.size(); i++ ) {
 
 
@@ -852,20 +855,20 @@ void DMSWMM::writeWeir(std::fstream &inp)
 
 
 
-        if (UUIDtoINT[startn->getName()] == 0) {
-            UUIDtoINT[startn->getName()] = GLOBAL_Counter++;
+        if (UUIDtoINT[startn->getUUID()] == 0) {
+            UUIDtoINT[startn->getUUID()] = GLOBAL_Counter++;
         }
-        if (UUIDtoINT[outfall->getName()] == 0) {
-            UUIDtoINT[outfall->getName()] = GLOBAL_Counter++;
-        }
-
-        if (UUIDtoINT[weir->getName()] == 0) {
-            UUIDtoINT[weir->getName()] = GLOBAL_Counter++;
+        if (UUIDtoINT[outfall->getUUID()] == 0) {
+            UUIDtoINT[outfall->getUUID()] = GLOBAL_Counter++;
         }
 
+        if (UUIDtoINT[weir->getUUID()] == 0) {
+            UUIDtoINT[weir->getUUID()] = GLOBAL_Counter++;
+        }
 
 
-        inp<<"WEIR"<<UUIDtoINT[weir->getName()]<<"\tNODE"<<UUIDtoINT[startn->getName()]<<"\tNODE"<<UUIDtoINT[outfall->getName()]<<"\t";
+
+        inp<<"WEIR"<<UUIDtoINT[weir->getUUID()]<<"\tNODE"<<UUIDtoINT[startn->getUUID()]<<"\tNODE"<<UUIDtoINT[outfall->getUUID()]<<"\t";
         inp<<"TRANSVERSE" << "\t";
         inp<< weir->getAttribute("InletOffset")->getDouble() << "\t";
 
@@ -879,8 +882,8 @@ void DMSWMM::writeWeir(std::fstream &inp)
 }
 void DMSWMM::writeCoordinates(std::fstream &inp)
 {
-    std::vector<std::string> WWTPs = city->getNamesOfComponentsInView(wwtp);
-    std::vector<std::string> OutfallNames = city->getNamesOfComponentsInView(outfalls);
+    std::vector<std::string> WWTPs = city->getUUIDsOfComponentsInView(wwtp);
+    std::vector<std::string> OutfallNames = city->getUUIDsOfComponentsInView(outfalls);
     //COORDINATES
     //-------------------------//
     inp << "\n";
@@ -894,7 +897,7 @@ void DMSWMM::writeCoordinates(std::fstream &inp)
         double x = node->getX();
         double y = node->getY();
 
-        inp << "NODE" << UUIDtoINT[node->getName()] ;
+        inp << "NODE" << UUIDtoINT[node->getUUID()] ;
         inp << "\t";
         inp << x;
         inp << "\t";
@@ -908,7 +911,7 @@ void DMSWMM::writeCoordinates(std::fstream &inp)
         double x = node->getX();
         double y = node->getY();
 
-        inp << "NODE" << UUIDtoINT[node->getName()] ;
+        inp << "NODE" << UUIDtoINT[node->getUUID()] ;
         inp << "\t";
         inp << x;
         inp << "\t";

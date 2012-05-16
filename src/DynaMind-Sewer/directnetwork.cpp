@@ -43,7 +43,7 @@ void DirectNetwork::run() {
 
     sys = this->getData("Vec");
 
-    std::vector<std::string> s_outfalls = sys->getNamesOfComponentsInView(this->outfalls);
+    std::vector<std::string> s_outfalls = sys->getUUIDsOfComponentsInView(this->outfalls);
     std::vector<DM::Node*> outfalls;
     foreach (std::string s, s_outfalls) {
         outfalls.push_back(sys->getNode(s));
@@ -51,7 +51,7 @@ void DirectNetwork::run() {
 
 
     //Create EdgeList
-    std::vector<std::string> s_edges = sys->getNamesOfComponentsInView(this->conduits);
+    std::vector<std::string> s_edges = sys->getUUIDsOfComponentsInView(this->conduits);
 
 
 

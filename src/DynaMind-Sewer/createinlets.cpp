@@ -34,7 +34,7 @@ void CreateInlets::run() {
 
     DM::System * city = this->getData("City");
 
-    std::vector<std::string> blocks = city->getNamesOfComponentsInView(Blocks);
+    std::vector<std::string> blocks = city->getUUIDsOfComponentsInView(Blocks);
     foreach (std::string nBlock, blocks) {
         DM::Face * f = city->getFace(nBlock);
 
@@ -79,7 +79,7 @@ void CreateInlets::run() {
                 if (startX < offsetX+with && startX > offsetX && startY < offsetY+heigth && startY > offsetY)  {
                     DM::Node * n = city->addNode(DM::Node(startX, startY, 0), Inlets);
                     n->addAttribute("BuildYear", buildyear);
-                    n->getAttribute("ID_CATCHMENT")->setString(f->getName());
+                    n->getAttribute("ID_CATCHMENT")->setString(f->getUUID());
 
                 }
                 startX+=Size;

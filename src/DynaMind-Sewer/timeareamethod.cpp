@@ -25,6 +25,7 @@
  */
 #include "timeareamethod.h"
 #include "tbvectordata.h"
+#include <math.h>
 
 DM_DECLARE_NODE_NAME(TimeAreaMethod, Sewer)
 TimeAreaMethod::TimeAreaMethod()
@@ -120,9 +121,9 @@ void TimeAreaMethod::run() {
 
     DM::System *city= this->getData("City");
     std::vector<std::string> InletNames;
-    InletNames = city->getNamesOfComponentsInView(inlet);
+    InletNames = city->getUUIDsOfComponentsInView(inlet);
     std::vector<std::string> ConduitNames;
-    ConduitNames = city->getNamesOfComponentsInView(conduit);
+    ConduitNames = city->getUUIDsOfComponentsInView(conduit);
 
     //Create Connection List
     foreach(std::string name , ConduitNames)  {
@@ -195,11 +196,11 @@ void TimeAreaMethod::run() {
 
 
 
-    foreach (std::string s, city->getNamesOfComponentsInView(globals)) {
+    foreach (std::string s, city->getUUIDsOfComponentsInView(globals)) {
         DM::Component * sg = city->getComponent(s);
         sg->addAttribute("CONNECTEDPOP", Population_sum);
         sg->addAttribute("CONNECTEDAREA", area_sum);
-        sg->addAttribute("CSOs", city->getNamesOfComponentsInView(outfalls).size());
+        sg->addAttribute("CSOs", city->getUUIDsOfComponentsInView(outfalls).size());
     }
 
 
@@ -207,7 +208,7 @@ void TimeAreaMethod::run() {
 
 
     //AddStorageToWWtp
-    std::vector<std::string> endPointNames = city->getNamesOfComponentsInView(wwtps);
+    std::vector<std::string> endPointNames = city->getUUIDsOfComponentsInView(wwtps);
     foreach(std::string name, endPointNames) {
         this->EndPointList.push_back(city->getNode(name));
         DM::Node * p = city->getNode(name);
@@ -217,7 +218,7 @@ void TimeAreaMethod::run() {
     }
 
 
-    foreach (std::string name, city->getNamesOfComponentsInView(conduit)) {
+    foreach (std::string name, city->getUUIDsOfComponentsInView(conduit)) {
         DM::Edge * con = city->getEdge(name);
         DM::Node * start = city->getNode(con->getStartpointName());
         DM::Node * end = city->getNode(con->getEndpointName());
@@ -342,7 +343,7 @@ void TimeAreaMethod::run() {
     }
 
     //Write Data to shaft
-    std::vector<std::string> junctionnames = city->getNamesOfComponentsInView(shaft);
+    std::vector<std::string> junctionnames = city->getUUIDsOfComponentsInView(shaft);
 
     for (int i = 0; i <junctionnames.size(); i++) {
         DM::Node * p = city->getNode(junctionnames[i]);
@@ -368,7 +369,7 @@ void TimeAreaMethod::run() {
     }
 
     //Dimensioning
-    std::vector<std::string> edgesname = city->getNamesOfComponentsInView(conduit);
+    std::vector<std::string> edgesname = city->getUUIDsOfComponentsInView(conduit);
     foreach(std::string  en, edgesname) {
         DM::Edge * e = city->getEdge(en);
         DM::Node * attr = city->getNode(e->getStartpointName());
@@ -395,7 +396,7 @@ void TimeAreaMethod::run() {
     }
 
     //Dimensioning of Outfalls
-    std::vector<std::string> outfallconduits = city->getNamesOfComponentsInView(weir);
+    std::vector<std::string> outfallconduits = city->getUUIDsOfComponentsInView(weir);
 
     foreach (std::string of, outfallconduits) {
         DM::Edge * weir = city->getEdge(of);
@@ -441,7 +442,7 @@ void TimeAreaMethod::run() {
     }
 
     //Dimensiong Pipe to WWTP
-    foreach (std::string nwwtp, city->getNamesOfComponentsInView(wwtps)) {
+    foreach (std::string nwwtp, city->getUUIDsOfComponentsInView(wwtps)) {
         DM::Node * wwtp = city->getNode(nwwtp);
         std::vector<DM::Edge*> edges = this->StartNodeSortedEdges[wwtp];
         if (edges.size() == 1) {
@@ -454,7 +455,7 @@ void TimeAreaMethod::run() {
     }
 
     //Dimensioning Storage
-    foreach (std::string nstorage, city->getNamesOfComponentsInView(storage)) {
+    foreach (std::string nstorage, city->getUUIDsOfComponentsInView(storage)) {
         DM::Node * storage = city->getNode(nstorage);
         std::vector<DM::Edge*> edges = this->EndNodeSortedEdges[storage];
         double minDiameter = -1;

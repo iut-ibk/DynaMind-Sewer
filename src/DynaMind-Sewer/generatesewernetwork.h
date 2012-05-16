@@ -100,9 +100,9 @@ public:
         int lastdir;
         Agent(Pos);
     protected:
-        ublas::vector<double> neigh;
-        ublas::vector<double> decissionVector;
-        ublas::vector<double> ProbabilityVector;
+        std::vector<double> neigh;
+        std::vector<double> decissionVector;
+        std::vector<double> ProbabilityVector;
 
 
     };
@@ -150,7 +150,7 @@ public:
     void MarkPathWithField(const std::vector<Pos> & path, RasterData * ConnectivityField, int ConnectivityWidth);
     void addRadiusValueADD(int x, int y, RasterData * layer, int rmax, double value);
     void addRadiusValue(int x, int y, RasterData * layer, int rmax, double value, double **);
-    static int indexOfMinValue(const ublas::vector<double> & vec);
+    static int indexOfMinValue(const vector<double> & vec);
 };
 
 #endif // GENERATESEWERNETWORK_H
