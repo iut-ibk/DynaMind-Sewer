@@ -31,9 +31,6 @@
 #include "dmmodule.h"
 #include "dm.h"
 #include <vector>
-#include <boost/numeric/ublas/matrix.hpp>
-#include <boost/numeric/ublas/io.hpp>
-namespace   ublas = boost::numeric::ublas;
 
 using namespace DM;
 
