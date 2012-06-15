@@ -334,7 +334,7 @@ GenerateSewerNetwork::GenerateSewerNetwork()
 
     this->addParameter("MaxDeph", DM::DOUBLE, &this->Hmin);
     this->addParameter("Steps", DM::LONG, & this->steps);
-    this->addParameter("ConnectivityWidth", DM::LONG, & this->ConnectivityWidth);
+    this->addParameter("ConnectivityWidth", DM::INT, & this->ConnectivityWidth);
     this->addParameter("AttractionTopology", DM::DOUBLE, & this->AttractionTopology);
     this->addParameter("AttractionConnectivity", DM::DOUBLE, & this->AttractionConnectivity);
     this->addParameter("MultiplyerCenterCon", DM::DOUBLE, & this->MultiplyerCenterCon);
@@ -350,7 +350,7 @@ GenerateSewerNetwork::GenerateSewerNetwork()
     Inlets.getAttribute("ID_CATCHMENT");
 
     catchment = DM::View("CATCHMENT", DM::FACE, DM::READ);
-    catchment.getAttribute("Population");
+    catchment.getAttribute("Active");
 
     city.push_back(Topology);
     city.push_back(Inlets);
@@ -423,11 +423,13 @@ void GenerateSewerNetwork::run() {
     foreach (std::string inlet, city->getUUIDsOfComponentsInView(Inlets))  {
         DM::Node * n = city->getNode(inlet);
         std::string ID_CA = n->getAttribute("ID_CATCHMENT")->getString();
-        //DM::Face * catchment = city->getFace(ID_CA);
+        DM::Face * catchment = city->getFace(ID_CA);
         //Just For Now
-        //if (catchment->getAttribute("Population")->getDouble() > 10) {
+        n->changeAttribute("New", 0);
+        if (catchment->getAttribute("Active")->getDouble() > 0.1) {
+             n->changeAttribute("New", 1);
             StartPos.push_back(n);
-        //}
+        }
     }
     //Create Agents
     int attrtopo = this->AttractionTopology - this->internalCounter;

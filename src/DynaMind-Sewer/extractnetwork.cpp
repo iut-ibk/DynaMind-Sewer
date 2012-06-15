@@ -166,7 +166,12 @@ void ExtractNetwork::run() {
     std::vector<DM::Node*> StartPos;
     foreach (std::string inlet, city->getUUIDsOfComponentsInView(Inlets))  {
         DM::Node * n = city->getNode(inlet);
-        if (n->getAttribute("New")->getDouble() > -1) {
+        std::string ID_CA = n->getAttribute("ID_CATCHMENT")->getString();
+        DM::Face * catchment = city->getFace(ID_CA);
+        //Just For Now
+        n->changeAttribute("New", 0);
+        if (catchment->getAttribute("Active")->getDouble() > 0.1) {
+             n->changeAttribute("New", 1);
             StartPos.push_back(n);
         }
     }

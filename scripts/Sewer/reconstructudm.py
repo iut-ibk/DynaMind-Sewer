@@ -75,7 +75,9 @@ class ReconstructUDM(Module):
                 self.PointMap = {}
 		city = self.getData("City")
 
-		names = city.getNamesOfComponentsInView(self.conduits)
+		names = city.getUUIDsOfComponentsInView(self.conduits)
+		print "Number of Conduits"
+		print len(names)
 		for nc in names:
                     condi = city.getEdge(nc)
                     
@@ -94,8 +96,9 @@ class ReconstructUDM(Module):
                     
 
 
-		names = city.getNamesOfComponentsInView(self.cityblock)
-                #print self.PointMap
+		names = city.getUUIDsOfComponentsInView(self.cityblock)
+		print "Number of Blocks"
+		print len(names)
 		for nc in names:
                     f = city.getFace(nc)
                     f1 = Face(f)

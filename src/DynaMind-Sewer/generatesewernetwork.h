@@ -116,7 +116,7 @@ private:
 
 
     DM::View  Inlets;
-    DM::View catchment;
+    DM::View  catchment;
 
 
     DM::RasterData *  rTopology;
