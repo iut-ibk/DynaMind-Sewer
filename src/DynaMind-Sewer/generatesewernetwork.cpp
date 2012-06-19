@@ -276,9 +276,9 @@ void GenerateSewerNetwork::MarkPathWithField(const std::vector<Pos> & path, Rast
     }
 
     for (int i = 0; i < rmax; i++) {
-        delete stamp[i];
+        delete[] stamp[i];
     }
-    delete stamp;
+        delete[] stamp;
 
     x = path[last].x;
     y = path[last].y;
@@ -427,7 +427,7 @@ void GenerateSewerNetwork::run() {
         //Just For Now
         n->changeAttribute("New", 0);
         if (catchment->getAttribute("Active")->getDouble() > 0.1) {
-             n->changeAttribute("New", 1);
+            n->changeAttribute("New", 1);
             StartPos.push_back(n);
         }
     }
