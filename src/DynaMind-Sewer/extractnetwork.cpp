@@ -103,6 +103,7 @@ ExtractNetwork::ExtractNetwork()
     this->ConduitLength = 200;
     this->Hmin = 3.1;
 
+
     this->addParameter("Steps", DM::LONG, & this->steps);
     this->addParameter("MaxDeph", DM::DOUBLE, &this->Hmin);
     this->addParameter("ConduitLength", DM::DOUBLE, &this->ConduitLength);
@@ -144,7 +145,7 @@ ExtractNetwork::ExtractNetwork()
 
 }
 void ExtractNetwork::run() {
-
+    nodeListToCompare.clear();
     this->city = this->getData("City");
 
 
