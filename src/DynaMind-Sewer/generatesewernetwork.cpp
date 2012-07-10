@@ -275,7 +275,7 @@ void GenerateSewerNetwork::MarkPathWithField(const std::vector<Pos> & path, Rast
 
     }
 
-    for (int i = 0; i < rmax; i++) {
+    for (int i = 0; i < rmax*2; i++) {
         delete[] stamp[i];
     }
         delete[] stamp;
@@ -350,10 +350,11 @@ GenerateSewerNetwork::GenerateSewerNetwork()
     Inlets.getAttribute("ID_CATCHMENT");
 
     catchment = DM::View("CATCHMENT", DM::FACE, DM::READ);
-    catchment.getAttribute("Active");
+    //catchment.getAttribute("Active");
 
     city.push_back(Topology);
     city.push_back(Inlets);
+    city.push_back(catchment);
 
     this->addData("City", city);
 
@@ -426,10 +427,10 @@ void GenerateSewerNetwork::run() {
         DM::Face * catchment = city->getFace(ID_CA);
         //Just For Now
         n->changeAttribute("New", 0);
-        if (catchment->getAttribute("Active")->getDouble() > 0.1) {
+        //if (catchment->getAttribute("Active")->getDouble() > 0.1) {
             n->changeAttribute("New", 1);
             StartPos.push_back(n);
-        }
+        //}
     }
     //Create Agents
     int attrtopo = this->AttractionTopology - this->internalCounter;

@@ -171,10 +171,10 @@ void ExtractNetwork::run() {
         DM::Face * catchment = city->getFace(ID_CA);
         //Just For Now
         n->changeAttribute("New", 0);
-        if (catchment->getAttribute("Active")->getDouble() > 0.1) {
+        //if (catchment->getAttribute("Active")->getDouble() > 0.1) {
              n->changeAttribute("New", 1);
             StartPos.push_back(n);
-        }
+        //}
     }
 
     //Create Agents

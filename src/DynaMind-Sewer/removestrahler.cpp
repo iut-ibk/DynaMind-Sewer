@@ -33,6 +33,8 @@ RemoveStrahler::RemoveStrahler()
     this->junctions = DM::View("JUNCTION", DM::NODE, DM::MODIFY);
     this->conduits = DM::View("CONDUIT", DM::EDGE, DM::MODIFY);
     this->conduits.getAttribute("Strahler");
+    until = 1;
+    this->addParameter("StrahlerNumber", DM::INT,&until);
 
     std::vector<DM::View> data;
     data.push_back(this->junctions);
@@ -52,7 +54,7 @@ void RemoveStrahler::run()
 
     foreach (std::string s, condis) {
         DM::Edge * c = sys->getEdge(s);
-        if (c->getAttribute("Strahler")->getDouble() < 2) {
+        if (c->getAttribute("Strahler")->getDouble() < until) {
             sys->removeComponentFromView(c, conduits);
             DM::Node * nstart = sys->getNode(c->getStartpointName());
             sys->removeComponentFromView(nstart, junctions);
