@@ -43,12 +43,12 @@ CreateInlets::CreateInlets()
 
     offsetX = 0;
     offsetY = 0;
-    with = 1000;
+    width = 1000;
     heigth = 1000;
 
     this->addParameter("offsetX", DM::DOUBLE, &offsetX);
     this->addParameter("offsetY", DM::DOUBLE, &offsetY);
-    this->addParameter("with", DM::DOUBLE, &with);
+    this->addParameter("width", DM::DOUBLE, &width);
     this->addParameter("heigth", DM::DOUBLE, &heigth);
 
 
