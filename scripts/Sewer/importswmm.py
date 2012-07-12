@@ -97,6 +97,9 @@ class ImportSWMM(Module):
                 coords = ress[c]
                 n = sewer.getNode(UUIDTranslator[c])
                 sewer.addComponentToView(n, self.junctions) 
+                attr = Attribute("SWMM_ID")
+                attr.setString(str(c))
+                n.addAttribute(attr)
                 if (c == self.NameWWTP):  
                     print "wwtp found"
                     sewer.addComponentToView(n, self.wwtps)
