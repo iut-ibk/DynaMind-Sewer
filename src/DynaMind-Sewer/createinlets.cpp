@@ -102,7 +102,7 @@ void CreateInlets::run() {
             continue;
         while (startY < maxy) {
             while (startX < maxx) {
-                if (startX < offsetX+with && startX > offsetX && startY < offsetY+heigth && startY > offsetY)  {
+                if (startX < offsetX+width && startX > offsetX && startY < offsetY+heigth && startY > offsetY)  {
                     DM::Node * n = city->addNode(DM::Node(startX, startY, 0), Inlets);
                     n->addAttribute("BuildYear", buildyear);
                     n->getAttribute("ID_CATCHMENT")->setString(f->getUUID());
