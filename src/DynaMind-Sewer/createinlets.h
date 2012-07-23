@@ -40,7 +40,7 @@ private:
 
         double offsetX;
         double offsetY;
-        double with;
+        double width;
         double heigth;
     public:
 

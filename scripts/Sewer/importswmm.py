@@ -24,6 +24,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """
 
+import sys
 
 from pydynamind import *
 class ImportSWMM(Module):
@@ -87,7 +88,7 @@ class ImportSWMM(Module):
             for c in ress:
                 coords = ress[c]
                 n = sewer.addNode(float(coords[0]), float(coords[1]),0.)
-                UUIDTranslator[c] = n.getName()
+                UUIDTranslator[c] = n.getUUID()
 
             #Add Nodes
 
@@ -96,6 +97,9 @@ class ImportSWMM(Module):
                 coords = ress[c]
                 n = sewer.getNode(UUIDTranslator[c])
                 sewer.addComponentToView(n, self.junctions) 
+                attr = Attribute("SWMM_ID")
+                attr.setString(str(c))
+                n.addAttribute(attr)
                 if (c == self.NameWWTP):  
                     print "wwtp found"
                     sewer.addComponentToView(n, self.wwtps)
@@ -108,9 +112,12 @@ class ImportSWMM(Module):
                 end = sewer.getNode(UUIDTranslator[vals[1]])
                 e = sewer.addEdge(start, end, self.conduits)
                 e.addAttribute("DIAMETER", float(xsections[c][1]))
-                
+                attr = Attribute("SWMM_ID")
+                attr.setString(str(c))
+                e.addAttribute(attr)
         except Exception, e:
-            print e
-            print "Unexpected error:"
+	        print e
+		print sys.exc_info()
+	     
 
                 

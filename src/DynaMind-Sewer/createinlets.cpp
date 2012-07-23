@@ -43,12 +43,12 @@ CreateInlets::CreateInlets()
 
     offsetX = 0;
     offsetY = 0;
-    with = 1000;
+    width = 1000;
     heigth = 1000;
 
     this->addParameter("offsetX", DM::DOUBLE, &offsetX);
     this->addParameter("offsetY", DM::DOUBLE, &offsetY);
-    this->addParameter("with", DM::DOUBLE, &with);
+    this->addParameter("width", DM::DOUBLE, &width);
     this->addParameter("heigth", DM::DOUBLE, &heigth);
 
 
@@ -102,7 +102,7 @@ void CreateInlets::run() {
             continue;
         while (startY < maxy) {
             while (startX < maxx) {
-                if (startX < offsetX+with && startX > offsetX && startY < offsetY+heigth && startY > offsetY)  {
+                if (startX < offsetX+width && startX > offsetX && startY < offsetY+heigth && startY > offsetY)  {
                     DM::Node * n = city->addNode(DM::Node(startX, startY, 0), Inlets);
                     n->addAttribute("BuildYear", buildyear);
                     n->getAttribute("ID_CATCHMENT")->setString(f->getUUID());

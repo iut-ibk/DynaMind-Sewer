@@ -1,3 +1,5 @@
+FILE(COPY ${dynamind-sewer_SOURCE_DIR}/scripts DESTINATION ${SCRIPT_PATH})
+
 MACRO(list_subdirectories retval curdir return_relative)
   FILE(GLOB sub-dir RELATIVE ${curdir} *)
   SET(list_of_dirs "")
@@ -16,10 +18,12 @@ ENDMACRO()
 
 LIST_SUBDIRECTORIES(DIRS ${dynamind-sewer_SOURCE_DIR}/scripts/ 1)
 
+
+
 FOREACH(DIR ${DIRS})
     FILE(GLOB SCRIPTFILES "${dynamind-sewer_SOURCE_DIR}/scripts/${DIR}/*.py")
-    INSTALL(FILES ${SCRIPTFILES} DESTINATION "lib/DynaMind/scripts/${DIR}")
+    INSTALL(FILES ${SCRIPTFILES} DESTINATION "${SCRIPT_PATH}/${DIR}")
 ENDFOREACH(DIR)
 
 FILE(GLOB BASESCRIPTS "${dynamind-sewer_SOURCE_DIR}/scripts/*.py")
-INSTALL(FILES ${BASESCRIPTS} DESTINATION "lib/DynaMind/scripts")
+INSTALL(FILES ${BASESCRIPTS} DESTINATION "${SCRIPT_PATH}")
