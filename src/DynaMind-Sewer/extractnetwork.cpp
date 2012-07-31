@@ -224,7 +224,7 @@ void ExtractNetwork::run() {
     }
 
 
-
+    Logger(Debug) << "multiplier" << multiplier;
 
     std::vector<std::vector<Node> > Points_After_Agent_Extraction;
     //Extract Netoworks
@@ -366,6 +366,7 @@ std::vector<std::vector<DM::Node> >  ExtractNetwork::SimplifyNetwork(std::vector
         foreach (Node node, pl) {
             Node * n = this->addNode(sys_tmp, node, dummy, offset);
             if (n->getAttribute("Counter")->getDouble() > 0.01) {
+                Logger(Debug) << n->getAttribute("Counter")->getDouble();
                 hitExisting = true;
                 n->changeAttribute("Counter",100);
                 break;
