@@ -232,6 +232,8 @@ void ExtractNetwork::run() {
         AgentExtraxtor * a = agents[j];
         if (a->alive) {
             a->run();
+        } else {
+            Logger(Debug) << "Agent Path Length" << a->path.size();
         }
         if (a->successful) {
             successfulAgents++;
@@ -241,7 +243,7 @@ void ExtractNetwork::run() {
                 points_for_total.push_back(Node(a->path[i].x * multiplier + offset, a->path[i].y * multiplier + offset,a->path[i].h));
 
             }
-            Logger(Debug) << "Agent Path Length" << a->path.size();
+            Logger(Debug) << "Successful Agent Path Length" << a->path.size();
             Points_After_Agent_Extraction.push_back(points_for_total);
             //Set Inlet Point to Used
 
@@ -250,7 +252,6 @@ void ExtractNetwork::run() {
             start->changeAttribute("New", 0);
             start->changeAttribute("Connected", 1);
         }
-
     }
 
     Logger(Debug) << "Done with the agents Junctions";
