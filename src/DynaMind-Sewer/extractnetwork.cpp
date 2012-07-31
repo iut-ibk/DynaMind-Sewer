@@ -196,11 +196,10 @@ void ExtractNetwork::run() {
         agents.push_back(a);
 
     }
+    Logger(Debug) << "Number of agents" << agents.size();
     long successfulAgents = 0;
     double multiplier;
     multiplier = this->ConnectivityField->getCellSize();
-    //double offset = this->ConnectivityField->getCellSize() /2.;
-
     //Extract Conduits
 
     foreach(std::string name, city->getUUIDsOfComponentsInView(Conduits)) {
@@ -240,7 +239,9 @@ void ExtractNetwork::run() {
             for (int i = 0; i < a->path.size(); i++) {
                 this->Path->setValue(a->path[i].x, a->path[i].y, 1);
                 points_for_total.push_back(Node(a->path[i].x * multiplier + offset, a->path[i].y * multiplier + offset,a->path[i].h));
+
             }
+            Logger(Debug) << "Agent Path Length" << a->path.size();
             Points_After_Agent_Extraction.push_back(points_for_total);
             //Set Inlet Point to Used
 
