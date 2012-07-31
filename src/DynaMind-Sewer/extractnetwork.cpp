@@ -363,7 +363,9 @@ std::vector<std::vector<DM::Node> >  ExtractNetwork::SimplifyNetwork(std::vector
     DM::View dummy;
     foreach (std::vector<Node> pl, points) {
         bool hitExisting= false;
+        int counter = 0;
         foreach (Node node, pl) {
+            counter++;
             Node * n = this->addNode(sys_tmp, node, dummy, offset);
             if (n->getAttribute("Counter")->getDouble() > 0.01) {
                 Logger(Debug) << n->getAttribute("Counter")->getDouble();
@@ -373,6 +375,7 @@ std::vector<std::vector<DM::Node> >  ExtractNetwork::SimplifyNetwork(std::vector
             }
             n->changeAttribute("Counter",1);
         }
+        Logger << "Counter " << counter;
 
     }
 
