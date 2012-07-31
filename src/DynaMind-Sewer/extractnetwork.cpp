@@ -375,7 +375,7 @@ std::vector<std::vector<DM::Node> >  ExtractNetwork::SimplifyNetwork(std::vector
             }
             n->changeAttribute("Counter",1);
         }
-        Logger << "Counter " << counter;
+        Logger(Debug) << "Counter " << counter;
 
     }
 
