@@ -171,10 +171,10 @@ void GenerateSewerNetwork::addRadiusValueADD(int x, int y, RasterData *layer, in
     int jmax = 10;
     int k = 0;
     double z = rmax*rmax;
-    for (i; i < rmax+x;  i++) {
+    for (; i < rmax+x;  i++) {
         j = y - rmax;
 
-        for ( j;  j < rmax+y; j++) {
+        for (;  j < rmax+y; j++) {
             double r = double((i-x)*(i-x) + (j-y)*(j-y));
             double val = ((r-z)/10.)*(value);
             if (layer->getValue(i,j) > val )
@@ -196,10 +196,10 @@ void GenerateSewerNetwork::addRadiusValue(int x, int y, RasterData * layer, int 
     int i_small = 0;
     int limitx =  rmax+x;
     int limity =  rmax+y;
-    for (i; i < limitx;  i++ ) {
+    for (; i < limitx;  i++ ) {
         j = y - rmax;
         int j_small = 0;
-        for ( j;  j < limity; j++) {
+        for (;  j < limity; j++) {
             double val =  stamp[i_small][j_small] * value;
             if (layer->getValue(i,j) > val ) {
                 layer->setValue(i,j,val );
