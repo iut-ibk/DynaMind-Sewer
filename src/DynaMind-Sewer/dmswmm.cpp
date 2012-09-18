@@ -333,7 +333,7 @@ void DMSWMM::RunSWMM() {
     tmpPath.mkdir("vibeswmm");
 
     //Path to SWMM
-    QSettings settings("IUT", "DYNAMIND");
+    QSettings settings;
     QString swmmPath = settings.value("SWMM").toString().replace("\\","/");
     if (swmmPath.lastIndexOf("/") != swmmPath.size()) {
         swmmPath.append("/");
