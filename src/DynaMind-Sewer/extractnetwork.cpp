@@ -35,7 +35,7 @@ void ExtractNetwork::AgentExtraxtor::run() {
     for (int i = 0; i < this->steps; i++) {
         this->path.push_back(currentPos);
 
-        double currentH = this->Topology->getValue(currentPos.x, currentPos.y);
+        double currentH = this->Topology->getCell(currentPos.x, currentPos.y);
         double hcurrent = currentPos.h;
         //Influence Topology
         ConnectivityField->getMoorNeighbourhood(neigh, currentPos.x,currentPos.y);
@@ -65,7 +65,7 @@ void ExtractNetwork::AgentExtraxtor::run() {
         this->currentPos.x+=csg_s::csg_s_operations::returnPositionX(direction);
         this->currentPos.y+=csg_s::csg_s_operations::returnPositionY(direction);
 
-        double deltaH = currentH - this->Topology->getValue(currentPos.x, currentPos.y);
+        double deltaH = currentH - this->Topology->getCell(currentPos.x, currentPos.y);
 
         if (deltaH > 0) {
             currentPos.h = hcurrent - deltaH;
@@ -82,7 +82,7 @@ void ExtractNetwork::AgentExtraxtor::run() {
 
 
         }
-        if (Goals->getValue(currentPos.x, currentPos.y ) > 0 || this->MarkPath->getValue(currentPos.x, currentPos.y) > 0) {
+        if (Goals->getCell(currentPos.x, currentPos.y ) > 0 || this->MarkPath->getCell(currentPos.x, currentPos.y) > 0) {
             if (currentPos.h < Hmin) {
                 this->alive = false;
                 this->successful = true;
@@ -157,9 +157,10 @@ void ExtractNetwork::run() {
 
     long width = this->ConnectivityField->getWidth();
     long height = this->ConnectivityField->getHeight();
-    double cellSize = this->ConnectivityField->getCellSize();
+    double cellSizeX = this->ConnectivityField->getCellSizeX();
+    double cellSizeY = this->ConnectivityField->getCellSizeY();
 
-    this->Path->setSize(width, height, cellSize);
+    this->Path->setSize(width, height, cellSizeX,cellSizeY,0,0);
     this->Path->clear();
 
     std::vector<AgentExtraxtor * > agents;
@@ -181,8 +182,8 @@ void ExtractNetwork::run() {
     //Create Agents
 
     foreach(DM::Node * p, StartPos) {
-        long x = (long) p->getX()/cellSize;
-        long y = (long) p->getY()/cellSize;
+        long x = (long) p->getX()/cellSizeX;
+        long y = (long) p->getY()/cellSizeY;
         AgentExtraxtor * a = new AgentExtraxtor(GenerateSewerNetwork::Pos(x,y));
         a->startNode = p;
         a->Topology = this->Topology;
@@ -200,7 +201,7 @@ void ExtractNetwork::run() {
     Logger(Debug) << "Number of agents" << agents.size();
     long successfulAgents = 0;
     double multiplier;
-    multiplier = this->ConnectivityField->getCellSize();
+    multiplier = this->ConnectivityField->getCellSizeX();
     //Extract Conduits
 
     foreach(std::string name, city->getUUIDsOfComponentsInView(Conduits)) {
@@ -240,7 +241,7 @@ void ExtractNetwork::run() {
             successfulAgents++;
             std::vector<Node> points_for_total;
             for (int i = 0; i < a->path.size(); i++) {
-                this->Path->setValue(a->path[i].x, a->path[i].y, 1);
+                this->Path->setCell(a->path[i].x, a->path[i].y, 1);
                 points_for_total.push_back(Node(a->path[i].x * multiplier + offset, a->path[i].y * multiplier + offset,a->path[i].h));
 
             }
@@ -256,7 +257,7 @@ void ExtractNetwork::run() {
     }
 
     Logger(Debug) << "Done with the agents Junctions";
-    std::vector<std::vector<DM::Node> > PointsToPlace = this->SimplifyNetwork(Points_After_Agent_Extraction, this->ConduitLength/cellSize, offset);
+    std::vector<std::vector<DM::Node> > PointsToPlace = this->SimplifyNetwork(Points_After_Agent_Extraction, this->ConduitLength/cellSizeX, offset);
 
     //Export Inlets
     Logger(Debug) << "Export Junctions";
@@ -318,17 +319,17 @@ void ExtractNetwork::run() {
 
     foreach (std::string name, this->city->getUUIDsOfComponentsInView(Junction)) {
         DM::Node * n =this->city->getNode(name);
-        int x = n->getX()/cellSize;
-        int y = n->getY()/cellSize;
-        double z = this->Topology->getValue(x,y);
+        int x = n->getX()/cellSizeX;
+        int y = n->getY()/cellSizeY;
+        double z = this->Topology->getCell(x,y);
         n->changeAttribute("Z", z);
 
     }
     foreach (std::string name, this->city->getUUIDsOfComponentsInView(EndPoint)) {
         DM::Node * n =this->city->getNode(name);
-        int x = n->getX()/cellSize;
-        int y = n->getY()/cellSize;
-        double z = this->Topology->getValue(x,y);
+        int x = n->getX()/cellSizeX;
+        int y = n->getY()/cellSizeY;
+        double z = this->Topology->getCell(x,y);
         n->changeAttribute("Z", z-3);
     }
     smoothNetwork();
