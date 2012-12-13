@@ -206,7 +206,8 @@ void ExtractNetwork::run() {
 
     foreach(std::string name, city->getUUIDsOfComponentsInView(Conduits)) {
         DM::Component * c = city->getComponent(name);
-        c->changeAttribute(DM::Attribute("New", 1));
+        DM::Attribute attr("New", 1);
+        c->changeAttribute(attr);
     }
 
     //CreateEndPointList
@@ -363,6 +364,16 @@ std::vector<std::vector<DM::Node> >  ExtractNetwork::SimplifyNetwork(std::vector
 
     DM::System sys_tmp;
     DM::View dummy;
+
+
+    //Init Counter Values
+    foreach (std::vector<Node> pl, points) {
+        foreach (Node node, pl) {
+            Node * n = this->addNode(sys_tmp, node, dummy, offset);
+            n->addAttribute("Counter", 0);
+        }
+    }
+
     foreach (std::vector<Node> pl, points) {
         bool hitExisting= false;
         int counter = 0;
@@ -372,7 +383,7 @@ std::vector<std::vector<DM::Node> >  ExtractNetwork::SimplifyNetwork(std::vector
             if (n->getAttribute("Counter")->getDouble() > 0.01) {
                 Logger(Debug) << n->getAttribute("Counter")->getDouble();
                 hitExisting = true;
-                n->changeAttribute("Counter",100);
+                n->changeAttribute("Counter",100.);
                 break;
             }
             n->changeAttribute("Counter",1);
