@@ -40,7 +40,7 @@ OutfallPlacement::OutfallPlacement()
     Inlet.addAttribute("Outfall");
     WWTP = DM::View("WWTP", DM::NODE, DM::READ);
     Outfall = DM::View("OUTFALL", DM::NODE, DM::WRITE);
-    ConduitOutfall = DM::View("WEIR", DM::EDGE, DM::WRITE);
+    ConduitOutfall = DM::View("WEIR", DM::NODE, DM::WRITE);
 
     MaxStrahler[1] = 100;
     MaxStrahler[2] = 0;

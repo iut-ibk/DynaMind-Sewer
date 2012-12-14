@@ -68,7 +68,7 @@ DMSWMM::DMSWMM()
     storage.getAttribute("Storage");
 
 
-    globals = DM::View("GLOBALS_SEWER", DM::NODE, DM::READ);
+    globals = DM::View("CITY", DM::COMPONENT, DM::READ);
     globals.addAttribute("SWMM_ID");
     globals.addAttribute("Vr");
     globals.addAttribute("Vp");
