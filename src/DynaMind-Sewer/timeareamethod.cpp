@@ -71,7 +71,7 @@ TimeAreaMethod::TimeAreaMethod()
     weir = DM::View("WEIR", DM::NODE, DM::WRITE);
     weir.addAttribute("InletOffset");
 
-    globals = DM::View("GLOBALS_SEWER", DM::NODE, DM::MODIFY);
+    globals = DM::View("CITY", DM::COMPONENT, DM::READ);
     globals.addAttribute("CONNECTEDPOP");
     globals.addAttribute("CONNECTEDAREA");
 
