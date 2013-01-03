@@ -344,7 +344,7 @@ GenerateSewerNetwork::GenerateSewerNetwork()
 
     Inlets = DM::View("INLET", DM::NODE, DM::READ);
     Inlets.getAttribute("New");
-    Inlets.getAttribute("ID_CATCHMENT");
+    Inlets.getAttribute("CATCHMENT");
 
     catchment = DM::View("CATCHMENT", DM::FACE, DM::READ);
     catchment.getAttribute("Active");
@@ -421,8 +421,12 @@ void GenerateSewerNetwork::run() {
     std::vector<DM::Node*> StartPos;
     foreach (std::string inlet, city->getUUIDsOfComponentsInView(Inlets))  {
         DM::Node * n = city->getNode(inlet);
-        std::string ID_CA = n->getAttribute("ID_CATCHMENT")->getString();
+        std::string ID_CA = n->getAttribute("CATCHMENT")->getLink().uuid;
         DM::Face * catchment = city->getFace(ID_CA);
+        if (!catchment) {
+            Logger(Warning) << "Inlet without Catchment ID";
+            continue;
+        }
         n->changeAttribute("New", 0);
         if (catchment->getAttribute("Active")->getDouble() > 0.1) {
             n->changeAttribute("New", 1);

@@ -42,7 +42,7 @@ TimeAreaMethod::TimeAreaMethod()
     inlet.addAttribute("Area");
     inlet.addAttribute("QrKrit");
     inlet.addAttribute("Impervious");
-    inlet.getAttribute("ID_CATCHMENT");
+    inlet.getAttribute("CATCHMENT");
 
     shaft = DM::View("JUNCTION", DM::NODE, DM::READ);
     shaft.addAttribute("WasteWaterPerShaft");
@@ -172,7 +172,7 @@ void TimeAreaMethod::run() {
         DM::Component *  inlet_attr = city->getComponent(id_inlet);
         if (inlet_attr->getAttribute("Connected")->getDouble() < 0.01 )
             continue;
-        DM::Component *  catchment_attr = city->getComponent(inlet_attr->getAttribute("ID_CATCHMENT")->getString());
+        DM::Component *  catchment_attr = city->getComponent(inlet_attr->getAttribute("CATCHMENT")->getString());
 
 
 

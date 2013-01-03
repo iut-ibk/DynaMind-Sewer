@@ -34,7 +34,7 @@ CreateInlets::CreateInlets()
     Blocks = DM::View("CITYBLOCK", DM::FACE, DM::READ);
     Inlets = DM::View("INLET", DM::NODE, DM::WRITE);
 
-    Inlets.addAttribute("ID_CATCHMENT");
+    Inlets.addAttribute("CATCHMENT");
 
     std::vector<DM::View> data;
     data.push_back(Blocks);
@@ -105,7 +105,7 @@ void CreateInlets::run() {
                 if (startX < offsetX+width && startX > offsetX && startY < offsetY+heigth && startY > offsetY)  {
                     DM::Node * n = city->addNode(DM::Node(startX, startY, 0), Inlets);
                     n->addAttribute("BuildYear", buildyear);
-                    n->getAttribute("ID_CATCHMENT")->setString(f->getUUID());
+                    n->getAttribute("CATCHMENT")->setString(f->getUUID());
 
                 }
                 startX+=Size;

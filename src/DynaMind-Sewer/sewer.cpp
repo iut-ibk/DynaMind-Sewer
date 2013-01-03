@@ -37,6 +37,7 @@
 #include "reconstructparameter.h"
 #include "removestrahler.h"
 #include "createinlets.h"
+#include "inclinedplane.h"
 
 /*#include "pickstartpoints.h"
 
@@ -46,20 +47,6 @@
 #include <iostream>
 
 using namespace std;
-
-/**
-  * @addtogroup Sewer
-  * @brief Sewer Modules
-  * @section Data Structure
-  * @subsection Nodes
-  * - INLET
-  * - CONDUIT
-  * - JUNCTION
-  * - OUTFALL
-  * @subsection Edges
-  * - CONDUIT
-  * @author Christian Urich
-  */
 
 extern "C" void DM_HELPER_DLL_EXPORT  registerModules(DM::ModuleRegistry *registry) {
     registry->addNodeFactory(new DM::NodeFactory<TimeAreaMethod>());
@@ -72,6 +59,7 @@ extern "C" void DM_HELPER_DLL_EXPORT  registerModules(DM::ModuleRegistry *regist
     registry->addNodeFactory(new NodeFactory<ReconstructParameter>());
     registry->addNodeFactory(new NodeFactory<RemoveStrahler>());
     registry->addNodeFactory(new NodeFactory<CreateInlets>());
+    registry->addNodeFactory(new NodeFactory<InclinedPlane>());
     /*registry->addNodeFactory(new NodeFactory<PickStartPoints>());
 
     registry->addNodeFactory(new NodeFactory<InfiltrationTrench>());
