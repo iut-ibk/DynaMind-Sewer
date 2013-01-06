@@ -44,6 +44,8 @@ DM_DECLARE_NODE (TimeAreaMethod)
 public:
     TimeAreaMethod();
 void run();
+void init();
+
 private:
     DM::View conduit;
     DM::View inlet;
@@ -60,6 +62,7 @@ private:
     double v;
     double r15;
     double chooseDiameter(double diameter);
+    bool combinedSystem;
     double caluclateAPhi(DM::Component *  attr, double r15) const;
 
 

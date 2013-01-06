@@ -24,7 +24,6 @@
  *
  */
 #include "generatesewernetwork.h"
-
 #include "csg_s_operations.h"
 
 
@@ -58,13 +57,15 @@ void GenerateSewerNetwork::Agent::run() {
         int index = GenerateSewerNetwork::indexOfMinValue(neigh);
         for (int i = 0; i < 9; i++) {
             if (currentHeight + (this->Hmin - this->currentPos.h) >= neigh[i]) {
-                decissionVector[i] = 1*this->AttractionTopology;
+                if (index == i )
+                    decissionVector[i] = MultiplyerCenterTop*this->AttractionTopology;
+                else
+                    decissionVector[i] = 1*this->AttractionTopology;
 
             } else {
                 decissionVector[i] = 0;
             }
-            if (index == i )
-                decissionVector[i] += MultiplyerCenterTop*this->AttractionTopology;
+
         }
 
         //Influence Topology
@@ -73,12 +74,14 @@ void GenerateSewerNetwork::Agent::run() {
         index = GenerateSewerNetwork::indexOfMinValue(neigh);
         for (int i = 0; i < 9; i++) {
             if (currentHeight > neigh[i]) {
-                decissionVector[i] += 1*this->AttractionConnectivity;
+                if (index == i)
+                    decissionVector[i] += MultiplyerCenterCon*this->AttractionConnectivity;
+                else
+                    decissionVector[i] += 1*this->AttractionConnectivity;
             } else {
                 decissionVector[i] += 0;
             }
-            if (index == i)
-                decissionVector[i] += MultiplyerCenterCon*this->AttractionConnectivity;
+
 
         }
 
@@ -143,7 +146,7 @@ void GenerateSewerNetwork::Agent::run() {
         }
 
         //Check current Pos is < 3 to secure connections
-        if (Goals->getCell(currentPos.x, currentPos.y ) > 0 && currentPos.h < this->Hmin) {
+        if (Goals->getCell(currentPos.x, currentPos.y ) > 0 && currentPos.h <= this->Hmin) {
             this->alive = false;
             this->successful = true;
             this->path.push_back(currentPos);
@@ -190,21 +193,24 @@ void GenerateSewerNetwork::addRadiusValue(int x, int y, RasterData * layer, int 
     int i = x - rmax;
     int j = y - rmax;
 
-    if (i < 0) i = 0;
-    if (j < 0) j = 0;
+    //if (i < 0) i = 0;
+    //if (j < 0) j = 0;
 
     int i_small = 0;
     int limitx =  rmax+x;
     int limity =  rmax+y;
     for (; i < limitx;  i++ ) {
         j = y - rmax;
-        int j_small = 0;
+        int j_small = -1;
         for (;  j < limity; j++) {
+            j_small++;
+            if (i < 0 || j < 0)
+                continue;
             double val =  stamp[i_small][j_small] * value;
             if (layer->getCell(i,j) > val ) {
                 layer->setCell(i,j,val );
             }
-            j_small++;
+
         }
         i_small++;
     }
@@ -254,19 +260,12 @@ void GenerateSewerNetwork::MarkPathWithField(const std::vector<Pos> & path, Rast
             }
         }
     }
+    int path_size =  path.size();
 
-    for (int i = 0; i < path.size(); i++) {
-
-        double val = 1 - ((double) i / (double) path.size());
-
+    for (int i = 0; i < path_size; i++) {
+        double val = 1 - ((double) i / (double) path_size);
         double r = last+1;
-
         val = val * r_opt / r;
-
-
-
-        // GenerateSewerNetwork::addRadiusValueADD(
-        //    path[last - i].x,  path[last - i].y, & Buffer, ConnectivityWidth, val);
 
         GenerateSewerNetwork::addRadiusValue(path[last - i].x,  path[last - i].y, & Buffer, ConnectivityWidth,  val, stamp);
 
@@ -275,13 +274,12 @@ void GenerateSewerNetwork::MarkPathWithField(const std::vector<Pos> & path, Rast
     for (int i = 0; i < rmax*2; i++) {
         delete[] stamp[i];
     }
-        delete[] stamp;
+    delete[] stamp;
 
     x = path[last].x;
     y = path[last].y;
-    for (int i = 0; i < ConnectivityField->getHeight(); i++) {
-        for (int j = 0; j < ConnectivityField->getWidth(); j++) {
-
+    for (unsigned int i = 0; i < ConnectivityField->getHeight(); i++) {
+        for (unsigned int j = 0; j < ConnectivityField->getWidth(); j++) {
             double val = ConnectivityField->getCell(j, i);
             double val2 = Buffer.getCell(j, i);
             if (val > val2) {
@@ -383,10 +381,6 @@ GenerateSewerNetwork::GenerateSewerNetwork()
 void GenerateSewerNetwork::run() {
     this->city = this->getData("City");
 
-    DM::System * sewerGeneration_in = this->getData("sewerGeneration_In");
-    DM::System * sewerGeneration_out = this->getData("sewerGeneration_Out");
-
-    DM::System * sewerGeneration_con = this->getData("sewerGeneration_con");
     rTopology = this->getRasterData("City", Topology);
 
 
@@ -406,7 +400,7 @@ void GenerateSewerNetwork::run() {
     this->rConnectivityField->setSize(width, height, cellSizeX,cellSizeY,0,0);
     Logger(Debug) << "Conn Max " << this->rConnectivityField_in->getMaxValue();
     Logger(Debug) << "Conn Min " << this->rConnectivityField_in->getMinValue();
-    Logger(Debug) << "DebugVal " << this->rConnectivityField_in->getDebugValue();
+    //Logger(Debug) << "DebugVal " << this->rConnectivityField_in->getDebugValue();
     for (int i = 0; i < width; i++) {
         for (int j = 0; j < height; j++ ) {
             this->rConnectivityField->setCell(i,j, this->rConnectivityField_in->getCell(i,j)*0.5);
@@ -433,6 +427,16 @@ void GenerateSewerNetwork::run() {
             StartPos.push_back(n);
         }
     }
+    //Randomize Agents
+    for (unsigned int i = 0; i < StartPos.size(); i++) {
+        int i_rand_1 = rand() % StartPos.size();
+        int i_rand_2 = rand() % StartPos.size();
+
+        DM::Node * n_tmp = StartPos[i_rand_1];
+        StartPos[i_rand_1] = StartPos[i_rand_2];
+        StartPos[i_rand_2] = n_tmp;
+    }
+
     //Create Agents
     int attrtopo = this->AttractionTopology - this->internalCounter;
     if (attrtopo < 0)
@@ -461,13 +465,13 @@ void GenerateSewerNetwork::run() {
     }
     long successfulAgents = 0;
     for (int i = 0; i < 1; i++) {
-        for (int j = 0; j < agents.size(); j++) {
+        for (unsigned int j = 0; j < agents.size(); j++) {
             Agent * a = agents[j];
             if (a->alive) {
                 a->run();
             }
         }
-        for (int j = 0; j < agents.size(); j++) {
+        for (unsigned int j = 0; j < agents.size(); j++) {
             Agent * a = agents[j];
             if (a->successful) {
                 successfulAgents++;

@@ -31,6 +31,7 @@ DM_DECLARE_NODE_NAME(TimeAreaMethod, Sewer)
 TimeAreaMethod::TimeAreaMethod()
 {
 
+    bool combinedSystem = false;
     conduit = DM::View("CONDUIT", DM::EDGE, DM::READ);
     conduit.addAttribute("Diameter");
     conduit.addAttribute("Length");
@@ -90,12 +91,36 @@ TimeAreaMethod::TimeAreaMethod()
 
     this->addParameter("v", DM::DOUBLE, & this->v);
     this->addParameter("r15", DM::DOUBLE, & this->r15);
+    this->addParameter("combined system", DM::BOOL, &this->combinedSystem);
 
     this->addData("City", views);
 
 
 
 
+}
+
+void TimeAreaMethod::init() {
+    std::vector<DM::View> views;
+    if (combinedSystem) {
+        views.push_back(conduit);
+        views.push_back(inlet);
+        views.push_back(shaft);
+        views.push_back(wwtps);
+        views.push_back(catchment);
+        views.push_back(outfalls);
+        views.push_back(weir);
+        views.push_back(storage);
+        views.push_back(globals);
+    } else {
+        views.push_back(conduit);
+        views.push_back(inlet);
+        views.push_back(shaft);
+        views.push_back(catchment);
+        views.push_back(outfalls);
+        views.push_back(globals);
+    }
+    this->addData("City", views);
 }
 
 double TimeAreaMethod::caluclateAPhi(DM::Component * attr, double r15)  const {
@@ -157,11 +182,6 @@ void TimeAreaMethod::run() {
     //Calculate Waste Water
     double Population_sum = 0;
     double area_sum = 0;
-
-
-
-
-
     double WasterWaterPerPerson = 0.0052;
     double InfiltrationWater =  0.003;
 
@@ -172,7 +192,7 @@ void TimeAreaMethod::run() {
         DM::Component *  inlet_attr = city->getComponent(id_inlet);
         if (inlet_attr->getAttribute("Connected")->getDouble() < 0.01 )
             continue;
-        DM::Component *  catchment_attr = city->getComponent(inlet_attr->getAttribute("CATCHMENT")->getString());
+        DM::Component *  catchment_attr = city->getComponent(inlet_attr->getAttribute("CATCHMENT")->getLink().uuid);
 
 
 
@@ -203,10 +223,6 @@ void TimeAreaMethod::run() {
         sg->addAttribute("CSOs", city->getUUIDsOfComponentsInView(outfalls).size());
     }
 
-
-
-
-
     //AddStorageToWWtp
     std::vector<std::string> endPointNames = city->getUUIDsOfComponentsInView(wwtps);
     foreach(std::string name, endPointNames) {
@@ -216,7 +232,6 @@ void TimeAreaMethod::run() {
         p->addAttribute("Storage",1);
         city->addComponentToView(p,storage);
     }
-
 
     foreach (std::string name, city->getUUIDsOfComponentsInView(conduit)) {
         DM::Edge * con = city->getEdge(name);
@@ -361,11 +376,6 @@ void TimeAreaMethod::run() {
             p->addAttribute("QrKrit_total", QrKritPerShaft_total*120/(p->getAttribute("TimeTotal")->getDouble()/60+120) );
 
         }
-
-
-
-
-
     }
 
     //Dimensioning

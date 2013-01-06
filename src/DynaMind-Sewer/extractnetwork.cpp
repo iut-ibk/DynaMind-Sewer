@@ -27,6 +27,7 @@
 #include <sstream>
 #include "csg_s_operations.h"
 #include "tbvectordata.h"
+#include <dmgeometry.h>
 
 DM_DECLARE_NODE_NAME(ExtractNetwork, Sewer)
 void ExtractNetwork::AgentExtraxtor::run() {
@@ -82,7 +83,8 @@ void ExtractNetwork::AgentExtraxtor::run() {
 
 
         }
-        if (Goals->getCell(currentPos.x, currentPos.y ) > 0 || this->MarkPath->getCell(currentPos.x, currentPos.y) > 0) {
+        //if (Goals->getCell(currentPos.x, currentPos.y ) > 0 || this->MarkPath->getCell(currentPos.x, currentPos.y) > 0) {
+        if (Goals->getCell(currentPos.x, currentPos.y ) > 0) {
             if (currentPos.h < Hmin) {
                 this->alive = false;
                 this->successful = true;
@@ -126,12 +128,12 @@ ExtractNetwork::ExtractNetwork()
     Conduits.addAttribute("New");
     Inlets= DM::View("INLET",  DM::NODE, DM::READ);
     Inlets.modifyAttribute("New");
-    Inlets.modifyAttribute("Used");
+    Inlets.addAttribute("Used");
     Inlets.addAttribute("Connected");
-    Junction= DM::View("JUNCTION",  DM::NODE, DM::MODIFY);
-    Junction.modifyAttribute("D");
-    Junction.modifyAttribute("Z");
-    EndPoint = DM::View("WWTP", DM::NODE, DM::READ);
+    Junction= DM::View("JUNCTION",  DM::NODE, DM::WRITE);
+    Junction.addAttribute("D");
+    Junction.addAttribute("Z");
+    EndPoint = DM::View("OUTFALL", DM::NODE, DM::READ);
 
     city.push_back(topo);
     city.push_back(Conduits);
@@ -168,7 +170,7 @@ void ExtractNetwork::run() {
     std::vector<DM::Node*> StartPos;
     foreach (std::string inlet, city->getUUIDsOfComponentsInView(Inlets))  {
         DM::Node * n = city->getNode(inlet);
-        std::string ID_CA = n->getAttribute("CATCHMENT")->getString();
+        std::string ID_CA = n->getAttribute("CATCHMENT")->getLink().uuid;
         DM::Face * catchment = city->getFace(ID_CA);
         //Just For Now
         n->changeAttribute("New", 0);
@@ -254,18 +256,26 @@ void ExtractNetwork::run() {
             start->changeAttribute("Used",1);
             start->changeAttribute("New", 0);
             start->changeAttribute("Connected", 1);
+            //Logger(Debug) << points_for_total[0].getX() << " " <<points_for_total[0].getY();
+            //Logger(Debug) << points_for_total[(points_for_total.size()-1)].getX() << " " <<points_for_total[(points_for_total.size()-1)].getY();
         }
+
+
     }
 
     Logger(Debug) << "Done with the agents Junctions";
-    std::vector<std::vector<DM::Node> > PointsToPlace = this->SimplifyNetwork(Points_After_Agent_Extraction, this->ConduitLength/cellSizeX, offset);
+    //std::vector<std::vector<DM::Node> > PointsToPlace = this->SimplifyNetwork(Points_After_Agent_Extraction, this->ConduitLength/cellSizeX, offset);
+    std::vector<std::vector<DM::Node> > PointsToPlace = Points_After_Agent_Extraction;//this->SimplifyNetwork(Points_After_Agent_Extraction, this->ConduitLength/cellSizeX, offset);
 
     //Export Inlets
     Logger(Debug) << "Export Junctions";
+    DM::SpatialNodeHashMap spnh(city, 100, false, Inlets);
+
     std::vector<std::vector<Node *> > Points_For_Conduits;
     foreach (std::vector<Node> pl, PointsToPlace) {
         Node * n = 0;
         n  = TBVectorData::addNodeToSystem2D(city, Inlets, pl[0],offset, false);
+
         if (n == 0)
             n = city->addNode(pl[0], Junction);
         city->addComponentToView(n, Junction);
@@ -273,14 +283,24 @@ void ExtractNetwork::run() {
         nl.push_back(n);
         Points_For_Conduits.push_back(nl);
     }
+
+
+
+
+
     std::vector<std::vector<Node *> > Points_For_Conduits_tmp;
     for(int j = 0; j < PointsToPlace.size(); j++){
         std::vector<Node> pl = PointsToPlace[j];
         std::vector<DM::Node * > nl = Points_For_Conduits[j];
         for (int i = 1; i < pl.size(); i++) {
-            //Check if Point is already placed
-            //If name = 0 Point doesnt exist
-            DM::Node * n = TBVectorData::addNodeToSystem2D(city, Junction, pl[i], 0.1);
+            bool foundNode = false;
+            if (spnh.findNode(pl[i].getX(), pl[i].getY(), 0.01)) {
+                foundNode = true;
+                Logger(Debug) << "Found Node";
+            }
+
+            DM::Node * n = spnh.addNode(pl[i].getX(), pl[i].getY(), pl[i].getZ(), offset+offset*0.1, Junction);
+
 
             if (n->getAttribute("D")->getDouble() > pl[i].getZ()) {
                 n->setZ(n->getAttribute("D")->getDouble());
@@ -288,6 +308,8 @@ void ExtractNetwork::run() {
 
             n->changeAttribute("D", pl[i].getZ());
             nl.push_back(n);
+            if (foundNode)
+                break;
         }
         Points_For_Conduits_tmp.push_back(nl);
     }
