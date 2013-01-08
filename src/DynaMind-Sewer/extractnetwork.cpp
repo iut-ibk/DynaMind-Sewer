@@ -130,10 +130,12 @@ ExtractNetwork::ExtractNetwork()
     Inlets.modifyAttribute("New");
     Inlets.addAttribute("Used");
     Inlets.addAttribute("Connected");
+    Inlets.addLinks("JUNCTION", Junction);
     Junction= DM::View("JUNCTION",  DM::NODE, DM::WRITE);
     Junction.addAttribute("D");
     Junction.addAttribute("Z");
-    EndPoint = DM::View("OUTFALL", DM::NODE, DM::READ);
+    Junction.addAttribute("id");
+    EndPoint = DM::View("OUTLET", DM::NODE, DM::READ);
 
     city.push_back(topo);
     city.push_back(Conduits);
@@ -256,6 +258,8 @@ void ExtractNetwork::run() {
             start->changeAttribute("Used",1);
             start->changeAttribute("New", 0);
             start->changeAttribute("Connected", 1);
+            start->getAttribute("JUNCTION")->setLink("JUNCTION", start->getUUID());
+            start->getAttribute("INLET")->setLink("INLET", start->getUUID());
             //Logger(Debug) << points_for_total[0].getX() << " " <<points_for_total[0].getY();
             //Logger(Debug) << points_for_total[(points_for_total.size()-1)].getX() << " " <<points_for_total[(points_for_total.size()-1)].getY();
         }
@@ -270,14 +274,16 @@ void ExtractNetwork::run() {
     //Export Inlets
     Logger(Debug) << "Export Junctions";
     DM::SpatialNodeHashMap spnh(city, 100, false, Inlets);
-
+    spnh.addNodesFromView(Junction);
     std::vector<std::vector<Node *> > Points_For_Conduits;
+
     foreach (std::vector<Node> pl, PointsToPlace) {
         Node * n = 0;
         n  = TBVectorData::addNodeToSystem2D(city, Inlets, pl[0],offset, false);
 
         if (n == 0)
             n = city->addNode(pl[0], Junction);
+
         city->addComponentToView(n, Junction);
         std::vector<DM::Node * > nl;
         nl.push_back(n);
@@ -334,18 +340,21 @@ void ExtractNetwork::run() {
     Logger(DM::Debug) << "Successful " << successfulAgents;
 
 
-    for (int j = 0; j < agents.size(); j++) {
+    for (unsigned int j = 0; j < agents.size(); j++) {
         delete agents[j];
     }
 
     agents.clear();
 
+    int id = 1;
     foreach (std::string name, this->city->getUUIDsOfComponentsInView(Junction)) {
         DM::Node * n =this->city->getNode(name);
         int x = n->getX()/cellSizeX;
         int y = n->getY()/cellSizeY;
         double z = this->Topology->getCell(x,y);
         n->changeAttribute("Z", z);
+        n->addAttribute("id", id++);
+
 
     }
     foreach (std::string name, this->city->getUUIDsOfComponentsInView(EndPoint)) {

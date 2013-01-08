@@ -49,10 +49,10 @@ DMSWMM::DMSWMM()
     inlet.getAttribute("CATCHMENT");
 
 
-    shaft = DM::View("JUNCTION", DM::NODE, DM::READ);
-    shaft.getAttribute("D");
+    junctions = DM::View("JUNCTION", DM::NODE, DM::READ);
+    junctions.getAttribute("D");
 
-    endnodes = DM::View("WWTP", DM::NODE, DM::READ);
+    endnodes = DM::View("OUTLET", DM::NODE, DM::READ);
     catchment = DM::View("CATCHMENT", DM::FACE, DM::READ);
     catchment.getAttribute("WasteWater");
     catchment.getAttribute("Area");
@@ -78,7 +78,7 @@ DMSWMM::DMSWMM()
 
     views.push_back(conduit);
     views.push_back(inlet);
-    views.push_back(shaft);
+    views.push_back(junctions);
     views.push_back(endnodes);
     views.push_back(catchment);
     views.push_back(outfalls);
@@ -87,7 +87,7 @@ DMSWMM::DMSWMM()
     views.push_back(storage);
     views.push_back(globals);
 
-    this->FileName = "swmmfile";
+    this->FileName = "";
     this->climateChangeFactor = 1;
     this->RainFile = "";
     this->Vr = 0;
@@ -95,9 +95,11 @@ DMSWMM::DMSWMM()
     this->Vwwtp = 0;
     years = 0;
 
-    this->addParameter("FileName", DM::STRING, &this->FileName);
+    this->isCombined = false;
+    this->addParameter("Folder", DM::STRING, &this->FileName);
     this->addParameter("RainFile", DM::FILENAME, &this->RainFile);
     this->addParameter("ClimateChangeFactor", DM::DOUBLE, & this->climateChangeFactor);
+    this->addParameter("combined system", DM::BOOL, &this->isCombined);
 
     counterRain =0;
 
@@ -105,6 +107,27 @@ DMSWMM::DMSWMM()
     this->addData("City", views);
 
 }
+
+void DMSWMM::init() {
+
+    std::vector<DM::View> views;
+    views.push_back(conduit);
+    views.push_back(inlet);
+    views.push_back(junctions);
+    views.push_back(endnodes);
+    views.push_back(catchment);
+    views.push_back(outfalls);
+
+    if (isCombined){
+        views.push_back(weir);
+        views.push_back(wwtp);
+        views.push_back(storage);
+    }
+    views.push_back(globals);
+
+    this->addData("City", views);
+}
+
 void DMSWMM::writeRainFile() {
     QFile r_in;
     r_in.setFileName(QString::fromStdString(this->RainFile));
@@ -137,7 +160,14 @@ void DMSWMM::run() {
 
     city = this->getData("City");
 
-    QDir tmpPath = QDir::tempPath();
+
+    QDir tmpPath;
+    if (this->FileName.empty()) {
+            tmpPath = QDir::tempPath();
+    } else {
+        tmpPath =QDir(QString::fromStdString(this->FileName));
+    }
+
     QString UUIDPath = QUuid::createUuid().toString().remove("{").remove("}");
 
     tmpPath.mkdir(UUIDPath);
@@ -346,8 +376,7 @@ void DMSWMM::RunSWMM() {
     newFileName = this->SWMMPath.absolutePath()+  + "/"+ "swmm5.exe";
     QFile (swmmPath+"swmm5.exe").copy(newFileName);
 
-    //newFileName  = this->SWMMPath.absolutePath()+ "/" + "rain.dat";
-    //QFile (QString::fromStdString(this->RainFile)).copy(newFileName);
+
 
 
     QProcess process;
@@ -356,8 +385,12 @@ void DMSWMM::RunSWMM() {
 #ifdef _WIN32
     process.start("swmm5",argument);
 #else
-    process.start("wine",argument);
+    Logger(Debug) << argument.join(" ").toStdString();
+    process.start("/usr/local/bin/wine",argument);
+
+
 #endif
+
     process.waitForFinished(300000);
 
 
@@ -369,7 +402,7 @@ void DMSWMM::writeJunctions(std::fstream &inp)
 {
 
     QStringList l;
-    std::vector<std::string> names = city->getUUIDsOfComponentsInView(shaft);
+    std::vector<std::string> names = city->getUUIDsOfComponentsInView(junctions);
 
     foreach (std::string name, names) {
         QString s = QString::fromStdString(name);
@@ -444,15 +477,14 @@ void DMSWMM::writeSubcatchments(std::fstream &inp)
     foreach(std::string name, InletNames) {
         DM::Node * inlet_attr = city->getNode(name);
 
-        std::string CATCHMENT_ID = inlet_attr->getAttribute("CATCHMENT")->getString();
+        std::string CATCHMENT_ID = inlet_attr->getAttribute("CATCHMENT")->getLink().uuid;
 
         if (UUIDtoINT[CATCHMENT_ID] == 0) {
             UUIDtoINT[CATCHMENT_ID] = GLOBAL_Counter++;
         }
 
         Component * catchment_attr = city->getComponent(CATCHMENT_ID);
-
-        int id = this->UUIDtoINT[inlet_attr->getUUID()];
+        int id = this->UUIDtoINT[inlet_attr->getAttribute("JUNCTION")->getLink().uuid];
         if (id == 0) {
             continue;
         }
@@ -479,7 +511,7 @@ void DMSWMM::writeSubcatchments(std::fstream &inp)
     foreach(std::string name, InletNames) {
         DM::Node * inlet_attr = city->getNode(name);
 
-        std::string CATCHMENT_ID = inlet_attr->getAttribute("CATCHMENT")->getString();
+        std::string CATCHMENT_ID = inlet_attr->getAttribute("CATCHMENT")->getLink().uuid;
 
         if (UUIDtoINT[CATCHMENT_ID] == 0) {
             UUIDtoINT[CATCHMENT_ID] = GLOBAL_Counter++;
@@ -490,8 +522,6 @@ void DMSWMM::writeSubcatchments(std::fstream &inp)
 
         foreach(std::string s,  catchment_attr->getNodes()){
             DM::Node * n = city->getNode(s);
-
-
             inp << "sub" << UUIDtoINT[CATCHMENT_ID] <<"\t" << n->getX() << "\t" << n->getY()<< "\n";
         }
         counter++;
@@ -508,12 +538,11 @@ void DMSWMM::writeSubcatchments(std::fstream &inp)
     inp<<";;============================================================================\n";
     foreach(std::string name, InletNames) {
         DM::Node * inlet_attr = city->getNode(name);
-        std::string CATCHMENT_ID = inlet_attr->getAttribute("CATCHMENT")->getString();
-        int id = this->UUIDtoINT[inlet_attr->getUUID()];
+        std::string CATCHMENT_ID = inlet_attr->getAttribute("CATCHMENT")->getLink().uuid;
+        int id = this->UUIDtoINT[inlet_attr->getAttribute("JUNCTION")->getLink().uuid];
         if (id == 0) {
             continue;
         }
-
         inp<<"  sub"<<UUIDtoINT[CATCHMENT_ID]<<"\t\t0.015\t0.2\t1.8\t5\t0\tOUTLET\n";
     }
     inp<<"\n";

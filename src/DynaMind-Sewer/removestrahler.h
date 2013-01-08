@@ -36,6 +36,8 @@ class DM_HELPER_DLL_EXPORT RemoveStrahler : public DM::Module
     private:
         DM::View conduits;
         DM::View junctions;
+        DM::View inlets;
+        DM::View catchments;
         int until;
 public:
     void run();

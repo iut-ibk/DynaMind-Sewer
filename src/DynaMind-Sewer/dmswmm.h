@@ -38,7 +38,7 @@ class DM_HELPER_DLL_EXPORT DMSWMM : public  DM::Module {
     DM::System * city;
     DM::View conduit;
     DM::View inlet;
-    DM::View shaft;
+    DM::View junctions;
     DM::View endnodes;
     DM::View catchment;
     DM::View outfalls;
@@ -51,7 +51,7 @@ class DM_HELPER_DLL_EXPORT DMSWMM : public  DM::Module {
     std::string RainFile;
     std::string FileName;
     std::vector<DM::Node*> PointList;
-    //std::vector<DM::Edge*> EdgeList;
+    bool isCombined;
 
     double Vp;
     double Vr;
@@ -89,6 +89,7 @@ class DM_HELPER_DLL_EXPORT DMSWMM : public  DM::Module {
 public:
     DMSWMM();
     void run();
+    void init();
 };
 
 #endif // VIBESWMM_H

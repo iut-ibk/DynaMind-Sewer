@@ -31,10 +31,11 @@ DM_DECLARE_NODE_NAME(TimeAreaMethod, Sewer)
 TimeAreaMethod::TimeAreaMethod()
 {
 
-    bool combinedSystem = false;
+    combinedSystem = false;
     conduit = DM::View("CONDUIT", DM::EDGE, DM::READ);
     conduit.addAttribute("Diameter");
     conduit.addAttribute("Length");
+    conduit.addAttribute("JUNCTION");
 
     inlet = DM::View("INLET", DM::NODE, DM::READ);
     inlet.getAttribute("Connected");
@@ -252,7 +253,7 @@ void TimeAreaMethod::run() {
         double infiltreationwater = inlet_attr->getAttribute("InfiltrationWater")->getDouble();
         double area = inlet_attr->getAttribute("Area")->getDouble();
         double QrKrit = inlet_attr->getAttribute("QrKrit")->getDouble();
-        DM::Node * id = city->getNode(name);
+
         bool ReachedEndPoint = false;
         DM::Node * idPrev = 0;
         //Length is reset if Outfall is hit
@@ -262,6 +263,12 @@ void TimeAreaMethod::run() {
         double QKrit = 0;
         double DeltaA = 0;
         double DeltaStorage = 0;
+
+        DM::Logger(DM::Debug) << "JUNCTION " << inlet_attr->getAttribute("JUNCTION")->getLink().uuid;
+        DM::Node * id = city->getNode(inlet_attr->getAttribute("JUNCTION")->getLink().uuid);
+        if (!id)
+            continue;
+
         do {
             id->getAttribute("WasteWaterPerShaft")->setDouble(id->getAttribute("WasteWaterPerShaft")->getDouble() + wastewater);
             id->getAttribute("InfiltrationWaterPerShaft")->setDouble(id->getAttribute("InfiltrationWaterPerShaft")->getDouble() + infiltreationwater);
