@@ -39,6 +39,7 @@
 #include "createinlets.h"
 #include "inclinedplane.h"
 #include "outfallstructure.h"
+#include "reducejunctions.h"
 
 /*#include "pickstartpoints.h"
 
@@ -62,6 +63,7 @@ extern "C" void DM_HELPER_DLL_EXPORT  registerModules(DM::ModuleRegistry *regist
     registry->addNodeFactory(new NodeFactory<CreateInlets>());
     registry->addNodeFactory(new NodeFactory<InclinedPlane>());
     registry->addNodeFactory(new NodeFactory<OutfallStructure>());
+    registry->addNodeFactory(new NodeFactory<ReduceJunctions>());
     /*registry->addNodeFactory(new NodeFactory<PickStartPoints>());
 
     registry->addNodeFactory(new NodeFactory<InfiltrationTrench>());
