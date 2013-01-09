@@ -31,6 +31,7 @@
 #include "dmmodule.h"
 #include "dm.h"
 #include <vector>
+#include <QHash>
 
 using namespace DM;
 
@@ -67,9 +68,10 @@ class DM_HELPER_DLL_EXPORT GenerateSewerNetwork : public  Module {
         long y;
         double z;
         double h;
+        double val;
 
         Pos(long x, long y) {this->x = x; this->y = y;}
-        Pos() {}
+        Pos();
     };
 public:
     class Agent {
@@ -130,6 +132,8 @@ private:
     DM::System * city;
     DM::System * sewerGeneration;
 
+    double rasterSize;
+
     int ConnectivityWidth;
     double AttractionTopology;
     double AttractionConnectivity;
@@ -140,14 +144,18 @@ private:
     int StablizierLastDir;
     std::string IdentifierStartPoins;
 
+    QHash<QPair<int, int> , Pos> agentPathMap;
+    void reducePath(std::vector<Pos> &path);
+
 public:
     GenerateSewerNetwork();
     void run();
 
-    void MarkPathWithField(const std::vector<Pos> & path, RasterData * ConnectivityField, int ConnectivityWidth);
+    void MarkPathWithField(RasterData * ConnectivityField, int ConnectivityWidth);
     void addRadiusValueADD(int x, int y, RasterData * layer, int rmax, double value);
     void addRadiusValue(int x, int y, RasterData * layer, int rmax, double value, double **);
     static int indexOfMinValue(const std::vector<double> & vec);
+
 };
 
 #endif // GENERATESEWERNETWORK_H

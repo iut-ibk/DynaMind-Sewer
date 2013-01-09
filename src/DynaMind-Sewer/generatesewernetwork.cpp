@@ -25,6 +25,10 @@
  */
 #include "generatesewernetwork.h"
 #include "csg_s_operations.h"
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 
 
 DM_DECLARE_NODE_NAME(GenerateSewerNetwork, Sewer)
@@ -193,8 +197,9 @@ void GenerateSewerNetwork::addRadiusValue(int x, int y, RasterData * layer, int 
     int i = x - rmax;
     int j = y - rmax;
 
-    //if (i < 0) i = 0;
-    //if (j < 0) j = 0;
+    if (value > 1000) {
+        Logger(Debug) << "Really Big";
+    }
 
     int i_small = 0;
     int limitx =  rmax+x;
@@ -216,24 +221,13 @@ void GenerateSewerNetwork::addRadiusValue(int x, int y, RasterData * layer, int 
     }
 }
 
-void GenerateSewerNetwork::MarkPathWithField(const std::vector<Pos> & path, RasterData * ConnectivityField, int ConnectivityWidth) {
+void GenerateSewerNetwork::MarkPathWithField(RasterData * ConnectivityField, int ConnectivityWidth) {
 
-    if (path.size() < 1) {
-        Logger(DM::Debug) << "MarkPathWithField: Path Size = 0" ;
-        return;
-    }
-    int last = path.size() - 1;
+
     RasterData Buffer;
     Buffer.setSize(ConnectivityField->getWidth(), ConnectivityField->getHeight(), ConnectivityField->getCellSizeX(),ConnectivityField->getCellSizeY(),ConnectivityField->getXOffset(),ConnectivityField->getXOffset());
     Buffer.clear();
 
-
-    //Cost Function for Length
-    double x = path[0].x - path[last].x;
-    double y = path[0].y - path[last].y;
-
-    //Calculate Optimal Length
-    double r_opt = sqrt(x * x + y * y);
 
     //Mark Field
     int level = ConnectivityWidth;
@@ -260,25 +254,19 @@ void GenerateSewerNetwork::MarkPathWithField(const std::vector<Pos> & path, Rast
             }
         }
     }
-    int path_size =  path.size();
 
-    for (int i = 0; i < path_size; i++) {
-        double val = 1 - ((double) i / (double) path_size);
-        double r = last+1;
-        val = val * r_opt / r;
-
-        GenerateSewerNetwork::addRadiusValue(path[last - i].x,  path[last - i].y, & Buffer, ConnectivityWidth,  val, stamp);
-
+    foreach(Pos p, agentPathMap){
+        //Logger(Debug) << p.val;
+        GenerateSewerNetwork::addRadiusValue(p.x,  p.y, ConnectivityField, ConnectivityWidth,  p.val, stamp);
     }
+
 
     for (int i = 0; i < rmax*2; i++) {
         delete[] stamp[i];
     }
     delete[] stamp;
 
-    x = path[last].x;
-    y = path[last].y;
-    for (unsigned int i = 0; i < ConnectivityField->getHeight(); i++) {
+    /*for (unsigned int i = 0; i < ConnectivityField->getHeight(); i++) {
         for (unsigned int j = 0; j < ConnectivityField->getWidth(); j++) {
             double val = ConnectivityField->getCell(j, i);
             double val2 = Buffer.getCell(j, i);
@@ -286,7 +274,7 @@ void GenerateSewerNetwork::MarkPathWithField(const std::vector<Pos> & path, Rast
                 ConnectivityField->setCell(j, i, val2);
             }
         }
-    }
+    }*/
 }
 
 int GenerateSewerNetwork::indexOfMinValue(const vector<double> &vec) {
@@ -309,6 +297,48 @@ int GenerateSewerNetwork::indexOfMinValue(const vector<double> &vec) {
     if (n > 1)
         index = -1;
     return index;
+}
+
+void GenerateSewerNetwork::reducePath(std::vector<GenerateSewerNetwork::Pos> & path)
+{
+    if (path.size() < 1) {
+        Logger(DM::Debug) << "MarkPathWithField: Path Size = 0" ;
+        return;
+    }
+
+    //Cost Function for Length
+    int last = path.size() - 1;
+
+    double x = path[0].x - path[last].x;
+    double y = path[0].y - path[last].y;
+
+    double r_opt = sqrt(x * x + y * y);
+
+    int path_size =  path.size();
+    for (int i = 0; i < path_size; i++) {
+        //Calculate Optimal Length
+
+        double r = last+1;
+        double val = ((double) i / (double) path_size);
+        val = val * r_opt / r;
+
+        int x_1 = path[i].x;
+        int y_1 = path[i].y;
+        QPair<int,int> hash(x_1,y_1);
+        if (!agentPathMap.contains(hash)) {
+            Pos p = path[i];
+            p.val = val;
+            agentPathMap[hash] = p;
+            continue;
+        } else {
+            if (val < agentPathMap[hash].val) {
+                continue;
+            }
+            Pos p = path[i];
+            p.val = val;
+            agentPathMap[hash] = p;
+        }
+    }
 }
 
 GenerateSewerNetwork::GenerateSewerNetwork()
@@ -397,6 +427,8 @@ void GenerateSewerNetwork::run() {
     double cellSizeX = this->rTopology->getCellSizeX();
     double cellSizeY = this->rTopology->getCellSizeY();
 
+    rasterSize = cellSizeX;
+
     this->rConnectivityField->setSize(width, height, cellSizeX,cellSizeY,0,0);
     Logger(Debug) << "Conn Max " << this->rConnectivityField_in->getMaxValue();
     Logger(Debug) << "Conn Min " << this->rConnectivityField_in->getMinValue();
@@ -464,20 +496,25 @@ void GenerateSewerNetwork::run() {
 
     }
     long successfulAgents = 0;
+    agentPathMap.clear();
+    int sumLengthAgentPath = 0;
     for (int i = 0; i < 1; i++) {
-        for (unsigned int j = 0; j < agents.size(); j++) {
+        unsigned int nov_agents = agents.size();
+        for (unsigned int j = 0; j < nov_agents; j++) {
             Agent * a = agents[j];
             if (a->alive) {
                 a->run();
+                if (a->successful) {
+                    this->reducePath(a->path);
+                    sumLengthAgentPath+=a->path.size();
+                    a->path.clear();
+                    successfulAgents++;
+                }
             }
         }
-        for (unsigned int j = 0; j < agents.size(); j++) {
-            Agent * a = agents[j];
-            if (a->successful) {
-                successfulAgents++;
-                GenerateSewerNetwork::MarkPathWithField(a->path, this->rConnectivityField, this->ConnectivityWidth);
-            }
-        }
+        //Reduction of Nodes
+
+        GenerateSewerNetwork::MarkPathWithField(this->rConnectivityField, this->ConnectivityWidth);
 
     }
     Logger(DM::Debug) << "Successful " << successfulAgents;
@@ -488,4 +525,14 @@ void GenerateSewerNetwork::run() {
     }
     agents.clear();
 
+}
+
+
+GenerateSewerNetwork::Pos::Pos()
+{
+    x = 0;
+    y = 0;
+    z = 0;
+    h = 0;
+    val = 0;
 }
