@@ -451,7 +451,7 @@ void GenerateSewerNetwork::run() {
         std::string ID_CA = n->getAttribute("CATCHMENT")->getLink().uuid;
         DM::Face * catchment = city->getFace(ID_CA);
         if (!catchment) {
-            Logger(Warning) << "Inlet without Catchment ID";
+            Logger(Warning) << "Inlet without Catchment ID " << ID_CA;;
             continue;
         }
         n->changeAttribute("New", 0);
