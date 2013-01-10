@@ -13,6 +13,7 @@ private:
         DM::View view_building;
         DM::View view_parcel;
         DM::View view_infitration_system;
+        DM::View view_catchment;
 
 public:
     InfiltrationTrench();

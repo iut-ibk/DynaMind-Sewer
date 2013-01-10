@@ -15,6 +15,8 @@ InfiltrationTrench::InfiltrationTrench()
     view_building.getAttribute("roof_area");
 
     view_parcel = DM::View("PARCEL", DM::COMPONENT, DM::READ);
+    view_parcel.getAttribute("CATCHMENT");
+
     view_parcel.getAttribute("BUILDING");
     view_parcel.addLinks("INFILTRATION_SYSTEM", view_infitration_system);
 
@@ -23,6 +25,9 @@ InfiltrationTrench::InfiltrationTrench()
     view_infitration_system.addAttribute("area");
     view_infitration_system.addAttribute("h");
     view_infitration_system.addAttribute("kf");
+
+    view_catchment = DM::View("CATCHMENT", DM::COMPONENT, DM::READ);
+    view_catchment.addLinks("INFILTRATION_SYSTEM", view_infitration_system);
 
 
     view_parcel.addLinks("INFILTRATION_SYSTEM", view_infitration_system);
@@ -44,7 +49,9 @@ void InfiltrationTrench::run() {
 
     foreach (std::string uuid, parcel_uuids) {
         DM::Face * parcel = city->getFace(uuid);
-
+        DM::Component * catchment =  city->getComponent(parcel->getAttribute("CATCHMENT")->getLink().uuid);
+        if (!catchment)
+            continue;
         //Get Buildings on Parcel
         double roof_area_tot = 0;
         std::vector<DM::LinkAttribute> l_buildings = parcel->getAttribute("BUILDING")->getLinks();
@@ -70,7 +77,8 @@ void InfiltrationTrench::run() {
         infiltration_system->addAttribute("kf", kf);
         infiltration_system->getAttribute("PARCEL")->setLink("PARCEL", uuid);
 
-        parcel->getAttribute("INFILTRATION_SYSTEM")->setLink("INFILTRATION_SYSTEM", infiltration_system->getUUID());
+        //parcel->getAttribute("INFILTRATION_SYSTEM")->setLink("INFILTRATION_SYSTEM", infiltration_system->getUUID());
+        catchment->getAttribute("INFILTRATION_SYSTEM")->setLink("INFILTRATION_SYSTEM", infiltration_system->getUUID());
 
 
 
