@@ -301,6 +301,7 @@ int GenerateSewerNetwork::indexOfMinValue(const vector<double> &vec) {
 
 void GenerateSewerNetwork::reducePath(std::vector<GenerateSewerNetwork::Pos> & path)
 {
+    QMutexLocker ml(&mMutex);
     if (path.size() < 1) {
         Logger(DM::Debug) << "MarkPathWithField: Path Size = 0" ;
         return;
@@ -341,7 +342,7 @@ void GenerateSewerNetwork::reducePath(std::vector<GenerateSewerNetwork::Pos> & p
     }
 }
 
-GenerateSewerNetwork::GenerateSewerNetwork()
+GenerateSewerNetwork::GenerateSewerNetwork() : mMutex()
 {
 
 
@@ -498,21 +499,36 @@ void GenerateSewerNetwork::run() {
     long successfulAgents = 0;
     agentPathMap.clear();
     int sumLengthAgentPath = 0;
+
     for (int i = 0; i < 1; i++) {
         unsigned int nov_agents = agents.size();
+#pragma omp parallel for
         for (unsigned int j = 0; j < nov_agents; j++) {
             Agent * a = agents[j];
             if (a->alive) {
                 a->run();
-                if (a->successful) {
-                    this->reducePath(a->path);
-                    sumLengthAgentPath+=a->path.size();
+                if (!a->successful) {
+                    continue;
                     a->path.clear();
-                    successfulAgents++;
                 }
+                this->reducePath(a->path);
+                sumLengthAgentPath+=a->path.size();
+                a->path.clear();
+                successfulAgents++;
             }
         }
         //Reduction of Nodes
+
+        /*for (unsigned int j = 0; j < nov_agents; j++) {
+            Agent * a = agents[j];
+
+            if (!a->successful)
+                continue;
+            this->reducePath(a->path);
+            sumLengthAgentPath+=a->path.size();
+            a->path.clear();
+            successfulAgents++;
+        }*/
 
         GenerateSewerNetwork::MarkPathWithField(this->rConnectivityField, this->ConnectivityWidth);
 

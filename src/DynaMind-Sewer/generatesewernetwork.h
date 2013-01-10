@@ -143,6 +143,7 @@ private:
     double Hmin;
     int StablizierLastDir;
     std::string IdentifierStartPoins;
+    QMutex mMutex;
 
     QHash<QPair<int, int> , Pos> agentPathMap;
     void reducePath(std::vector<Pos> &path);
