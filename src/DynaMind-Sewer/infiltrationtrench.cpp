@@ -38,6 +38,7 @@ InfiltrationTrench::InfiltrationTrench()
     datastream.push_back(view_building);
     datastream.push_back(view_parcel);
     datastream.push_back(view_infitration_system);
+    datastream.push_back(view_catchment);
 
     this->addData("city", datastream);
 }
@@ -77,7 +78,6 @@ void InfiltrationTrench::run() {
         infiltration_system->addAttribute("kf", kf);
         infiltration_system->getAttribute("PARCEL")->setLink("PARCEL", uuid);
 
-        //parcel->getAttribute("INFILTRATION_SYSTEM")->setLink("INFILTRATION_SYSTEM", infiltration_system->getUUID());
         catchment->getAttribute("INFILTRATION_SYSTEM")->setLink("INFILTRATION_SYSTEM", infiltration_system->getUUID());
 
 
