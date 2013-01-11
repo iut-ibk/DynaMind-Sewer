@@ -536,7 +536,7 @@ void ExtractNetwork::smoothNetwork() {
                 DM::Node * p_upper = this->city->getNode(e->getStartpointName());
                 double z_upper = p_upper->getAttribute("Z")->getDouble() - p_upper->getAttribute("D")->getDouble();
                 if (z_lower >= z_upper) {
-                    z_upper = z_lower + 0.05;
+                    z_upper = z_lower + 0.00005;
                 }
                 internalcounter++;
                 if (internalcounter > 100000) {
