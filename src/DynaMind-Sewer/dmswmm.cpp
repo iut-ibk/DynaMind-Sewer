@@ -248,6 +248,7 @@ void DMSWMM::readInReportFile() {
     double Vp = 0;
     double Vr = 0;
     double Vwwtp = 0;
+    double Voutfall = 0;
 
     int counter = 0;
     for (int i = 0; i < fileContent.size(); i++) {
@@ -263,6 +264,13 @@ void DMSWMM::readInReportFile() {
         if (line.contains("Node Flooding Summary") ) {
             FloodSection = true;
             continue;
+        }
+        if (SectionSurfaceRunoff) {
+            if (line.contains("Surface Runoff")) {
+                //Start extract
+                QStringList data =line.split(QRegExp("\\s+"));
+                SurfaceRunOff = QString(data[data.size()-2]).toDouble()*10;
+            }
         }
         if (SectionSurfaceRunoff) {
             if (line.contains("Surface Runoff")) {
@@ -293,6 +301,9 @@ void DMSWMM::readInReportFile() {
                     if (p->getAttribute("WWTP")->getDouble() > 0.01) {
                         p->changeAttribute("OutfallVolume",  QString(data[4]).toDouble());
                         Vwwtp +=QString(data[4]).toDouble();
+                    } else {
+                        p->changeAttribute("OutfallVolume",  QString(data[4]).toDouble());
+                        Voutfall +=QString(data[4]).toDouble();
                     }
                 }
 
@@ -338,6 +349,7 @@ void DMSWMM::readInReportFile() {
     Logger (Standard)  << "Vp " << Vp;
     Logger (Standard)  << "Vr " << SurfaceRunOff;
     Logger (Standard)  << "Vwwtp " << Vwwtp;
+    Logger (Standard)  << "Voutfall " << Voutfall;
     this->Vp = Vp;
     this->Vwwtp = Vwwtp;
     this->Vr = SurfaceRunOff;
@@ -459,9 +471,6 @@ void DMSWMM::writeJunctions(std::fstream &inp)
 
 void DMSWMM::writeSubcatchments(std::fstream &inp)
 {
-    int subcatchCount=0;
-
-
     //SUBCATCHMENTS
     //-------------------------//
     inp<<"[SUBCATCHMENTS]\n";
@@ -479,15 +488,17 @@ void DMSWMM::writeSubcatchments(std::fstream &inp)
 
         std::string CATCHMENT_ID = inlet_attr->getAttribute("CATCHMENT")->getLink().uuid;
 
-        if (UUIDtoINT[CATCHMENT_ID] == 0) {
-            UUIDtoINT[CATCHMENT_ID] = GLOBAL_Counter++;
-        }
-
         Component * catchment_attr = city->getComponent(CATCHMENT_ID);
         int id = this->UUIDtoINT[inlet_attr->getAttribute("JUNCTION")->getLink().uuid];
         if (id == 0) {
             continue;
         }
+
+        if (UUIDtoINT[CATCHMENT_ID] == 0) {
+            UUIDtoINT[CATCHMENT_ID] = GLOBAL_Counter++;
+        }
+
+
         double area = catchment_attr->getAttribute("Area")->getDouble()/10000.;// node->area/10000.;
         double with = sqrt(area*10000.);
         double gradient = fabs(catchment_attr->getAttribute("Gradient")->getDouble());
@@ -514,7 +525,7 @@ void DMSWMM::writeSubcatchments(std::fstream &inp)
         std::string CATCHMENT_ID = inlet_attr->getAttribute("CATCHMENT")->getLink().uuid;
 
         if (UUIDtoINT[CATCHMENT_ID] == 0) {
-            UUIDtoINT[CATCHMENT_ID] = GLOBAL_Counter++;
+            continue;
         }
 
         DM::Face * catchment_attr = city->getFace(CATCHMENT_ID);
@@ -556,11 +567,16 @@ void DMSWMM::writeSubcatchments(std::fstream &inp)
     inp<<";;============================================================================\n";
     foreach(std::string name, InletNames) {
         DM::Node * inlet_attr = city->getNode(name);
-        int id = this->UUIDtoINT[inlet_attr->getUUID()];
+
+        std::string CATCHMENT_ID = inlet_attr->getAttribute("CATCHMENT")->getLink().uuid;
+         DM::Face * catchment_attr = city->getFace(CATCHMENT_ID);
+        if (!catchment_attr)
+            continue;
+
+        int id = this->UUIDtoINT[CATCHMENT_ID];
         if (id == 0) {
             continue;
         }
-        std::string CATCHMENT_ID = inlet_attr->getAttribute("CATCHMENT")->getString();
         inp<<"  sub"<<UUIDtoINT[CATCHMENT_ID]<<"\t60\t6.12\t3\t6\t0\n";
     }
     inp<<"\n";
@@ -736,7 +752,7 @@ void DMSWMM::writeLID_Controlls(std::fstream &inp) {
         if (!catchment_attr)
             continue;
 
-        int id = this->UUIDtoINT[inlet_attr->getAttribute("JUNCTION")->getLink().uuid];
+        int id = this->UUIDtoINT[CATCHMENT_ID];
         if (id == 0) {
             continue;
         }
@@ -768,16 +784,23 @@ void DMSWMM::writeLID_Controlls(std::fstream &inp) {
             inp << "Infiltration" << UUIDtoINT[la.uuid] << "\t"  << "SURFACE" <<    "\t" <<  infilt->getAttribute("h")->getDouble()*1000<<    "\t"     <<   "0.0"  <<    "\t"  <<   "0.1"<<    "\t" <<      0.1 <<    "\t" <<      "5" << "\n";
             inp << "Infiltration" << UUIDtoINT[la.uuid] << "\t"  << "STORAGE" <<    "\t" <<  "200"<<    "\t"     <<   "0.75"  <<    "\t"  <<   infilt->getAttribute("kf")->getDouble() * 1000<<    "\t" <<       "0" << "\n";
             inp << "Infiltration" << UUIDtoINT[la.uuid] << "\t"  << "DRAIN" <<    "\t" <<  "0" <<    "\t"     <<   "0.5"  <<     "\t"<< "0"<< "\t"<< "6" << "\n";
+            inp<<"\n";
         }
     }
 }
 void DMSWMM::writeLID_Usage(std::fstream &inp) {
 
 
+
+
     std::vector<std::string> InletNames = city->getUUIDsOfComponentsInView(inlet);
 
     inp << "\n";
-    inp << "[LID_USAGE]" << "\n";
+
+    inp <<  "[LID_USAGE]"  << "\n";
+    inp << ";;Subcatchment   LID Process      Number  Area       Width      InitSatur  FromImprv  ToPerv     Report File"  << "\n";
+    inp << ";;-------------- ---------------- ------- ---------- ---------- ---------- ---------- ---------- -----------"  << "\n";
+
     foreach(std::string name, InletNames) {
         DM::Component * inlet_attr;
         inlet_attr = city->getComponent(name);
@@ -790,16 +813,11 @@ void DMSWMM::writeLID_Usage(std::fstream &inp) {
         if (!catchment_attr)
             continue;
 
-        int id = this->UUIDtoINT[inlet_attr->getAttribute("JUNCTION")->getLink().uuid];
+        int id = this->UUIDtoINT[CATCHMENT_ID];
         if (id == 0) {
             continue;
         }
 
-
-        //double imp = catchment_attr.getAttribute("Impervious")*100;
-        //double inf = catchment_attr.getAttribute("RoofAreaInfitrated")/(200*200)*100;
-
-        //double treated = inf/imp*100;
         double area = catchment_attr->getAttribute("Area")->getDouble();// node->area/10000.;
         double imp = catchment_attr->getAttribute("Impervious")->getDouble();// node->area/10000.;
 
@@ -808,16 +826,16 @@ void DMSWMM::writeLID_Usage(std::fstream &inp) {
         if (numberOfInfiltrationSystems == 0 || area == 0)
             continue;
 
-        /*[LID_USAGE]
-    ;;Subcatchment   LID Process      Number  Area       Width      InitSatur  FromImprv  ToPerv     Report File
-    ;;-------------- ---------------- ------- ---------- ---------- ---------- ---------- ---------- -----------
-    sub68            Infitration      1       40000.00   200        90         100        0          "report1.txt"*/
+
         std::vector<DM::LinkAttribute> infitration_systems = catchment_attr->getAttribute("INFILTRATION_SYSTEM")->getLinks();
+
+
 
         foreach (LinkAttribute la, infitration_systems) {
             DM::Component * infilt = city->getComponent(la.uuid);
-
-            inp << "sub" <<UUIDtoINT[CATCHMENT_ID] << "\t"  << "Infiltration"<< UUIDtoINT[la.uuid]  <<    "\t" <<  1 <<    "\t"     <<   infilt->getAttribute("area")->getDouble()   <<    "\t"  <<   "1"<<    "\t" <<       "0" <<    "\t" <<      infilt->getAttribute("treated_area")->getDouble()  / (area*imp) * 100 <<    "\t" <<    "0" <<    "\t" << "\"report" << UUIDtoINT[CATCHMENT_ID] << ".txt\"" << "\n";
+            double treated = infilt->getAttribute("treated_area")->getDouble();
+            treated = (area*imp);
+            inp << "sub" <<UUIDtoINT[CATCHMENT_ID] << "\t"  << "Infiltration"<< UUIDtoINT[la.uuid]  <<    "\t" <<  1 <<    "\t"     <<   infilt->getAttribute("area")->getDouble()   <<    "\t"  <<   "1"<<    "\t" <<       "0" <<    "\t" <<        treated  / (area*imp) * 100. <<    "\t" <<    "0" <<    "\n"; // << "\"report" << UUIDtoINT[CATCHMENT_ID] << ".txt\"" << "\n";
         }
     }
 }
