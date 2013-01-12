@@ -1,0 +1,67 @@
+#include "linkelementwithnearestpoint.h"
+#include "spatialsearchnearestnodes.h"
+DM_DECLARE_NODE_NAME(LinkElementWithNearestPoint, Sewer)
+
+LinkElementWithNearestPoint::LinkElementWithNearestPoint()
+{
+    this->name_linkElements = "";
+    this->name_nearestPoints = "";
+
+    this->addParameter("LinkNearestPoints", DM::STRING, & this->name_linkElements);
+    this->addParameter("NearestPoints", DM::STRING, & this->name_nearestPoints);
+
+}
+
+void LinkElementWithNearestPoint::init()
+{
+    if (name_linkElements.empty()) return;
+    if (name_nearestPoints.empty()) return;
+
+    view_linkElements = DM::View(this->name_linkElements, DM::NODE, DM::READ);
+
+    view_nearestPoints = DM::View(this->name_nearestPoints, DM::NODE, DM::READ);
+
+    view_linkElements.addLinks(this->name_nearestPoints, view_nearestPoints);
+    view_nearestPoints.addLinks(this->name_nearestPoints, view_linkElements);
+
+    std::vector<DM::View> datastream;
+    datastream.push_back(view_linkElements);
+    datastream.push_back(view_nearestPoints);
+
+    this->addData("city", datastream);
+
+}
+
+void LinkElementWithNearestPoint::run()
+{
+    DM::System * city = this->getData("city");
+
+    std::vector<std::string> search_uuids = city->getUUIDs(view_nearestPoints);
+
+    std::vector<DM::Node*> nodes;
+    foreach (std::string uuid, search_uuids)
+        nodes.push_back(city->getNode(uuid));
+
+    int numberOfLinks = 0;
+    SpatialSearchNearestNodes ssnn(city, nodes);
+
+    std::vector<std::string> link_uuids = city->getUUIDs(view_linkElements);
+    int l_n = link_uuids.size();
+
+    for (int i = 0; i < l_n; i++) {
+        DM::Node * query = city->getNode(link_uuids[i]);
+
+        DM::Node * n = ssnn.findNearestNode(query);
+        if (!n)
+            continue;
+        numberOfLinks++;
+
+        query->getAttribute(name_nearestPoints)->setLink(name_nearestPoints, n->getUUID());
+        n->getAttribute(name_linkElements)->setLink(name_linkElements, query->getUUID());
+    }
+
+    DM::Logger(DM::Standard) << "Linked Elements " << numberOfLinks;
+}
+
+
+

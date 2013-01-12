@@ -41,6 +41,7 @@
 #include "outfallstructure.h"
 #include "reducejunctions.h"
 #include "infiltrationtrench.h"
+#include "linkelementwithnearestpoint.h"
 
 /*#include "pickstartpoints.h"
 
@@ -66,6 +67,7 @@ extern "C" void DM_HELPER_DLL_EXPORT  registerModules(DM::ModuleRegistry *regist
     registry->addNodeFactory(new NodeFactory<OutfallStructure>());
     registry->addNodeFactory(new NodeFactory<ReduceJunctions>());
     registry->addNodeFactory(new NodeFactory<InfiltrationTrench>());
+    registry->addNodeFactory(new NodeFactory<LinkElementWithNearestPoint>());
     /*registry->addNodeFactory(new NodeFactory<PickStartPoints>());
 
 
