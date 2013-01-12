@@ -42,7 +42,7 @@ class ImportSWMM(Module):
         views.append(self.wwtps)
         
         self.addData("Sewer", views)        
-        self.createParameter("filename", STRING, "Name of SWMM File")
+        self.createParameter("filename", FILENAME, "Name of SWMM File")
         self.filename = "/home/christian/Documents/DynaMind/data/networks/SWMM_innsbruck.inp"
         self.createParameter("NameWWTP", STRING, "Identifier WWTP")
         self.NameWWTP = "MD020"
@@ -91,7 +91,6 @@ class ImportSWMM(Module):
                 UUIDTranslator[c] = n.getUUID()
 
             #Add Nodes
-
             ress = results["[JUNCTIONS]"]
             for c in ress:
                 coords = ress[c]
