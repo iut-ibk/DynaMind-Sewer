@@ -7,8 +7,8 @@ LinkElementWithNearestPoint::LinkElementWithNearestPoint()
     this->name_linkElements = "";
     this->name_nearestPoints = "";
 
-    this->addParameter("LinkNearestPoints", DM::STRING, & this->name_linkElements);
-    this->addParameter("NearestPoints", DM::STRING, & this->name_nearestPoints);
+    this->addParameter("Points_to_Link", DM::STRING, & this->name_linkElements);
+    this->addParameter("Point_Field", DM::STRING, & this->name_nearestPoints);
 
 }
 
