@@ -62,6 +62,8 @@ private:
     DM::View Junction;
     DM::View EndPoint;
 
+    long offsetX;
+    long offsetY;
 
     double ConduitLength;
     long steps;

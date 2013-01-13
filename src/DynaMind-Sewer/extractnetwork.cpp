@@ -161,10 +161,12 @@ void ExtractNetwork::run() {
 
     long width = this->ConnectivityField->getWidth();
     long height = this->ConnectivityField->getHeight();
+    offsetX = this->ConnectivityField->getXOffset();
+    offsetY = this->ConnectivityField->getYOffset();
     double cellSizeX = this->ConnectivityField->getCellSizeX();
     double cellSizeY = this->ConnectivityField->getCellSizeY();
 
-    this->Path->setSize(width, height, cellSizeX,cellSizeY,0,0);
+    this->Path->setSize(width, height, cellSizeX,cellSizeY,offsetX,offsetY);
     this->Path->clear();
 
     std::vector<AgentExtraxtor * > agents;
@@ -247,7 +249,7 @@ void ExtractNetwork::run() {
             std::vector<Node> points_for_total;
             for (int i = 0; i < a->path.size(); i++) {
                 this->Path->setCell(a->path[i].x, a->path[i].y, 1);
-                points_for_total.push_back(Node(a->path[i].x * multiplier + offset, a->path[i].y * multiplier + offset,a->path[i].h));
+                points_for_total.push_back(Node(a->path[i].x * multiplier + offset + this->offsetX, a->path[i].y * multiplier + offset + this->offsetY,a->path[i].h));
 
             }
             Logger(Debug) << "Successful Agent Path Length" << a->path.size();
