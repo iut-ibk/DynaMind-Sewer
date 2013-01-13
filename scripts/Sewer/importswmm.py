@@ -31,22 +31,106 @@ class ImportSWMM(Module):
     def __init__(self):
         Module.__init__(self)
         self.conduits = View("CONDUIT", EDGE, WRITE)
+        self.conduits.addAttribute("DIAMETER")
+        
+        self.xsections = View("XSECTION",COMPONENT,WRITE)     
+        self.xsections.addAttribute("type")
+        self.xsections.addAttribute("shape")
+        
+        
+        self.conduits.addLinks("XSECTION", self.xsections)
+        
         self.junctions = View("JUNCTION", NODE, WRITE)
+        self.junctions.addAttribute("Z")
+        self.junctions.addAttribute("D")
+
+        self.outfalls = View("OUTFALL", NODE, WRITE)
+        self.outfalls.addAttribute("Z")
+        
         self.inlets = View("INLET", NODE, WRITE)
+
+        
         self.wwtps = View("WWTP", NODE, WRITE)
+        
+        self.storages = View("STORAGE", NODE, WRITE)
+        self.storages.addAttribute("Z")
+        self.storages.addAttribute("max_depth")
+        self.storages.addAttribute("type")
+        self.storages.addAttribute("storage_x")
+        self.storages.addAttribute("storage_y")
+
+        self.weirs = View("WEIR", EDGE, WRITE)
+        self.weirs.addAttribute("type")
+        self.weirs.addAttribute("crest_height")
+        self.weirs.addAttribute("discharge_coefficient")
+        self.weirs.addAttribute("end_coefficient")
+        
+        self.pumps = View("PUMP", EDGE, WRITE)
+        self.pumps.addAttribute("type")
+        self.pumps.addAttribute("pump_x")
+        self.pumps.addAttribute("pump_y")
         
         views = []
         views.append(self.conduits)
+        views.append(self.outfalls)
         views.append(self.junctions)
         views.append(self.inlets)
         views.append(self.wwtps)
+        views.append(self.storages)
+        views.append(self.weirs)
+        views.append(self.xsections)
+        views.append(self.pumps)
         
         self.addData("Sewer", views)        
         self.createParameter("filename", FILENAME, "Name of SWMM File")
-        self.filename = "/home/christian/Documents/DynaMind/data/networks/SWMM_innsbruck.inp"
+        self.filename = ""
         self.createParameter("NameWWTP", STRING, "Identifier WWTP")
         self.NameWWTP = "MD020"
         
+        self.curves = {}
+        self.curves_types = {}      
+        
+        
+    def readCurves(self):
+        try:
+            print "start reading curves"
+            f = open(self.filename)
+            startReading = False
+
+            for line in f:
+                line = line.strip()
+                if line is '':
+                    continue
+                if line[0] is ';':
+                    continue
+                if startReading == True and line[0] is '[':
+                    startReading = False
+                    break
+                if startReading == True:
+                    #print line 
+                    content = line.split()
+                    if content[0] not in self.curves:
+                        self.curves[ content[0] ] = []
+                    values = self.curves[ content[0] ]
+                    if (len(content) == 4):
+                        values.append((float(content[2]), float(content[3])))
+                    if (len(content) == 3):
+                        values.append((float(content[1]), float(content[2])))
+                    self.curves[ content[0] ] = values
+                    
+                    if (len(content) == 4):
+                        if content[1] != "":
+                            self.curves_types[content[0]] = str(content[1])
+                        
+                if line == "[CURVES]":
+                    startReading = True
+            print "end"
+            f.close()
+
+        except Exception, e:
+            print e
+            print sys.exc_info()            
+                
     def run(self):        
         try:
             sewer = self.getData("Sewer")
@@ -78,11 +162,12 @@ class ImportSWMM(Module):
                 ress = results[currentContainer]
                 ress[content[0]] = container
                 results[currentContainer] = ress
-            
+            f.close()
+            self.readCurves()
             
             "Create Nodes"
             UUIDTranslator = {}
-
+            
             #Add Coordinates
             ress = results["[COORDINATES]"]
             for c in ress:
@@ -90,33 +175,130 @@ class ImportSWMM(Module):
                 n = sewer.addNode(float(coords[0]), float(coords[1]),0.)
                 UUIDTranslator[c] = n.getUUID()
 
+
             #Add Nodes
-            ress = results["[JUNCTIONS]"]
-            for c in ress:
-                coords = ress[c]
-                n = sewer.getNode(UUIDTranslator[c])
-                sewer.addComponentToView(n, self.junctions) 
-                attr = Attribute("SWMM_ID")
-                attr.setString(str(c))
-                n.addAttribute(attr)
+            junctions = results["[JUNCTIONS]"]
+            for c in junctions:
+                attributes = junctions[c]
+                juntion = sewer.getNode(UUIDTranslator[c])
+                sewer.addComponentToView(juntion, self.junctions) 
+                
+                juntion.addAttribute("SWMM_ID", str(c))
+                juntion.addAttribute("Z", (float(attributes[0])))
+                juntion.addAttribute("D", (float(attributes[1])))
                 if (c == self.NameWWTP):  
                     print "wwtp found"
-                    sewer.addComponentToView(n, self.wwtps)
+                    sewer.addComponentToView(juntion, self.wwtps)                    
+            #Write Outfalls
+            outfalls = results["[OUTFALLS]"]
+            for o in outfalls:
+                vals = outfalls[o]
+                attributes = outfalls[o]
+                outfall = sewer.getNode(UUIDTranslator[o])
+                sewer.addComponentToView(outfall, self.outfalls) 
+                outfall.addAttribute("Z", float(vals[0]))
+                
+            #Write Storage Units
+            storages = results["[STORAGE]"]
+            for s in storages:
+                vals = storages[s]
+                storage = sewer.getNode(UUIDTranslator[s])
+                sewer.addComponentToView(storage, self.storages) 
+                storage.addAttribute("Z", float(vals[0]))
+                storage.addAttribute("max_depth", float(vals[1]))
+                storage.addAttribute("type", vals[3])
+                if  vals[3] == "TABULAR":
+                    curve = self.curves[vals[4]]
+                    storage_x = doublevector()
+                    storage_y = doublevector()
+                    for c in curve:
+                        storage_x.append(c[0])
+                        storage_y.append(c[1])
+                    storage.getAttribute("storage_x").setDoubleVector(storage_x)
+                    storage.getAttribute("storage_y").setDoubleVector(storage_y)
                     
-            xsections = results["[XSECTIONS]"]               
-            ress = results["[CONDUITS]"]
+                
+                
+            
+            xsections = results["[XSECTIONS]"]     
+            
+            ress = results["[CONDUITS]"]            
             for c in ress:
                 vals = ress[c]
                 start = sewer.getNode(UUIDTranslator[vals[0]])
                 end = sewer.getNode(UUIDTranslator[vals[1]])
                 e = sewer.addEdge(start, end, self.conduits)
+                e.addAttribute("SWMM_ID", str(c))
+                #Create XSection
                 e.addAttribute("DIAMETER", float(xsections[c][1]))
-                attr = Attribute("SWMM_ID")
-                attr.setString(str(c))
-                e.addAttribute(attr)
+                
+                xsection = self.createXSection(sewer, xsections[c])
+                e.getAttribute("XSECTION").setLink("XSECTION", xsection.getUUID())
+
+            c_weirs = results["[WEIRS]"]     
+            for c in c_weirs:
+                vals = c_weirs[c]
+                start = sewer.getNode(UUIDTranslator[vals[0]])
+                end = sewer.getNode(UUIDTranslator[vals[1]])
+                e = sewer.addEdge(start, end, self.weirs)
+                
+                e.addAttribute("type",vals[2] )
+                e.addAttribute("crest_height",float(vals[3]))
+                e.addAttribute("discharge_coefficient",float(vals[4]))
+                e.addAttribute("end_coefficient",float(vals[7]))
+
+            c_pumps = results["[PUMPS]"]     
+            for c in c_pumps:
+                vals = c_pumps[c]
+                start = sewer.getNode(UUIDTranslator[vals[0]])
+                end = sewer.getNode(UUIDTranslator[vals[1]])
+                e = sewer.addEdge(start, end, self.pumps)
+                
+                e.addAttribute("type", self.curves_types[vals[2]] )                
+                
+                curve = self.curves[vals[2]]
+                pump_x = doublevector()
+                pump_y = doublevector()
+                for c in curve:
+                    pump_x.append(c[0])
+                    pump_y.append(c[1])  
+                
+                e.getAttribute("pump_x").setDoubleVector(pump_x)
+                e.getAttribute("pump_y").setDoubleVector(pump_y)
+                
         except Exception, e:
-	        print e
-		print sys.exc_info()
-	     
+            print e
+            print sys.exc_info()
+            
+    def createXSection(self, sewer, attributes):
+        c_xsection = Component()
+        xsection = sewer.addComponent(c_xsection, self.xsections)
+        xsection.addAttribute("type", str(attributes[0]))   
+        diameters = doublevector()
+        diameters.push_back(float(attributes[1]))
+        #print self.curves
+        if str(attributes[0]) != "CUSTOM":
+            diameters.push_back(float(attributes[1]))
+            diameters.push_back(float(attributes[2]))
+            diameters.push_back(float(attributes[3]))
+        else:
+            shape_x = doublevector()
+            shape_y = doublevector()
+            #print attributes
+            cv = self.curves[attributes[2]]
+            
+            #xsection.getAttribute("shape_type").setString(vd)
+            for c in cv: 
+                shape_x.append(c[0])
+                shape_y.append(c[1])
+            xsection.getAttribute("shape_x").setDoubleVector(shape_x)
+            xsection.getAttribute("shape_y").setDoubleVector(shape_y)
+            xsection.getAttribute("shape_type").setString(self.curves_types[attributes[2]])
+            
+        xsection.getAttribute("diameters").setDoubleVector(diameters)
+        
+        return xsection
+        
+        
 
                 
