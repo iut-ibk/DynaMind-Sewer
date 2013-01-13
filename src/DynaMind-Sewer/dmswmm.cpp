@@ -52,20 +52,24 @@ DMSWMM::DMSWMM()
     junctions = DM::View("JUNCTION", DM::NODE, DM::READ);
     junctions.getAttribute("D");
 
-    endnodes = DM::View("OUTLET", DM::NODE, DM::READ);
+    endnodes = DM::View("OUTFALL", DM::NODE, DM::READ);
+
     catchment = DM::View("CATCHMENT", DM::FACE, DM::READ);
     catchment.getAttribute("WasteWater");
-    catchment.getAttribute("Area");
+    catchment.getAttribute("area");
     catchment.getAttribute("Impervious");
 
     outfalls= DM::View("OUTFALL", DM::NODE, DM::READ);
-    weir = DM::View("WEIR", DM::NODE, DM::READ);
-    weir.getAttribute("InletOffset");
+
+    weir = DM::View("WEIR", DM::EDGE, DM::READ);
+    weir.getAttribute("crest_height");
     wwtp = DM::View("WWTP", DM::NODE, DM::READ);
 
+    pumps = DM::View("PUMPS", DM::EDGE, DM::READ);
+
     storage = DM::View("STORAGE", DM::NODE, DM::READ);
-    storage.getAttribute("StorageV");
-    storage.getAttribute("Storage");
+    storage.getAttribute("Z");
+    //storage.getAttribute("Storage");
 
 
     globals = DM::View("CITY", DM::COMPONENT, DM::READ);
@@ -157,7 +161,7 @@ void DMSWMM::writeRainFile() {
 }
 
 void DMSWMM::run() {
-
+    curves.str("");
     city = this->getData("City");
 
 
@@ -246,7 +250,7 @@ void DMSWMM::readInReportFile() {
     bool SectionOutfall = false;
     double SurfaceRunOff = 0;
     double Vp = 0;
-    double Vr = 0;
+    //double Vr = 0;
     double Vwwtp = 0;
     double Voutfall = 0;
 
@@ -437,9 +441,7 @@ void DMSWMM::writeJunctions(std::fstream &inp)
             continue;
         if (p->getAttribute("Storage")->getDouble() == 1)
             continue;
-        //SewerTree::Node *node = this->sewerTree.getNodes().at(i);
 
-        double depht = p->getZ();
         int id = UUIDtoINT[p->getUUID()];
 
         if (std::find(checkForduplicatedNodes.begin(), checkForduplicatedNodes.end(), id) != checkForduplicatedNodes.end())
@@ -451,10 +453,10 @@ void DMSWMM::writeJunctions(std::fstream &inp)
         inp << "\t";
         inp << "\t";
         //Get Val
-        inp << p->getAttribute("Z")->getDouble()-( p->getAttribute("D")->getDouble()-2);
+        inp << p->getAttribute("Z")->getDouble();
 
         inp << "\t";
-        inp <<  p->getAttribute("D")->getDouble()+1;
+        inp <<  p->getAttribute("D")->getDouble();
         inp << "\t";
         inp << "0";
         inp << "\t";
@@ -488,7 +490,11 @@ void DMSWMM::writeSubcatchments(std::fstream &inp)
 
         std::string CATCHMENT_ID = inlet_attr->getAttribute("CATCHMENT")->getLink().uuid;
 
+        Logger(Debug) << "CATCHMENT_ID  " << CATCHMENT_ID;
         Component * catchment_attr = city->getComponent(CATCHMENT_ID);
+        if (inlet_attr->getAttribute("JUNCTION")->getLinks().size() < 1) {
+            continue;
+        }
         int id = this->UUIDtoINT[inlet_attr->getAttribute("JUNCTION")->getLink().uuid];
         if (id == 0) {
             continue;
@@ -499,7 +505,7 @@ void DMSWMM::writeSubcatchments(std::fstream &inp)
         }
 
 
-        double area = catchment_attr->getAttribute("Area")->getDouble()/10000.;// node->area/10000.;
+        double area = catchment_attr->getAttribute("area")->getDouble()/10000.;// node->area/10000.;
         double with = sqrt(area*10000.);
         double gradient = fabs(catchment_attr->getAttribute("Gradient")->getDouble());
         double imp = catchment_attr->getAttribute("Impervious")->getDouble();
@@ -512,7 +518,6 @@ void DMSWMM::writeSubcatchments(std::fstream &inp)
 
         if ( area > 0 ) {
             inp<<"sub"<<UUIDtoINT[CATCHMENT_ID]<<"\tRG01"<<"\t\tnode"<<id<<"\t" << area << "\t" <<imp*100 << "\t"<< with << "\t"<<gradient*100<<"\t1\n";
-            //inp<<"sub"<<subcatchCount++<<"\tRG01"<<"\t\tnode"<<id<<"\t" << area << "\t" <<catchment_attr.getAttribute("Impervious")*100 << "\t"<< with << "\t"<<gradient*100<<"\t1\n";
         }
 
     }
@@ -569,7 +574,7 @@ void DMSWMM::writeSubcatchments(std::fstream &inp)
         DM::Node * inlet_attr = city->getNode(name);
 
         std::string CATCHMENT_ID = inlet_attr->getAttribute("CATCHMENT")->getLink().uuid;
-         DM::Face * catchment_attr = city->getFace(CATCHMENT_ID);
+        DM::Face * catchment_attr = city->getFace(CATCHMENT_ID);
         if (!catchment_attr)
             continue;
 
@@ -634,34 +639,70 @@ void DMSWMM::writeStorage(std::fstream &inp) {
     //\nODE85           93.7286  6.35708  0        FUNCTIONAL 1000     0        22222    1000     0
     std::vector<std::string> storages = this->city->getUUIDsOfComponentsInView(storage);
     foreach(std::string name, storages) {
+        std::stringstream storage_id;
+
         Node * p = this->city->getNode(name);
 
         int id = this->UUIDtoINT[p->getUUID()];
-
+        storage_id << "NODE" << id;
         inp << "NODE";
         inp << id;
         inp << "\t";
         inp << "\t";
-        //Get Val
-        inp << p->getAttribute("Z")->getDouble()-( p->getAttribute("D")->getDouble()-2);
 
-        inp << "\t";
-        inp <<  p->getAttribute("D")->getDouble()+1;
-        inp << "\t";
-        inp << "\t";
-        inp << "0";
-        inp << "\t";
-        inp << "FUNCTIONAL";
-        inp << "\t";
-        inp << "0";
-        inp << "\t";
-        inp << "0";
-        inp << "\t";
-        inp << p->getAttribute("StorageA")->getDouble();
-        inp << "\t";
-        inp << "1000";
-        inp << "0";
-        inp << "\n";
+
+        if (p->getAttribute("type")->getString() == "TABULAR") {
+            inp << p->getAttribute("Z")->getDouble();
+            inp << "\t";
+            inp << p->getAttribute("max_depth")->getDouble();
+            inp << "\t";
+            inp << "0";
+            inp << "\t";
+            inp << p->getAttribute("type")->getString();
+            inp << "\t";
+            inp << storage_id.str();
+            inp << "\t";
+            inp << 10000;
+            inp << "\t";
+            inp << 0;
+            inp << "\n";
+            //Write XSection to CURVES
+            std::vector<double> storage_x = p->getAttribute("storage_x")->getDoubleVector();
+            std::vector<double> storage_y = p->getAttribute("storage_y")->getDoubleVector();
+
+            for (unsigned int i = 0; i < storage_x.size(); i++) {
+                curves << storage_id.str() << "\t";
+                if (i == 0)
+                    curves << "STORAGE" << "\t";
+                else
+                    curves  << "\t";
+                curves << storage_x[i] << "\t";
+                curves << storage_y[i] << "\t";
+
+                curves <<  "\n";
+            }
+        }
+
+        if (p->getAttribute("type")->getString() == "FUNCTIONAL") {
+            inp << p->getAttribute("Z")->getDouble()-( p->getAttribute("D")->getDouble()-2);
+            inp << "\t";
+            inp <<  p->getAttribute("D")->getDouble()+1;
+            inp << "\t";
+            inp << "\t";
+            inp << "0";
+            inp << "\t";
+            inp << "FUNCTIONAL";
+            inp << "\t";
+            inp << "0";
+            inp << "\t";
+            inp << "0";
+            inp << "\t";
+            inp << p->getAttribute("StorageA")->getDouble();
+            inp << "\t";
+            inp << "1000";
+            inp << "0";
+            inp << "\n";
+        }
     }
 }
 
@@ -673,7 +714,7 @@ void DMSWMM:: writeOutfalls(std::fstream &inp) {
     inp<<";;============================================================================\n";
 
     std::vector<std::string> OutfallNames = city->getUUIDsOfComponentsInView(outfalls);
-    for ( int i = 0; i < OutfallNames.size(); i++ ) {
+    for (unsigned int i = 0; i < OutfallNames.size(); i++ ) {
         DM::Node * p = city->getNode(OutfallNames[i]);
 
         if (UUIDtoINT[p->getUUID()] == 0) {
@@ -697,7 +738,7 @@ void DMSWMM::writeConduits(std::fstream &inp) {
 
     foreach(DM::View con, conduits)  {
         std::vector<std::string> ConduitNames = city->getUUIDsOfComponentsInView(con);
-        int counter = 0;
+
         foreach(std::string name, ConduitNames) {
             DM::Edge * link = city->getEdge(name);
 
@@ -726,7 +767,7 @@ void DMSWMM::writeConduits(std::fstream &inp) {
             int StartNode =  UUIDtoINT[nStartNode->getUUID()];
             double offest = 0;
             if (EndNode != -1 && StartNode != -1 && EndNode != StartNode)
-                inp<<"LINK"<< UUIDtoINT[link->getUUID()]<<"\tNODE"<<EndNode<<"\tNODE"<<StartNode<<"\t"<<length<<"\t"<<"0.01	" << offest  <<"\t"	<< offest << "\n";
+                inp<<"LINK"<< UUIDtoINT[link->getUUID()]<<"\tNODE"<<EndNode<<"\tNODE"<<StartNode<<"\t"<<length<<"\t"<<"0.01	" << link->getAttribute("inlet_offset")->getDouble()  <<"\t"	<< link->getAttribute("outlet_offset")->getDouble()  << "\n";
 
         }
     }
@@ -840,6 +881,17 @@ void DMSWMM::writeLID_Usage(std::fstream &inp) {
     }
 }
 
+void DMSWMM::writeCurves(fstream &inp)
+{
+    inp<<"\n";
+    inp<<"[CURVES]\n";
+    inp<<";;Name           Type       X-Value    Y-Value   \n";
+    inp<<";;-------------- ---------- ---------- ----------\n";
+
+    inp << curves.str();
+    inp<<"\n";
+}
+
 void DMSWMM::writeXSection(std::fstream &inp) {
     std::vector<std::string> OutfallNames = city->getUUIDsOfComponentsInView(weir);
 
@@ -855,19 +907,18 @@ void DMSWMM::writeXSection(std::fstream &inp) {
     condies.push_back(conduit);
 
     foreach (DM::View condie, condies) {
-
-
         std::vector<std::string> ConduitNames = city->getUUIDsOfComponentsInView(condie);
         foreach(std::string name, ConduitNames) {
+            std::string linkname = "";
+            if (condie.getName() == "CONDUIT")
+                linkname = "LINK";
+            if (condie.getName() == "WEIR")
+                linkname = "WEIR";
             DM::Edge * link = city->getEdge(name);
 
 
             DM::Node * nStartNode = city->getNode(link->getStartpointName());
             DM::Node * nEndNode = city->getNode(link->getEndpointName());
-
-
-            double x = nStartNode->getX()  - nEndNode->getX();
-            double y = nStartNode->getY() - nEndNode->getY();
 
             if (UUIDtoINT[nStartNode->getUUID()] == 0) {
                 UUIDtoINT[nStartNode->getUUID()] = GLOBAL_Counter++;
@@ -876,20 +927,50 @@ void DMSWMM::writeXSection(std::fstream &inp) {
                 UUIDtoINT[nEndNode->getUUID()] = GLOBAL_Counter++;
             }
 
-            int EndNode = UUIDtoINT[nEndNode->getUUID()];
-            int StartNode =  UUIDtoINT[nStartNode->getUUID()];
+            double d = link->getAttribute("Diameter")->getDouble();
 
-            if (nStartNode->isInView(wwtp)) {
-                int i = 0;
+            if (link->getAttribute("XSECTION")->getLinks().size() == 0) {
+                if (condie.getName().compare(conduit.getName()) == 0)
+                    inp << linkname << UUIDtoINT[link->getUUID()] << "\tCIRCULAR\t"<< d <<" \t0\t0\t0\n";
+                continue;
             }
 
-            double d = link->getAttribute("Diameter")->getDouble()/1000;
-            if (condie.getName().compare(conduit.getName()) == 0)
-                inp << "LINK" << UUIDtoINT[link->getUUID()] << "\tCIRCULAR\t"<< d <<" \t0\t0\t0\n";
+            DM::Component * xscetion = city->getComponent(link->getAttribute("XSECTION")->getLink().uuid);
 
-            if (condie.getName().compare(weir.getName()) == 0)
-                inp << "WEIR" << UUIDtoINT[link->getUUID()] << "\tRECT_OPEN\t"<< "10" <<" \t6\t0\t0\n";
+            if (xscetion->getAttribute("type")->getString() != "CUSTOM") {
+                inp << linkname << UUIDtoINT[link->getUUID()] << "\t";
+                inp << xscetion->getAttribute("type")->getString() << "\t";
+                std::vector<double> diameters = xscetion->getAttribute("diameters")->getDoubleVector();
+                foreach (double d, diameters)
+                    inp << d << "\t";
+                inp << "\n";
+                continue;
+            }
+            std::stringstream section_id;
+            section_id << "XSECTION" <<  UUIDtoINT[link->getUUID()];
+            inp << linkname << UUIDtoINT[link->getUUID()] << "\t";
+            inp << xscetion->getAttribute("type")->getString() << "\t";
+            inp << d << "\t";
+            inp <<  section_id.str() << "\t";
+            inp << "0" << "\t";
+            inp << "0" << "\t";
+            inp << "\n";
 
+            //Write XSection to CURVES
+            std::vector<double> shape_x = xscetion->getAttribute("shape_x")->getDoubleVector();
+            std::vector<double> shape_y = xscetion->getAttribute("shape_y")->getDoubleVector();
+
+            for (unsigned int i = 0; i < shape_x.size(); i++) {
+                curves << section_id.str() << "\t";
+                if (i == 0)
+                    curves << xscetion->getAttribute("shape_type")->getString() << "\t";
+                else
+                    curves  << "\t";
+                curves << shape_x[i] << "\t";
+                curves << shape_y[i] << "\t";
+
+                curves <<  "\n";
+            }
         }
     }
     inp<<"\n";
@@ -906,29 +987,11 @@ void DMSWMM::writeWeir(std::fstream &inp)
     inp<<";;-------------- ---------------- ---------------- ------------ ---------- ---------- ---- -------- ----------\n";
     //LINK984          NODE109          NODE985          TRANSVERSE   0          1.80       NO   0        0
     std::vector<std::string> namesWeir = this->city->getUUIDsOfComponentsInView(weir);
-    for ( int i = 0; i < namesWeir.size(); i++ ) {
-
+    for (unsigned int i = 0; i < namesWeir.size(); i++ ) {
 
         DM::Edge * weir = this->city->getEdge(namesWeir[i]);
         DM::Node * startn = this->city->getNode(weir->getStartpointName());
         DM::Node * outfall = this->city->getNode(weir->getEndpointName());
-        double diameter = 0;
-        bool storage = false;
-        //Get Upper Points Connected with the  Weir
-        /*std::vector<std::string> connectedConduits = VectorDataHelper::findConnectedEges((*this->Network), WeirPoints[0], 1, BOTH, this->IdentifierConduit);
-
-        foreach (std::string s, connectedConduits ) {
-            double d = this->Network->getAttributes(s).getAttribute("Diameter");
-            if ( diameter < d ) {
-                diameter = d;
-
-            }
-        }*/
-
-        double x = startn->getX() -  outfall->getX();
-        double y = startn->getY() -  outfall->getY();
-
-
 
         if (UUIDtoINT[startn->getUUID()] == 0) {
             UUIDtoINT[startn->getUUID()] = GLOBAL_Counter++;
@@ -941,20 +1004,76 @@ void DMSWMM::writeWeir(std::fstream &inp)
             UUIDtoINT[weir->getUUID()] = GLOBAL_Counter++;
         }
 
-
-
         inp<<"WEIR"<<UUIDtoINT[weir->getUUID()]<<"\tNODE"<<UUIDtoINT[startn->getUUID()]<<"\tNODE"<<UUIDtoINT[outfall->getUUID()]<<"\t";
         inp<<"TRANSVERSE" << "\t";
-        inp<< weir->getAttribute("InletOffset")->getDouble() << "\t";
+        inp<< weir->getAttribute("crest_height")->getDouble() << "\t";
 
-        inp<<"1.8" << "\t";
+        inp<< weir->getAttribute("discharge_coefficient")->getDouble() << "\t";
         inp<<"NO" << "\t";
         inp<<"0" << "\t";
-        inp<<"0" << "\t" << "\n";
+        inp<< weir->getAttribute("end_coefficient")->getDouble() << "\t";
+        inp << "\n";
 
 
     }
 }
+
+void DMSWMM::writePumps(fstream &inp)
+{
+
+    inp<<"\n";
+    inp<<"[PUMPS]\n";
+    inp<<";;               Inlet            Outlet           Pump             Init.  Startup  Shutoff \n";
+    inp<<";;Name           Node             Node             Curve            Status Depth    Depth\n";
+    inp<<";;-------------- ---------------- ---------------- ---------------- ------ -------- --------\n";
+
+    std::vector<std::string> namePumps = this->city->getUUIDsOfComponentsInView(pumps);
+    for (unsigned int i = 0; i < namePumps.size(); i++ ) {
+        DM::Edge * pump = this->city->getEdge(namePumps[i]);
+        DM::Node * startn = this->city->getNode(pump->getStartpointName());
+        DM::Node * endn = this->city->getNode(pump->getEndpointName());
+
+        if (UUIDtoINT[startn->getUUID()] == 0) {
+            UUIDtoINT[startn->getUUID()] = GLOBAL_Counter++;
+        }
+        if (UUIDtoINT[endn->getUUID()] == 0) {
+            UUIDtoINT[endn->getUUID()] = GLOBAL_Counter++;
+        }
+
+        if (UUIDtoINT[pump->getUUID()] == 0) {
+            UUIDtoINT[pump->getUUID()] = GLOBAL_Counter++;
+        }
+
+        std::stringstream pump_id;
+        pump_id << "PUMP" << UUIDtoINT[pump->getUUID()];
+
+        inp << pump_id.str()  << "\t";
+        inp <<"NODE"<<UUIDtoINT[startn->getUUID()] << "\t";
+        inp <<"NODE"<<UUIDtoINT[endn->getUUID()] << "\t";
+        inp << pump_id.str() << "\t";
+        inp<<"ON" << "\t";
+        inp<<"0" << "\t";
+        inp<<"0" << "\t" << "\n";
+
+        //Write XSection to PUMPS
+        std::vector<double> pump_x = pump->getAttribute("pump_x")->getDoubleVector();
+        std::vector<double> pump_y = pump->getAttribute("pump_y")->getDoubleVector();
+
+        for (unsigned int i = 0; i < pump_x.size(); i++) {
+            curves << pump_id.str() << "\t";
+            if (i == 0)
+                curves << "PUMP2" << "\t";
+            else
+                curves  << "\t";
+            curves << pump_x[i] << "\t";
+            curves << pump_y[i] << "\t";
+
+            curves <<  "\n";
+        }
+    }
+}
+
+
 void DMSWMM::writeCoordinates(std::fstream &inp)
 {
     std::vector<std::string> WWTPs = city->getUUIDsOfComponentsInView(wwtp);
@@ -967,7 +1086,7 @@ void DMSWMM::writeCoordinates(std::fstream &inp)
     inp<<";;============================================================================\n";
 
 
-    for ( int i = 0; i < this->PointList.size(); i++ ) {
+    for (unsigned int i = 0; i < this->PointList.size(); i++ ) {
         DM::Node * node = this->PointList[i];
         double x = node->getX();
         double y = node->getY();
@@ -981,7 +1100,7 @@ void DMSWMM::writeCoordinates(std::fstream &inp)
 
     }
 
-    for ( int i = 0; i < OutfallNames.size(); i++ ) {
+    for (unsigned int i = 0; i < OutfallNames.size(); i++ ) {
         DM::Node * node = city->getNode(OutfallNames[i]);
         double x = node->getX();
         double y = node->getY();
@@ -1026,6 +1145,8 @@ void DMSWMM::writeSWMMFile() {
     writeXSection(inp);
     writeDWF(inp);
     writeCoordinates(inp);
+    writePumps(inp);
+    writeCurves(inp);
 
     inp.close();
 

@@ -29,6 +29,7 @@
 #include <dmmodule.h>
 #include <dm.h>
 #include <QDir>
+#include <sstream>
 
 class DM_HELPER_DLL_EXPORT DMSWMM : public  DM::Module {
     DM_DECLARE_NODE (DMSWMM)
@@ -45,6 +46,7 @@ class DM_HELPER_DLL_EXPORT DMSWMM : public  DM::Module {
     DM::View weir;
     DM::View wwtp;
     DM::View storage;
+    DM::View pumps;
     DM::View globals;
 
 
@@ -77,14 +79,19 @@ class DM_HELPER_DLL_EXPORT DMSWMM : public  DM::Module {
     void writeConduits(std::fstream &inp);
     void writeXSection(std::fstream &inp);
     void writeWeir(std::fstream &inp);
+    void writePumps(std::fstream &inp);
     void writeCoordinates(std::fstream &inp);
     void writeLID_Controlls(std::fstream &inp);
     void writeLID_Usage(std::fstream &inp);
+    void writeCurves(std::fstream & inp);
+
     void writeRainFile();
     int years;
     double counterRain;
 
     std::map<std::string, int> UUIDtoINT;
+
+    std::stringstream curves;
 
 public:
     DMSWMM();

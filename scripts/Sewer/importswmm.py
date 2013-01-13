@@ -31,7 +31,7 @@ class ImportSWMM(Module):
     def __init__(self):
         Module.__init__(self)
         self.conduits = View("CONDUIT", EDGE, WRITE)
-        self.conduits.addAttribute("DIAMETER")
+        self.conduits.addAttribute("Diameter")
         
         self.xsections = View("XSECTION",COMPONENT,WRITE)     
         self.xsections.addAttribute("type")
@@ -65,7 +65,7 @@ class ImportSWMM(Module):
         self.weirs.addAttribute("discharge_coefficient")
         self.weirs.addAttribute("end_coefficient")
         
-        self.pumps = View("PUMP", EDGE, WRITE)
+        self.pumps = View("PUMPS", EDGE, WRITE)
         self.pumps.addAttribute("type")
         self.pumps.addAttribute("pump_x")
         self.pumps.addAttribute("pump_y")
@@ -230,8 +230,9 @@ class ImportSWMM(Module):
                 e = sewer.addEdge(start, end, self.conduits)
                 e.addAttribute("SWMM_ID", str(c))
                 #Create XSection
-                e.addAttribute("DIAMETER", float(xsections[c][1]))
-                
+                e.addAttribute("Diameter", float(xsections[c][1]))
+                e.addAttribute("inlet_offset", float(vals[4]))
+                e.addAttribute("outlet_offset", float(vals[5]))
                 xsection = self.createXSection(sewer, xsections[c])
                 e.getAttribute("XSECTION").setLink("XSECTION", xsection.getUUID())
 
@@ -246,6 +247,12 @@ class ImportSWMM(Module):
                 e.addAttribute("crest_height",float(vals[3]))
                 e.addAttribute("discharge_coefficient",float(vals[4]))
                 e.addAttribute("end_coefficient",float(vals[7]))
+                #Create XSection
+                e.addAttribute("Diameter", float(xsections[c][1]))
+                
+                xsection = self.createXSection(sewer, xsections[c])
+                e.getAttribute("XSECTION").setLink("XSECTION", xsection.getUUID())                
+                
 
             c_pumps = results["[PUMPS]"]     
             for c in c_pumps:
@@ -278,9 +285,9 @@ class ImportSWMM(Module):
         diameters.push_back(float(attributes[1]))
         #print self.curves
         if str(attributes[0]) != "CUSTOM":
-            diameters.push_back(float(attributes[1]))
             diameters.push_back(float(attributes[2]))
             diameters.push_back(float(attributes[3]))
+            diameters.push_back(float(attributes[4]))
         else:
             shape_x = doublevector()
             shape_y = doublevector()
