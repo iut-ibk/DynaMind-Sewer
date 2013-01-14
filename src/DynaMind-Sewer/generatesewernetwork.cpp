@@ -428,9 +428,12 @@ void GenerateSewerNetwork::run() {
     double cellSizeX = this->rTopology->getCellSizeX();
     double cellSizeY = this->rTopology->getCellSizeY();
 
+    double OffsetX = this->rTopology->getXOffset();
+    double OffsetY = this->rTopology->getYOffset();
+
     rasterSize = cellSizeX;
 
-    this->rConnectivityField->setSize(width, height, cellSizeX,cellSizeY,0,0);
+    this->rConnectivityField->setSize(width, height, cellSizeX,cellSizeY,OffsetX,OffsetY);
     Logger(Debug) << "Conn Max " << this->rConnectivityField_in->getMaxValue();
     Logger(Debug) << "Conn Min " << this->rConnectivityField_in->getMinValue();
     //Logger(Debug) << "DebugVal " << this->rConnectivityField_in->getDebugValue();
@@ -440,7 +443,7 @@ void GenerateSewerNetwork::run() {
         }
     }
     this->rConnectivityField->setDebugValue(rConnectivityField_in->getDebugValue()+1);
-    this->rPath->setSize(width, height, cellSizeX,cellSizeY,0,0);
+    this->rPath->setSize(width, height, cellSizeX,cellSizeY,OffsetX,OffsetY);
     this->rPath->clear();
     std::vector<Agent * > agents;
 
@@ -478,8 +481,8 @@ void GenerateSewerNetwork::run() {
     if (attrcon < 0)
         attrcon = 0;
     foreach(DM::Node * p, StartPos) {
-        long x = (long) p->getX()/cellSizeX;
-        long y = (long) p->getY()/cellSizeY;
+        long x = (long) (p->getX()  - OffsetX )/cellSizeX;
+        long y = (long) (p->getY() -  OffsetY) /cellSizeY;
         Agent * a = new Agent(Pos(x,y));
         a->Topology = this->rTopology;
         a->MarkPath = this->rPath;
@@ -499,9 +502,9 @@ void GenerateSewerNetwork::run() {
     long successfulAgents = 0;
     agentPathMap.clear();
     int sumLengthAgentPath = 0;
-
+    int nov_agents = agents.size();
     for (int i = 0; i < 1; i++) {
-        unsigned int nov_agents = agents.size();
+
 #pragma omp parallel for
         for (unsigned int j = 0; j < nov_agents; j++) {
             Agent * a = agents[j];
@@ -533,7 +536,7 @@ void GenerateSewerNetwork::run() {
         GenerateSewerNetwork::MarkPathWithField(this->rConnectivityField, this->ConnectivityWidth);
 
     }
-    Logger(DM::Debug) << "Successful " << successfulAgents;
+    Logger(DM::Standard) << "Successful " << nov_agents << "/" << successfulAgents;
 
 
     for (int j = 0; j < agents.size(); j++) {

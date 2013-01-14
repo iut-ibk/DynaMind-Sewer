@@ -65,6 +65,8 @@ void RemoveStrahler::run()
 
     foreach (std::string s, condis) {
         DM::Edge * c = sys->getEdge(s);
+        if (c->getAttribute("existing")->getDouble() >0.01)
+            continue;
         startNodeMap[sys->getNode(c->getStartpointName())] = c;
     }
 
@@ -77,6 +79,12 @@ void RemoveStrahler::run()
                 DM::Edge * e = startNodeMap[id];
                 if (!e) {
                     id = 0;
+                    continue;
+                }
+
+                if (e->getAttribute("existing")->getDouble() > 0.01){
+                    id = 0;
+                    DM::Logger(DM::Standard) << "EEEEEEERRRROROORO";
                     continue;
                 }
                 int currentStrahler = (int) e->getAttribute("Strahler")->getDouble();

@@ -101,6 +101,9 @@ void ReduceJunctions::run()
 
     foreach (std::string c_uuid, conduit_uuids) {
         DM::Edge * c = city->getEdge(c_uuid);
+        if (c->getAttribute("existing")->getDouble() >0.01)
+            continue;
+
         startNodeMap[city->getNode(c->getStartpointName())] = c;
         endPointCounter[city->getNode(c->getEndpointName())] =  endPointCounter[city->getNode(c->getEndpointName())] + 1;
 
@@ -132,6 +135,10 @@ void ReduceJunctions::run()
                 //last node
                 new_conduits.push_back(current_j);
                 this->createJunctions(city, new_conduits, removed_junctions, currrentStrahler);
+                current_j = 0;
+                continue;
+            }
+            if (c->getAttribute("existing")->getDouble() > 0.01){
                 current_j = 0;
                 continue;
             }

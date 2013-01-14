@@ -135,7 +135,7 @@ ExtractNetwork::ExtractNetwork()
     Junction.addAttribute("D");
     Junction.addAttribute("Z");
     Junction.addAttribute("id");
-    EndPoint = DM::View("OUTLET", DM::NODE, DM::READ);
+    EndPoint = DM::View("OUTFALL", DM::NODE, DM::READ);
 
     city.push_back(topo);
     city.push_back(Conduits);
@@ -188,8 +188,8 @@ void ExtractNetwork::run() {
     //Create Agents
 
     foreach(DM::Node * p, StartPos) {
-        long x = (long) p->getX()/cellSizeX;
-        long y = (long) p->getY()/cellSizeY;
+        long x = (long) (p->getX() - offsetX)/cellSizeX;
+        long y = (long) (p->getY() - offsetY)/cellSizeY;
         AgentExtraxtor * a = new AgentExtraxtor(GenerateSewerNetwork::Pos(x,y));
         a->startNode = p;
         a->Topology = this->Topology;
@@ -339,7 +339,7 @@ void ExtractNetwork::run() {
     }
 
 
-    Logger(DM::Debug) << "Successful " << successfulAgents;
+    Logger(DM::Standard) << "Successful " << agents.size() << "/" << successfulAgents;
 
 
     for (unsigned int j = 0; j < agents.size(); j++) {
@@ -351,8 +351,8 @@ void ExtractNetwork::run() {
     int id = 1;
     foreach (std::string name, this->city->getUUIDsOfComponentsInView(Junction)) {
         DM::Node * n =this->city->getNode(name);
-        int x = n->getX()/cellSizeX;
-        int y = n->getY()/cellSizeY;
+        int x = (n->getX() - offsetX)/cellSizeX;
+        int y = (n->getY() - offsetY)/cellSizeY;
         double z = this->Topology->getCell(x,y);
         n->changeAttribute("Z", z);
         n->addAttribute("id", id++);
@@ -361,8 +361,8 @@ void ExtractNetwork::run() {
     }
     foreach (std::string name, this->city->getUUIDsOfComponentsInView(EndPoint)) {
         DM::Node * n =this->city->getNode(name);
-        int x = n->getX()/cellSizeX;
-        int y = n->getY()/cellSizeY;
+        int x = (n->getX() -  offsetX)/cellSizeX;
+        int y = (n->getY() - offsetY)/cellSizeY;
         double z = this->Topology->getCell(x,y);
         n->changeAttribute("Z", z-3);
     }

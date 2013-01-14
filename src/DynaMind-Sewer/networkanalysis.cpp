@@ -196,6 +196,9 @@ void NetworkAnalysis::run() {
             }
             prevStrahler = outgoing_id->getAttribute("Strahler")->getDouble();
             nextID = nextid_tmp;
+            if (nextID->getAttribute("existing")->getDouble() > 0.01) {
+                nextID = 0;
+            }
 
 
             foreach (DM::Node * visited,visitedNodes) {

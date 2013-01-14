@@ -154,6 +154,8 @@ void TimeAreaMethod::run() {
     //Create Connection List
     foreach(std::string name , ConduitNames)  {
         DM::Edge * e = city->getEdge(name);
+        if (e->getAttribute("existing")->getDouble() > 0.01)
+            continue;
         DM::Node * startnode = city->getNode(e->getStartpointName());
         std::vector<DM::Edge*> v = ConnectedEdges[startnode];
         v.push_back(e);
@@ -168,6 +170,8 @@ void TimeAreaMethod::run() {
 
     foreach(std::string name , ConduitNames)  {
         DM::Edge * e = city->getEdge(name);
+        if (e->getAttribute("existing")->getDouble() > 0.01)
+            continue;
         DM::Node * startnode = city->getNode(e->getStartpointName());
         std::vector<DM::Edge*> v = StartNodeSortedEdges[startnode];
         v.push_back(e);
@@ -389,6 +393,8 @@ void TimeAreaMethod::run() {
     std::vector<std::string> edgesname = city->getUUIDsOfComponentsInView(conduit);
     foreach(std::string  en, edgesname) {
         DM::Edge * e = city->getEdge(en);
+        if (e->getAttribute("existing")->getDouble() > 0.01)
+            continue;
         DM::Node * attr = city->getNode(e->getStartpointName());
         double QWasteWater = attr->getAttribute("WasteWaterPerShaft")->getDouble() +  attr->getAttribute("InfiltrationWaterPerShaft")->getDouble();
         double QRainWater =  attr->getAttribute("Area_total")->getDouble()*attr->getAttribute("APhi")->getDouble()*this->r15/10000. +  attr->getAttribute("QrKrit_total")->getDouble();
@@ -417,6 +423,8 @@ void TimeAreaMethod::run() {
 
     foreach (std::string of, outfallconduits) {
         DM::Edge * weir = city->getEdge(of);
+        if (weir->getAttribute("existing")->getDouble() > 0.01)
+            continue;
         DM::Node * StartNode = city->getNode(weir->getStartpointName());
 
         //Get Upstream Nodes
@@ -461,6 +469,8 @@ void TimeAreaMethod::run() {
     //Dimensiong Pipe to WWTP
     foreach (std::string nwwtp, city->getUUIDsOfComponentsInView(wwtps)) {
         DM::Node * wwtp = city->getNode(nwwtp);
+        if (wwtp->getAttribute("existing")->getDouble() > 0.01)
+            continue;
         std::vector<DM::Edge*> edges = this->StartNodeSortedEdges[wwtp];
         if (edges.size() == 1) {
             double QWasteWater = 2*wwtp->getAttribute("WasteWaterPerShaft")->getDouble() +  wwtp->getAttribute("InfiltrationWaterPerShaft")->getDouble();
@@ -474,6 +484,8 @@ void TimeAreaMethod::run() {
     //Dimensioning Storage
     foreach (std::string nstorage, city->getUUIDsOfComponentsInView(storage)) {
         DM::Node * storage = city->getNode(nstorage);
+        if (storage->getAttribute("existing")->getDouble() > 0.01)
+            continue;
         std::vector<DM::Edge*> edges = this->EndNodeSortedEdges[storage];
         double minDiameter = -1;
         double maxDiameter = 0;
