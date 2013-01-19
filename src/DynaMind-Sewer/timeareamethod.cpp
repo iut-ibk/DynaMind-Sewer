@@ -229,14 +229,14 @@ void TimeAreaMethod::run() {
     }
 
     //AddStorageToWWtp
-    std::vector<std::string> endPointNames = city->getUUIDsOfComponentsInView(wwtps);
+    /*std::vector<std::string> endPointNames = city->getUUIDsOfComponentsInView(wwtps);
     foreach(std::string name, endPointNames) {
         this->EndPointList.push_back(city->getNode(name));
         DM::Node * p = city->getNode(name);
         p->addAttribute("StorageV",0);
         p->addAttribute("Storage",1);
         city->addComponentToView(p,storage);
-    }
+    }*/
 
     foreach (std::string name, city->getUUIDsOfComponentsInView(conduit)) {
         DM::Edge * con = city->getEdge(name);
@@ -409,7 +409,7 @@ void TimeAreaMethod::run() {
         if (QWasteWater_2 > QBem) {
             QBem = QWasteWater_2;
         }
-        e->addAttribute("Diameter", this->chooseDiameter(sqrt((QBem)/3.14*4))); //in mm
+        e->addAttribute("Diameter", this->chooseDiameter(sqrt((QBem)/3.14*4)) / 1000.); //in mm
         e->addAttribute("QBem", QBem);
         e->addAttribute("Area_tot", Area_tot);
         e->addAttribute("QrKrittotal", (attr->getAttribute("QrKrit_total")->getDouble()));
@@ -475,8 +475,8 @@ void TimeAreaMethod::run() {
         if (edges.size() == 1) {
             double QWasteWater = 2*wwtp->getAttribute("WasteWaterPerShaft")->getDouble() +  wwtp->getAttribute("InfiltrationWaterPerShaft")->getDouble();
             DM::Edge * e = edges[0];
-            double diameter = sqrt(QWasteWater/1000)/3.14*4;
-            e->addAttribute("Diameter", this->chooseDiameter(diameter));
+            double diameter = sqrt(QWasteWater)/3.14*4;
+            e->addAttribute("Diameter", this->chooseDiameter(diameter)/1000.);
 
         }
     }

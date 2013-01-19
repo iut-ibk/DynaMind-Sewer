@@ -38,6 +38,7 @@ private:
     DM::View conduit_new;
     DM::View catchment;
     double distance;
+    std::map<DM::Node*, int > junction_map_Counter;
     void createJunctions(DM::System *city, std::vector<DM::Node*> & nodes, std::vector<DM::Node *> &r_nodes, int strahlerNumber);
 
 

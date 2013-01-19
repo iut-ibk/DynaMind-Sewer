@@ -159,6 +159,7 @@ void ExtractNetwork::run() {
     this->ForbiddenAreas = this->getRasterData("sewerGeneration", forb);
     this->Topology = this->getRasterData("City", topo);
 
+
     long width = this->ConnectivityField->getWidth();
     long height = this->ConnectivityField->getHeight();
     offsetX = this->ConnectivityField->getXOffset();
@@ -166,6 +167,7 @@ void ExtractNetwork::run() {
     double cellSizeX = this->ConnectivityField->getCellSizeX();
     double cellSizeY = this->ConnectivityField->getCellSizeY();
 
+    cellsize = cellSizeX;
     this->Path->setSize(width, height, cellSizeX,cellSizeY,offsetX,offsetY);
     this->Path->clear();
 
@@ -302,14 +304,15 @@ void ExtractNetwork::run() {
         std::vector<DM::Node * > nl = Points_For_Conduits[j];
         for (int i = 1; i < pl.size(); i++) {
             bool foundNode = false;
-            if (spnh.findNode(pl[i].getX(), pl[i].getY(), 0.01)) {
+            //if (spnh.findNode(pl[i].getX(), pl[i].getY(), 0.01)) {
+            if (spnh.findNode(pl[i].getX(), pl[i].getY(), cellsize-0.0001)) {
                 foundNode = true;
                 Logger(Debug) << "Found Node";
             }
 
-            DM::Node * n = spnh.addNode(pl[i].getX(), pl[i].getY(), pl[i].getZ(), offset+offset*0.1, Junction);
+            //DM::Node * n = spnh.addNode(pl[i].getX(), pl[i].getY(), pl[i].getZ(), offset+offset*0.1, Junction);
 
-
+              DM::Node * n = spnh.addNode(pl[i].getX(), pl[i].getY(), pl[i].getZ(), cellsize-0.0001, Junction);
             if (n->getAttribute("D")->getDouble() > pl[i].getZ()) {
                 n->setZ(n->getAttribute("D")->getDouble());
             }
@@ -354,6 +357,10 @@ void ExtractNetwork::run() {
         int x = (n->getX() - offsetX)/cellSizeX;
         int y = (n->getY() - offsetY)/cellSizeY;
         double z = this->Topology->getCell(x,y);
+
+        if (n->getAttribute("existing")->getDouble() >0.01)
+            continue;
+
         n->changeAttribute("Z", z);
         n->addAttribute("id", id++);
 
@@ -361,6 +368,8 @@ void ExtractNetwork::run() {
     }
     foreach (std::string name, this->city->getUUIDsOfComponentsInView(EndPoint)) {
         DM::Node * n =this->city->getNode(name);
+        if (n->getAttribute("existing")->getDouble() >0.01)
+            continue;
         int x = (n->getX() -  offsetX)/cellSizeX;
         int y = (n->getY() - offsetY)/cellSizeY;
         double z = this->Topology->getCell(x,y);

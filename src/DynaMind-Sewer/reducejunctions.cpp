@@ -59,6 +59,8 @@ void ReduceJunctions::createJunctions(DM::System * city, std::vector<DM::Node *>
     for (int i = 0; i < numberOfEdges; i++) {
         if (nodes[i] == nodes[i+1])
             continue;
+        junction_map_Counter[nodes[i]] = 1;
+        junction_map_Counter[nodes[i+1]] = 1;
         DM::Edge * e = city->addEdge(nodes[i], nodes[i+1], conduit_new);
         e->addAttribute("Strahler", strahlerNumber);
 
@@ -81,6 +83,10 @@ void ReduceJunctions::createJunctions(DM::System * city, std::vector<DM::Node *>
         foreach(DM::LinkAttribute l_attr, junction_link_attribute.getLinks()) {
             lastNode->getAttribute("INLET")->setLink(l_attr.viewname,l_attr.uuid);
         }
+        if (n->getAttribute("existing")->getDouble() > 0.01)
+            continue;
+        if ( junction_map_Counter[n] > 0)
+            continue;
         city->removeComponentFromView(n, junctions);
     }
 
@@ -101,21 +107,24 @@ void ReduceJunctions::run()
 
     foreach (std::string c_uuid, conduit_uuids) {
         DM::Edge * c = city->getEdge(c_uuid);
-        if (c->getAttribute("existing")->getDouble() >0.01)
-            continue;
 
         startNodeMap[city->getNode(c->getStartpointName())] = c;
         endPointCounter[city->getNode(c->getEndpointName())] =  endPointCounter[city->getNode(c->getEndpointName())] + 1;
 
         //Remove old
+        if (c->getAttribute("existing")->getDouble() > 0.01)
+            continue;
         city->removeComponentFromView(c, conduits);
     }
     foreach (std::string j_uuid, junction_uuids) {
         DM::Node * jun = city->getNode(j_uuid);
         int counter = endPointCounter[jun];
         jun->addAttribute("end_counter",(double) counter);
-        if (counter==0)
-            start_uuids.push_back(jun->getUUID());
+        if (jun->getAttribute("existing")->getDouble() > 0.01 )
+            continue;
+        if (counter!=0)
+            continue;
+        start_uuids.push_back(jun->getUUID());
 
     }
 
@@ -138,10 +147,14 @@ void ReduceJunctions::run()
                 current_j = 0;
                 continue;
             }
-            if (c->getAttribute("existing")->getDouble() > 0.01){
+            if (current_j->getAttribute("existing")->getDouble() > 0.01){
+                new_conduits.push_back(current_j);
+                this->createJunctions(city, new_conduits, removed_junctions, currrentStrahler);
                 current_j = 0;
                 continue;
+
             }
+
             if (currrentStrahler == -1) {
                 currrentStrahler = (int) c->getAttribute("Strahler")->getDouble();
             }
@@ -161,6 +174,7 @@ void ReduceJunctions::run()
             //current node is start for next conduit
             new_conduits.push_back(current_j);
             currrentStrahler =  (int) c->getAttribute("Strahler")->getDouble();
+
 
 
         }

@@ -61,6 +61,8 @@ void RemoveStrahler::run()
 
     std::vector<std::string> condis = sys->getUUIDsOfComponentsInView(conduits);
     std::vector<std::string> inlet_uuids = sys->getUUIDs(inlets);
+
+    std::map<DM::Node*, int> visitedNodes;
     std::map<DM::Node *, DM::Edge*> startNodeMap;
 
     foreach (std::string s, condis) {
@@ -75,7 +77,8 @@ void RemoveStrahler::run()
             DM::Component * n = sys->getComponent(s);
             DM::Node * id = sys->getNode(n->getAttribute("JUNCTION")->getLink().uuid);
 
-            while (id != 0) {
+            while (id != 0 ) {
+
                 DM::Edge * e = startNodeMap[id];
                 if (!e) {
                     id = 0;
@@ -116,8 +119,15 @@ void RemoveStrahler::run()
                 new_junction_inlet->addAttribute("number_of_inlets",new_junction_inlet->getAttribute("INLET")->getLinks().size());
 
                 sys->removeComponentFromView(id, junctions);
+                if (visitedNodes[id] > 0) {
+                    id = 0;
+                    DM::Logger(DM::Debug) << "reviste node";
+                    continue;
+                }
 
+                visitedNodes[id]+=1;
                 id = new_junction_inlet;
+
             }
 
         }

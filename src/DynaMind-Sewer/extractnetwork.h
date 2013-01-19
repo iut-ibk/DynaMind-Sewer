@@ -69,6 +69,7 @@ private:
     long steps;
     double Hmin;
     double offset;
+    double cellsize;
 
     DM::System * city;
 
