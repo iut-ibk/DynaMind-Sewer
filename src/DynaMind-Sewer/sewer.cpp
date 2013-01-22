@@ -42,6 +42,8 @@
 #include "reducejunctions.h"
 #include "infiltrationtrench.h"
 #include "linkelementwithnearestpoint.h"
+#include "floodingvisual.h"
+#include "pipeage.h"
 
 /*#include "pickstartpoints.h"
 
@@ -68,6 +70,8 @@ extern "C" void DM_HELPER_DLL_EXPORT  registerModules(DM::ModuleRegistry *regist
     registry->addNodeFactory(new NodeFactory<ReduceJunctions>());
     registry->addNodeFactory(new NodeFactory<InfiltrationTrench>());
     registry->addNodeFactory(new NodeFactory<LinkElementWithNearestPoint>());
+    registry->addNodeFactory(new NodeFactory<FloodingVisual>());
+    registry->addNodeFactory(new NodeFactory<PipeAge>());
     /*registry->addNodeFactory(new NodeFactory<PickStartPoints>());
 
 
