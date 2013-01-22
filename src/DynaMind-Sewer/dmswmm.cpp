@@ -51,6 +51,7 @@ DMSWMM::DMSWMM()
 
     junctions = DM::View("JUNCTION", DM::NODE, DM::READ);
     junctions.getAttribute("D");
+    junctions.addAttribute("flooding_V");
 
     endnodes = DM::View("OUTFALL", DM::NODE, DM::READ);
 
@@ -332,7 +333,7 @@ void DMSWMM::readInReportFile() {
                     id_asstring.remove("NODE");
                     int id = id_asstring.toInt();
                     DM::Node * p = this->city->getNode(revUUIDtoINT[id]);
-                    p->changeAttribute("FloodVolume",  QString(data[5]).toDouble());
+                    p->changeAttribute("flooding_V",  QString(data[5]).toDouble());
                     Vp += QString(data[5]).toDouble();
 
                 }
@@ -502,6 +503,8 @@ void DMSWMM::writeSubcatchments(std::fstream &inp)
 
         if (UUIDtoINT[CATCHMENT_ID] == 0) {
             UUIDtoINT[CATCHMENT_ID] = GLOBAL_Counter++;
+        } else {
+            continue;
         }
 
 
@@ -509,8 +512,8 @@ void DMSWMM::writeSubcatchments(std::fstream &inp)
         double with = sqrt(area*10000.);
         double gradient = fabs(catchment_attr->getAttribute("Gradient")->getDouble());
         double imp = catchment_attr->getAttribute("Impervious")->getDouble();
-        if (imp < 0.2)
-            imp = 0.2;
+        /*if (imp < 0.2)
+            imp = 0.2;*/
         if (gradient > 0.01)
             gradient = 0.01;
         if (gradient < 0.001)
