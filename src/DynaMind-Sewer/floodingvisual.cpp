@@ -5,6 +5,8 @@ DM_DECLARE_NODE_NAME(FloodingVisual, Sewer)
 
 FloodingVisual::FloodingVisual()
 {
+    radius = 2;
+    scaling = 1;
     view_junctions = DM::View("JUNCTION", DM::NODE, DM::READ);
     view_junctions.getAttribute("flooding_V");
     view_junction_flooding = DM::View("JUNCTION_VISUAL", DM::FACE, DM::WRITE);

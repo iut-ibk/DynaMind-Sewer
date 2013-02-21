@@ -9,8 +9,8 @@ class DM_HELPER_DLL_EXPORT FloodingVisual : public DM::Module
     private:
         DM::View view_junctions;
         DM::View view_junction_flooding;
-        double radius = 2;
-        double scaling = 1;
+        double radius;
+        double scaling;
 
 public:
     FloodingVisual();
