@@ -8,10 +8,9 @@ class DM_HELPER_DLL_EXPORT PipeAge : public DM::Module
 {   
     DM_DECLARE_NODE (PipeAge)
 
-    DM::View view_inlet = DM::View("INLET", DM::NODE, DM::READ);
-    DM::View view_catchment = DM::View("CATCHMENT", DM::COMPONENT, DM::READ);
-    DM::View view_conduit = DM::View("CONDUIT", DM::EDGE, DM::READ);
-
+    DM::View view_inlet;
+    DM::View view_catchment;
+    DM::View view_conduit;
 public:
         void run();
         PipeAge();

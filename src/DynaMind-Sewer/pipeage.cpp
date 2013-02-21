@@ -5,6 +5,11 @@ DM_DECLARE_NODE_NAME(PipeAge, Sewer)
 PipeAge::PipeAge()
 {
 
+
+    view_inlet = DM::View("INLET", DM::NODE, DM::READ);
+    view_catchment = DM::View("CATCHMENT", DM::COMPONENT, DM::READ);
+    view_conduit = DM::View("CONDUIT", DM::EDGE, DM::READ);
+
     view_inlet.getAttribute("CATCHMENT");
     view_inlet.getAttribute("JUNCTION");
     view_catchment.getAttribute("built_year");
