@@ -506,7 +506,7 @@ void GenerateSewerNetwork::run() {
     for (int i = 0; i < 1; i++) {
 
 #pragma omp parallel for
-        for (unsigned int j = 0; j < nov_agents; j++) {
+        for (int j = 0; j < nov_agents; j++) {
             Agent * a = agents[j];
             if (a->alive) {
                 a->run();
