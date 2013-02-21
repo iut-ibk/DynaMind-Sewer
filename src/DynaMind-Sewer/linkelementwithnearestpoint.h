@@ -13,8 +13,8 @@ private:
     std::string name_nearestPoints;
     std::string name_linkElements;
 
-    double treshhold = 200;
-    bool onSignal = false;
+    double treshhold;
+    bool onSignal;
 
 public:
     LinkElementWithNearestPoint();

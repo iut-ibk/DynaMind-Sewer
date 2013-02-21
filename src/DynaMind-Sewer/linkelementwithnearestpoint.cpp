@@ -4,6 +4,9 @@ DM_DECLARE_NODE_NAME(LinkElementWithNearestPoint, Sewer)
 
 LinkElementWithNearestPoint::LinkElementWithNearestPoint()
 {
+     treshhold = 200;
+     onSignal = false;
+
     this->name_linkElements = "";
     this->name_nearestPoints = "";
 
