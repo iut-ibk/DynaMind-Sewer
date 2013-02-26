@@ -30,6 +30,7 @@ ReconstructParameter::ReconstructParameter()
 {
     this->network = DM::View("CONDUIT", DM::EDGE, DM::READ);
     this->network.addAttribute("CONYEAR");
+    this->network.addAttribute("PLAN_YEAR");
     std::vector<DM::View> views;
     views.push_back(this->network);
     this->addData("City", views);
@@ -86,7 +87,7 @@ void ReconstructParameter::run() {
 
     foreach(std::string name , names)  {
         DM::Edge * e = city->getEdge(name);
-        e->addAttribute("CONYEAR", e->getAttribute("PLAN_DATE")->getDouble());
+        e->addAttribute("CONYEAR", e->getAttribute("PLAN_YEAR")->getDouble());
         DM::Node * startnode = city->getNode(e->getStartpointName());
         StartNodes.push_back(startnode);
     }
@@ -106,7 +107,7 @@ void ReconstructParameter::run() {
             continue;
         }
 
-        int PLAN_DATE = (int) e->getAttribute("PLAN_DATE")->getDouble();
+        int PLAN_DATE = (int) e->getAttribute("PLAN_YEAR")->getDouble();
         std::vector<DM::Node * > visitedNodes;
         do {
             DM::Node * nextid_tmp = 0;
@@ -141,20 +142,8 @@ void ReconstructParameter::run() {
             if (nextid_tmp == 0 || outgoing_id == 0) {
                 break;
             }
-            /*int maxStrahlerInNode = -1;
-            int strahlerCounter = 0;
-            foreach(DM::Edge * up, upstreamEdges) {
-                if (e != outgoing_id) {
-                    if (maxStrahlerInNode < up->getAttribute("Strahler")->getDouble()) {
-                        maxStrahlerInNode = up->getAttribute("Strahler")->getDouble();
-                        strahlerCounter = 1;
-                    } else if (maxStrahlerInNode == up->getAttribute("Strahler")->getDouble()) {
-                        strahlerCounter++;
-                    }
 
-                }
-            }*/
-            int constructionAgeOutGoing =  (int) outgoing_id->getAttribute("PLAN_DATE")->getDouble();
+            int constructionAgeOutGoing =  (int) outgoing_id->getAttribute("PLAN_YEAR")->getDouble();
             int conYear =  (int) outgoing_id->getAttribute("CONYEAR")->getDouble();
 
 
@@ -172,8 +161,6 @@ void ReconstructParameter::run() {
 
             nextID = nextid_tmp;
 
-            if (nextID->isInView(DM::View("OUTLET", DM::NODE)))
-                int asdfasf = 0;
             foreach (DM::Node * visited,visitedNodes) {
                 if (nextID == visited) {
                     nextID = 0;
@@ -186,4 +173,9 @@ void ReconstructParameter::run() {
         } while (nextID != 0);
 
     }
+}
+
+string ReconstructParameter::getHelpUrl()
+{
+    return "https://docs.google.com/document/d/10Ftd_63V442jVI-M6BQPPjBr3BTfV0jx3OKXDvfpIgc/edit";
 }

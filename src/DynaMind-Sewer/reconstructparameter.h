@@ -45,6 +45,8 @@ class DM_HELPER_DLL_EXPORT ReconstructParameter : public DM::Module {
 public:
     ReconstructParameter();
     void run();
+
+    std::string getHelpUrl();
 };
 
 #endif // RECONSTRUCTPARAMETER_H
