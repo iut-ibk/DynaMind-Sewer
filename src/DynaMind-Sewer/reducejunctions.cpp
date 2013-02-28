@@ -183,8 +183,12 @@ void ReduceJunctions::run()
     std::vector<std::string> catchment_uuids = city->getUUIDs(catchment);
     foreach (std::string uuid, catchment_uuids) {
         DM::Component * c = city->getComponent(uuid);
+        if (c->getAttribute("INLET")->getLinks().size() < 1)
+            continue;
         DM::Component * inlet = city->getComponent(c->getAttribute("INLET")->getLink().uuid);
         if (!inlet)
+            continue;
+        if (c->getAttribute("JUNCTION")->getLinks().size() < 1)
             continue;
         DM::Component * jun = city->getComponent(inlet->getAttribute("JUNCTION")->getLink().uuid);
         if (!jun)
