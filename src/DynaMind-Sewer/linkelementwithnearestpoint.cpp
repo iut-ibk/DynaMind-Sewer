@@ -27,7 +27,7 @@ void LinkElementWithNearestPoint::init()
     view_nearestPoints = DM::View(this->name_nearestPoints, DM::NODE, DM::READ);
 
     view_linkElements.addLinks(this->name_nearestPoints, view_nearestPoints);
-    view_nearestPoints.addLinks(this->name_nearestPoints, view_linkElements);
+    view_nearestPoints.addLinks(this->name_linkElements, view_linkElements);
 
     std::vector<DM::View> datastream;
     datastream.push_back(view_linkElements);
