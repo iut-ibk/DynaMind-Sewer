@@ -4,7 +4,7 @@
  * @version 1.0
  * @section LICENSE
  *
- * This file is part of VIBe2
+ * This file is part of DynaMind
  *
  * Copyright (C) 2011  Christian Urich
 
@@ -75,6 +75,7 @@ private:
 
     std::vector<std::vector<DM::Node> > SimplifyNetwork(std::vector<std::vector<DM::Node> >  & points, int PReduction, double offset);
     void smoothNetwork();
+    std::string EndNode;
 
     DM::Node * addNode(System &sys ,  DM::Node tmp_n, DM::View v, double offset);
 public:

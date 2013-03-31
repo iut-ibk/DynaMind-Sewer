@@ -135,13 +135,14 @@ ExtractNetwork::ExtractNetwork()
     Junction.addAttribute("D");
     Junction.addAttribute("Z");
     Junction.addAttribute("id");
-    EndPoint = DM::View("OUTFALL", DM::NODE, DM::READ);
+    EndPoint = DM::View("OUTLET", DM::NODE, DM::READ);
 
     city.push_back(topo);
     city.push_back(Conduits);
     city.push_back(Inlets);
     city.push_back(Junction);
-    city.push_back(EndPoint);
+    /** todo easy way out, needs a proper bugfix */
+    //city.push_back(EndPoint);
     offset = 10;
     this->addParameter("Offset", DM::DOUBLE, &offset);
 
@@ -152,13 +153,11 @@ void ExtractNetwork::run() {
     nodeListToCompare.clear();
     this->city = this->getData("City");
 
-
     this->ConnectivityField = this->getRasterData("sewerGeneration", confield);
     this->Goals = this->getRasterData("sewerGeneration", goals);
     this->Path =  this->getRasterData("sewerGeneration", path);
     this->ForbiddenAreas = this->getRasterData("sewerGeneration", forb);
     this->Topology = this->getRasterData("City", topo);
-
 
     long width = this->ConnectivityField->getWidth();
     long height = this->ConnectivityField->getHeight();
@@ -222,6 +221,7 @@ void ExtractNetwork::run() {
     std::vector<DM::Node*> EndPointList;
     foreach(std::string name, this->city->getUUIDsOfComponentsInView(Junction)) {
         EndPointList.push_back(this->city->getNode(name));
+        this->EndNode = name;
         DM::Node * tmp_n = city->getNode(name);
         std::stringstream id;
         id << (long) tmp_n->getX()/100.;
@@ -232,8 +232,10 @@ void ExtractNetwork::run() {
 
         existingPoints.push_back(tmp_n);
         this->nodeListToCompare[id.str()] = existingPoints;
+
     }
 
+    Logger(Debug) << "Number existingPoints " << nodeListToCompare.size();
 
     Logger(Debug) << "multiplier" << multiplier;
 
@@ -264,29 +266,38 @@ void ExtractNetwork::run() {
             start->changeAttribute("Connected", 1);
             start->getAttribute("JUNCTION")->setLink("JUNCTION", start->getUUID());
             start->getAttribute("INLET")->setLink("INLET", start->getUUID());
-            //Logger(Debug) << points_for_total[0].getX() << " " <<points_for_total[0].getY();
-            //Logger(Debug) << points_for_total[(points_for_total.size()-1)].getX() << " " <<points_for_total[(points_for_total.size()-1)].getY();
         }
 
 
     }
 
     Logger(Debug) << "Done with the agents Junctions";
-    //std::vector<std::vector<DM::Node> > PointsToPlace = this->SimplifyNetwork(Points_After_Agent_Extraction, this->ConduitLength/cellSizeX, offset);
-    std::vector<std::vector<DM::Node> > PointsToPlace = Points_After_Agent_Extraction;//this->SimplifyNetwork(Points_After_Agent_Extraction, this->ConduitLength/cellSizeX, offset);
+
+    std::vector<std::vector<DM::Node> > PointsToPlace = Points_After_Agent_Extraction;
 
     //Export Inlets
     Logger(Debug) << "Export Junctions";
-    DM::SpatialNodeHashMap spnh(city, 100, false, Inlets);
+    /*DM::SpatialNodeHashMap spnh(city, 100, false, Inlets);
     spnh.addNodesFromView(Junction);
+    spnh.addNodesFromView(EndPoint);*/
     std::vector<std::vector<Node *> > Points_For_Conduits;
+
+    //First inlets are assinged to the junctions
+    //Inlets are not considered in the later following point extraction
+
+    DM::SpatialNodeHashMap spnh(city, 100, false, Junction);
+    //spnh.addNodesFromView(Inlets);
+    spnh.addNodesFromView(EndPoint);
+
 
     foreach (std::vector<Node> pl, PointsToPlace) {
         Node * n = 0;
         n  = TBVectorData::addNodeToSystem2D(city, Inlets, pl[0],offset, false);
 
-        if (n == 0)
+        if (n == 0) {
             n = city->addNode(pl[0], Junction);
+            Logger(Warning) << "Starting point is not an inlet";
+        }
 
         city->addComponentToView(n, Junction);
         std::vector<DM::Node * > nl;
@@ -295,31 +306,28 @@ void ExtractNetwork::run() {
     }
 
 
-
-
-
+    //Point extraction starts from 1
     std::vector<std::vector<Node *> > Points_For_Conduits_tmp;
     for(int j = 0; j < PointsToPlace.size(); j++){
         std::vector<Node> pl = PointsToPlace[j];
         std::vector<DM::Node * > nl = Points_For_Conduits[j];
         for (int i = 1; i < pl.size(); i++) {
             bool foundNode = false;
-            //if (spnh.findNode(pl[i].getX(), pl[i].getY(), 0.01)) {
             if (spnh.findNode(pl[i].getX(), pl[i].getY(), cellsize-0.0001)) {
                 foundNode = true;
-                Logger(Debug) << "Found Node";
             }
-
-            //DM::Node * n = spnh.addNode(pl[i].getX(), pl[i].getY(), pl[i].getZ(), offset+offset*0.1, Junction);
-
-              DM::Node * n = spnh.addNode(pl[i].getX(), pl[i].getY(), pl[i].getZ(), cellsize-0.0001, Junction);
+            DM::Node * n = spnh.addNode(pl[i].getX(), pl[i].getY(), pl[i].getZ(), cellsize-0.0001, Junction);
             if (n->getAttribute("D")->getDouble() > pl[i].getZ()) {
                 n->setZ(n->getAttribute("D")->getDouble());
             }
+            n->setZ(n->getAttribute("D")->getDouble());
 
+            if (n->getUUID() == this->EndNode){
+                Logger(Debug) << "EndNode found";
+            }
             n->changeAttribute("D", pl[i].getZ());
             nl.push_back(n);
-            if (foundNode)
+            if (foundNode && i != 0)
                 break;
         }
         Points_For_Conduits_tmp.push_back(nl);
@@ -388,8 +396,11 @@ DM::Node * ExtractNetwork::addNode(System & sys, DM::Node tmp_n, DM::View v,doub
 
     std::vector<DM::Node*> existingPoints = this->nodeListToCompare[id.str()];
     foreach (DM::Node * n, existingPoints) {
-        if (n->compare2d(tmp_n, offset))
+        if (n->compare2d(tmp_n, offset)){
+            if (this->EndNode == n->getUUID())
+                Logger(Standard) << "Found End Node";
             return n;
+        }
     }
 
     Node * n = sys.addNode(tmp_n, v);

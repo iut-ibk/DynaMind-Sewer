@@ -52,16 +52,14 @@ void OutfallStructure::run()
     foreach (std::string o_uuid, outlet_uuids) {
         DM::Node * n = city->getNode(o_uuid);
 
+
         DM::Node offset(15,15,0);
 
         DM::Node * outfall = city->addNode(*n + offset, view_outfalls);
-
+        outfall->addAttribute("Z",n->getAttribute("Z")->getDouble());
         DM::Edge * e = city->addEdge(n, outfall, view_conduits);
         e->addAttribute("Diameter", 4000);
         e->addAttribute("Length", 15.);
-
-
-
 
     }
 }
