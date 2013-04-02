@@ -166,8 +166,8 @@ void SWMMReturnPeriod::run() {
 
     return_periods.push_back(0.25);
     return_periods.push_back(0.5);
-    return_periods.push_back(0.1);
-    return_periods.push_back(0.2);
+    return_periods.push_back(1);
+    return_periods.push_back(2);
     return_periods.push_back(5);
     return_periods.push_back(10);
     return_periods.push_back(20);
@@ -176,7 +176,7 @@ void SWMMReturnPeriod::run() {
     return_periods.push_back(100);
     return_periods.push_back(200);
 
-
+return_periods.push_back(5);
 
     curves.str("");
     city = this->getData("City");
