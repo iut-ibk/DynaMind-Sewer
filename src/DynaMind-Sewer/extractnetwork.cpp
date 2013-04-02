@@ -150,7 +150,7 @@ ExtractNetwork::ExtractNetwork()
 
 }
 void ExtractNetwork::run() {
-    nodeListToCompare.clear();
+    ///nodeListToCompare.clear();
     this->city = this->getData("City");
 
     this->ConnectivityField = this->getRasterData("sewerGeneration", confield);
@@ -217,30 +217,15 @@ void ExtractNetwork::run() {
         c->changeAttribute(attr);
     }
 
-    //CreateEndPointList
-    std::vector<DM::Node*> EndPointList;
-    foreach(std::string name, this->city->getUUIDsOfComponentsInView(Junction)) {
-        EndPointList.push_back(this->city->getNode(name));
-        this->EndNode = name;
-        DM::Node * tmp_n = city->getNode(name);
-        std::stringstream id;
-        id << (long) tmp_n->getX()/100.;
-        id << "/";
-        id << (long) tmp_n->getY()/100.;
-
-        std::vector<DM::Node*> existingPoints = this->nodeListToCompare[id.str()];
-
-        existingPoints.push_back(tmp_n);
-        this->nodeListToCompare[id.str()] = existingPoints;
-
-    }
-
-    Logger(Debug) << "Number existingPoints " << nodeListToCompare.size();
-
     Logger(Debug) << "multiplier" << multiplier;
 
     std::vector<std::vector<Node> > Points_After_Agent_Extraction;
     //Extract Netoworks
+
+    std::vector<std::string> endNodeList;
+    DM::SpatialNodeHashMap existing_nodes(city, 1000, true, Junction);
+
+    Logger(Standard) << "Junctions" << existing_nodes.size();
     for (int j = 0; j < agents.size(); j++) {
         AgentExtraxtor * a = agents[j];
         if (a->alive) {
@@ -253,8 +238,22 @@ void ExtractNetwork::run() {
             std::vector<Node> points_for_total;
             for (int i = 0; i < a->path.size(); i++) {
                 this->Path->setCell(a->path[i].x, a->path[i].y, 1);
-                points_for_total.push_back(Node(a->path[i].x * multiplier + offset + this->offsetX, a->path[i].y * multiplier + offset + this->offsetY,a->path[i].h));
 
+
+                //Find connecting Node
+                if (i == a->path.size()-1) {
+                    DM::Node * n = existing_nodes.findNode(a->path[i].x * multiplier + offset + this->offsetX, a->path[i].y * multiplier + offset + this->offsetY, cellsize-0.001);
+                    if (!n){
+                        Logger(Error) << "Couldn't find endnode";
+                        continue;
+                    }
+                    points_for_total.push_back(Node(n->getX(), n->getY(), a->path[i].h));
+                    if (find(endNodeList.begin(), endNodeList.end(), n->getUUID()) == endNodeList.end()) {
+                        endNodeList.push_back(n->getUUID());
+                    }
+                } else
+
+                    points_for_total.push_back(Node(a->path[i].x * multiplier + offset + this->offsetX, a->path[i].y * multiplier + offset + this->offsetY,a->path[i].h));
             }
             Logger(Debug) << "Successful Agent Path Length" << a->path.size();
             Points_After_Agent_Extraction.push_back(points_for_total);
@@ -267,9 +266,17 @@ void ExtractNetwork::run() {
             start->getAttribute("JUNCTION")->setLink("JUNCTION", start->getUUID());
             start->getAttribute("INLET")->setLink("INLET", start->getUUID());
         }
-
-
     }
+
+Logger(DM::Standard) << "Successful " << agents.size() << "/" << successfulAgents;
+
+
+    for (unsigned int j = 0; j < agents.size(); j++) {
+        delete agents[j];
+    }
+
+    agents.clear();
+
 
     Logger(Debug) << "Done with the agents Junctions";
 
@@ -277,19 +284,13 @@ void ExtractNetwork::run() {
 
     //Export Inlets
     Logger(Debug) << "Export Junctions";
-    /*DM::SpatialNodeHashMap spnh(city, 100, false, Inlets);
-    spnh.addNodesFromView(Junction);
-    spnh.addNodesFromView(EndPoint);*/
     std::vector<std::vector<Node *> > Points_For_Conduits;
 
-    //First inlets are assinged to the junctions
-    //Inlets are not considered in the later following point extraction
 
-    DM::SpatialNodeHashMap spnh(city, 100, false, Junction);
-    //spnh.addNodesFromView(Inlets);
-    spnh.addNodesFromView(EndPoint);
-
-
+    DM::SpatialNodeHashMap spnh(city, 100, false);
+    foreach (std::string uuid, endNodeList) {
+        spnh.addNodeToSpatialNodeHashMap(city->getNode(uuid));
+    }
     foreach (std::vector<Node> pl, PointsToPlace) {
         Node * n = 0;
         n  = TBVectorData::addNodeToSystem2D(city, Inlets, pl[0],offset, false);
@@ -348,17 +349,6 @@ void ExtractNetwork::run() {
 
         }
     }
-
-
-    Logger(DM::Standard) << "Successful " << agents.size() << "/" << successfulAgents;
-
-
-    for (unsigned int j = 0; j < agents.size(); j++) {
-        delete agents[j];
-    }
-
-    agents.clear();
-
     int id = 1;
     foreach (std::string name, this->city->getUUIDsOfComponentsInView(Junction)) {
         DM::Node * n =this->city->getNode(name);
@@ -387,110 +377,6 @@ void ExtractNetwork::run() {
 
 }
 
-DM::Node * ExtractNetwork::addNode(System & sys, DM::Node tmp_n, DM::View v,double offset) {
-    //CreateID
-    std::stringstream id;
-    id << (long) tmp_n.getX()/100.;
-    id << "/";
-    id << (long) tmp_n.getY()/100.;
-
-    std::vector<DM::Node*> existingPoints = this->nodeListToCompare[id.str()];
-    foreach (DM::Node * n, existingPoints) {
-        if (n->compare2d(tmp_n, offset)){
-            if (this->EndNode == n->getUUID())
-                Logger(Standard) << "Found End Node";
-            return n;
-        }
-    }
-
-    Node * n = sys.addNode(tmp_n, v);
-
-
-    existingPoints.push_back(n);
-    this->nodeListToCompare[id.str()] = existingPoints;
-    return n;
-
-}
-
-
-std::vector<std::vector<DM::Node> >  ExtractNetwork::SimplifyNetwork(std::vector<std::vector<DM::Node> > &points, int PReduction, double offset) {
-
-    DM::System sys_tmp;
-    DM::View dummy;
-
-
-    //Init Counter Values
-    foreach (std::vector<Node> pl, points) {
-        foreach (Node node, pl) {
-            Node * n = this->addNode(sys_tmp, node, dummy, offset);
-            n->addAttribute("Counter", 0);
-        }
-    }
-
-    foreach (std::vector<Node> pl, points) {
-        bool hitExisting= false;
-        int counter = 0;
-        foreach (Node node, pl) {
-            counter++;
-            Node * n = this->addNode(sys_tmp, node, dummy, offset);
-            if (n->getAttribute("Counter")->getDouble() > 0.01) {
-                Logger(Debug) << n->getAttribute("Counter")->getDouble();
-                hitExisting = true;
-                n->changeAttribute("Counter",100.);
-                break;
-            }
-            n->changeAttribute("Counter",1);
-        }
-        Logger(Debug) << "Counter " << counter;
-
-    }
-
-    std::vector<std::vector<Node> > ResultVector;
-    std::vector<Node> StartandEndPointList;
-    //CreateStartAndEndPointList
-    foreach (std::vector<Node> pl, points) {
-        Node startPoint = pl[0];
-        Node endPoint = pl[pl.size()-1];
-        StartandEndPointList.push_back(startPoint);
-        StartandEndPointList.push_back(endPoint);
-
-    }
-
-    int counter = 0;
-
-    foreach (std::vector<Node> pl, points) {
-        std::vector<Node> pointlist_new;
-
-        for (int i  = 0; i < pl.size(); i++) {
-            counter++;
-            bool placePoint = false;
-            Node * n = this->addNode(sys_tmp, pl[i], dummy, offset);
-            if (n->getAttribute("Counter")->getDouble() > 99) {
-                n->changeAttribute("Counter", n->getAttribute("Counter")->getDouble()+100);
-                placePoint = true;
-            }
-            if (i == 0)
-                placePoint = true;
-            if (i == pl.size()-1)
-                placePoint = true;
-            if (counter > PReduction)
-                placePoint = true;
-
-            if (placePoint) {
-                pointlist_new.push_back(pl[i]);
-                counter = 0;
-            }
-            if (n->getAttribute("Counter")->getDouble() > 201) {
-                break;
-            }
-
-        }
-        ResultVector.push_back(pointlist_new);
-    }
-
-    return ResultVector;
-
-}
 //TODO: Smooth Networks
 void ExtractNetwork::smoothNetwork() {
     std::map<DM::Node *, std::vector<DM::Edge*> > StartNodeSortedEdges;

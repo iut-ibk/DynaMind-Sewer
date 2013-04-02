@@ -44,7 +44,7 @@ class DM_HELPER_DLL_EXPORT ExtractNetwork : public  Module {
 
 
 private:
-    std::map<std::string, std::vector<DM::Node*> > nodeListToCompare;
+    //std::map<std::string, std::vector<DM::Node*> > nodeListToCompare;
     RasterData * ConnectivityField;
     RasterData * Goals;
     RasterData * Path;
@@ -73,11 +73,11 @@ private:
 
     DM::System * city;
 
-    std::vector<std::vector<DM::Node> > SimplifyNetwork(std::vector<std::vector<DM::Node> >  & points, int PReduction, double offset);
+
     void smoothNetwork();
     std::string EndNode;
 
-    DM::Node * addNode(System &sys ,  DM::Node tmp_n, DM::View v, double offset);
+   // DM::Node * addNode(System &sys ,  DM::Node tmp_n, DM::View v, double offset);
 public:
     ExtractNetwork();
     void run();
