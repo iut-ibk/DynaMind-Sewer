@@ -91,7 +91,7 @@ private:
 
     double climateChangeFactor;
 
-    std::vector<std::string> floodedNodes;
+    std::vector<std::pair <std::string, double> > floodedNodes;
 
     QFile reportFile;
 
@@ -102,8 +102,9 @@ public:
     void setClimateChangeFactor(int cf);
     void writeSWMMFile();
     void run();
+    std::string getSWMMUUID();
 
-    std::vector<std::string> getFloodedNodes();
+    std::vector<std::pair<string, double> > getFloodedNodes();
 
 
 

@@ -27,9 +27,12 @@ class DM_HELPER_DLL_EXPORT SWMMReturnPeriod : public  DM::Module {
     DM::View globals;
     DM::View flooding_area;
 
+    DM::View vcity;
+
 
     std::string RainFile;
     std::string FileName;
+    std::string outputFiles;
     std::vector<DM::Node*> PointList;
     bool isCombined;
 
@@ -48,6 +51,8 @@ class DM_HELPER_DLL_EXPORT SWMMReturnPeriod : public  DM::Module {
     std::stringstream curves;
     void createEulerRainFile(double duration, double deltaT, double return_period);
 
+private:
+    void writeOutputFiles(DM::System * sys, double rp, std::vector<std::pair<std::string, double> > &  flooding_vec, std::string swmmuuid);
 public:
     SWMMReturnPeriod();
     void run();

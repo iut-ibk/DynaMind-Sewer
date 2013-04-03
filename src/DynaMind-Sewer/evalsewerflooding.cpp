@@ -12,11 +12,13 @@ EvalSewerFlooding::EvalSewerFlooding()
     counter = 0;
 
     city = DM::View("CITY", DM::COMPONENT, DM::READ);
+    city.getAttribute("impervious_area");
+    city.getAttribute("buildings");
     city.getAttribute("year");
 
     flooding_area = DM::View("FLOODING_AREA",DM::COMPONENT,DM::MODIFY);
     flooding_area.getAttribute("return_period");
-    flooding_area.getAttribute("id");
+    //flooding_area.getAttribute("id");
 
     std::vector<DM::View> datastream;
     datastream.push_back(city);
@@ -33,7 +35,9 @@ void EvalSewerFlooding::run() {
     std::vector<std::string> v_cities = sys->getUUIDs(city);
     if (!v_cities.size()) return;
 
-    int current_year = sys->getComponent(v_cities[0])->getAttribute("year")->getDouble();
+    DM::Component * city = sys->getComponent(v_cities[0]);
+
+    int current_year = city->getAttribute("year")->getDouble();
 
     std::stringstream fname;
     fname << this->FileName << "_" << current_year;
@@ -42,12 +46,12 @@ void EvalSewerFlooding::run() {
     inp.open(fname.str(),ios::out);
 
     std::vector<std::string> flooding_uuids = sys->getUUIDs(flooding_area);
-
+    inp << fixed;
+    inp << "Imparea " << city->getAttribute("impervious_area")->getDouble() << "\n";
+    inp << "Buildings " << city->getAttribute("buildings")->getDouble() << "\n";
     foreach (std::string uuid, flooding_uuids) {
         DM::Component * cmp = sys->getComponent(uuid);
         inp << cmp->getUUID();
-        inp << "\t";
-        inp << cmp->getAttribute("id")->getDouble();
         inp << "\t";
         inp << cmp->getAttribute("return_period")->getDouble();
         inp << "\n";

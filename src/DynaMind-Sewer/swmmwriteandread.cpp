@@ -73,6 +73,9 @@ void SWMMWriteAndRead::setClimateChangeFactor(int cf)
 }
 
 void SWMMWriteAndRead::readInReportFile() {
+
+    ;
+
     std::map<int, std::string> revUUIDtoINT;
 
     for (std::map<std::string, int>::const_iterator it = UUIDtoINT.begin(); it !=UUIDtoINT.end(); ++it) {
@@ -200,7 +203,7 @@ void SWMMWriteAndRead::readInReportFile() {
                     DM::Node * p = this->city->getNode(revUUIDtoINT[id]);
                     p->changeAttribute("flooding_V",  QString(data[5]).toDouble());
                     Vp += QString(data[5]).toDouble();
-                    floodedNodes.push_back(p->getUUID());
+                     floodedNodes.push_back(std::pair<std::string, double> (p->getUUID(),QString(data[5]).toDouble() ));
 
                 }
 
@@ -1001,6 +1004,7 @@ void SWMMWriteAndRead::writeSWMMFile() {
 
 void SWMMWriteAndRead::run()
 {
+    floodedNodes.clear();
     foreach(std::string name , city->getUUIDsOfComponentsInView(conduit))
     {
 
@@ -1029,7 +1033,12 @@ void SWMMWriteAndRead::run()
     this->readInReportFile();
 }
 
-std::vector<string> SWMMWriteAndRead::getFloodedNodes()
+string SWMMWriteAndRead::getSWMMUUID()
+{
+    return this->SWMMPath.absolutePath().toStdString();
+}
+
+std::vector<std::pair<string, double > > SWMMWriteAndRead::getFloodedNodes()
 {
     return this->floodedNodes;
 }
