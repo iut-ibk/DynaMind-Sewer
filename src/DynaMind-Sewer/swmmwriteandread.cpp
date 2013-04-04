@@ -1055,25 +1055,16 @@ void SWMMWriteAndRead::runSWMM()
     //Path to SWMM
     QSettings settings;
     QString swmmPath = settings.value("SWMM").toString().replace("\\","/");
-    if (swmmPath.lastIndexOf("/") != swmmPath.size()) {
-        swmmPath.append("/");
-    }
-
-    //Copy SWMM to tmp Path
-    QString newFileName = this->SWMMPath.absolutePath() + "/"+ "swmm5.dll";
-    QFile (swmmPath+"swmm5.dll").copy(newFileName);
-
-    newFileName = this->SWMMPath.absolutePath()+  + "/"+ "swmm5.exe";
-    QFile (swmmPath+"swmm5.exe").copy(newFileName);
 
     QProcess process;
     QStringList argument;
-    argument << this->SWMMPath.absolutePath() + "/" + "swmm5.exe" << this->SWMMPath.absolutePath() + "/"+ "swmm.inp" << this->SWMMPath.absolutePath() + "/" + "swmm.rep";
+    argument << this->SWMMPath.absolutePath() + "/"+ "swmm.inp" << this->SWMMPath.absolutePath() + "/" + "swmm.rep";
+    QString swmm = swmmPath;
 #ifdef _WIN32
-    process.start("swmm5",argument);
+    process.start(swmm.toStdString(),argument);
 #else
     Logger(Debug) << argument.join(" ").toStdString();
-    process.start("/usr/local/bin/wine",argument);
+    process.start(swmm,argument);
 
 
 #endif
