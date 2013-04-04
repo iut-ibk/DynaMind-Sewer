@@ -219,14 +219,15 @@ void SWMMReturnPeriod::run() {
     city = this->getData("City");
 
     foreach (double rp, return_periods) {
+        double cf = 1. + years / 20. * (this->climateChangeFactor - 1.);
+        this->climateChangeFactor = cf;
+
         DM::Logger(DM::Standard) << "return_period " <<  rp;
         this->createEulerRainFile(120,5,rp);
 
         SWMMWriteAndRead swmm(city, "/tmp/rain.dat", this->FileName);
 
-        //double cf = 1. + years / 20. * (this->climateChangeFactor - 1.);
-        double cf = this->climateChangeFactor;
-        swmm.setClimateChangeFactor(cf);
+
         swmm.run();
 
         std::vector<std::string> c_uuids = city->getUUIDs(this->flooding_area);
