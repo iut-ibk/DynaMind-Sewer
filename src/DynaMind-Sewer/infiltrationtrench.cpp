@@ -72,6 +72,7 @@ void InfiltrationTrench::run() {
 
         DM::Component * infiltration_system = new DM::Component();
         city->addComponent(infiltration_system, view_infitration_system);
+        DM::Logger(DM::Debug) << roof_area_tot;
         infiltration_system->addAttribute("treated_area", roof_area_tot);
         infiltration_system->addAttribute("area", As);
         infiltration_system->addAttribute("h", h);
