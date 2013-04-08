@@ -36,6 +36,8 @@ class SWMMWriteAndRead
 {
 private:
 
+    int setting_timestep;
+
     int GLOBAL_Counter;
     DM::System * city;
     DM::View conduit;
@@ -88,7 +90,9 @@ private:
     double Vp;
     double Vr;
     double Vwwtp;
-
+    double Vout;
+    double TotalImpervious;
+    double ContinuityError;
     double climateChangeFactor;
 
     std::vector<std::pair <std::string, double> > floodedNodes;
@@ -105,6 +109,16 @@ public:
     std::string getSWMMUUID();
 
     std::vector<std::pair<string, double> > getFloodedNodes();
+
+    double getVp();
+    double getVr();
+    double getVwwtp();
+    double getVout();
+    double getTotalImpervious();
+    double getContinuityError();
+
+    /** @brief set caculation timestep for flow rounting in sec */
+    void setCalculationTimeStep(int timeStep);
 
 
 

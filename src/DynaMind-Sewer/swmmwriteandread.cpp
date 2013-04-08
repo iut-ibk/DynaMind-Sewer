@@ -39,7 +39,8 @@ using namespace DM;
 SWMMWriteAndRead::SWMMWriteAndRead(DM::System * city, std::string rainfile, std::string filename) :
     city(city),
     climateChangeFactor(1),
-    rainfile(rainfile)
+    rainfile(rainfile),
+    setting_timestep(5)
 {
     GLOBAL_Counter = 1;
     this->createViewDefinition();
@@ -73,8 +74,6 @@ void SWMMWriteAndRead::setClimateChangeFactor(int cf)
 }
 
 void SWMMWriteAndRead::readInReportFile() {
-
-    ;
 
     std::map<int, std::string> revUUIDtoINT;
 
@@ -117,9 +116,10 @@ void SWMMWriteAndRead::readInReportFile() {
     bool FloodSection = false;
     bool SectionSurfaceRunoff = false;
     bool SectionOutfall = false;
+    bool FlowRouting = false;
     double SurfaceRunOff = 0;
     double Vp = 0;
-    //double Vr = 0;
+    ContinuityError = 0;
     double Vwwtp = 0;
     double Voutfall = 0;
 
@@ -130,6 +130,10 @@ void SWMMWriteAndRead::readInReportFile() {
             SectionSurfaceRunoff = true;
             continue;
         }
+        if (line.contains("Flow Routing Continuity") ) {
+            FlowRouting = true;
+            continue;
+        }
         if (line.contains("Outfall Loading Summary") ) {
             SectionOutfall = true;
             continue;
@@ -138,13 +142,14 @@ void SWMMWriteAndRead::readInReportFile() {
             FloodSection = true;
             continue;
         }
-        if (SectionSurfaceRunoff) {
-            if (line.contains("Surface Runoff")) {
-                //Start extract
-                QStringList data =line.split(QRegExp("\\s+"));
-                SurfaceRunOff = QString(data[data.size()-2]).toDouble()*10;
-            }
+        if (line.contains("Continuity Error") && FlowRouting == true) {
+            QStringList data =line.split(QRegExp("\\s+"));
+            //foreach (QString s, data) Logger(Standard) << s.toStdString();
+            this->ContinuityError = QString(data[data.size()-1]).toDouble();
+            FlowRouting = false;
+            continue;
         }
+
         if (SectionSurfaceRunoff) {
             if (line.contains("Surface Runoff")) {
                 //Start extract
@@ -203,7 +208,7 @@ void SWMMWriteAndRead::readInReportFile() {
                     DM::Node * p = this->city->getNode(revUUIDtoINT[id]);
                     p->changeAttribute("flooding_V",  QString(data[5]).toDouble());
                     Vp += QString(data[5]).toDouble();
-                     floodedNodes.push_back(std::pair<std::string, double> (p->getUUID(),QString(data[5]).toDouble() ));
+                    floodedNodes.push_back(std::pair<std::string, double> (p->getUUID(),QString(data[5]).toDouble() ));
 
                 }
 
@@ -224,9 +229,12 @@ void SWMMWriteAndRead::readInReportFile() {
     Logger (Standard)  << "Vr " << SurfaceRunOff;
     Logger (Standard)  << "Vwwtp " << Vwwtp;
     Logger (Standard)  << "Voutfall " << Voutfall;
+    Logger (Standard)  << "Continuty Error " << this->ContinuityError;
+
     this->Vp = Vp;
     this->Vwwtp = Vwwtp;
     this->Vr = SurfaceRunOff;
+    this->Vout = Voutfall;
 
     foreach (std::string s, this->city->getUUIDsOfComponentsInView(globals)) {
         DM::Component * c = this->city->getComponent(s);
@@ -297,6 +305,8 @@ void SWMMWriteAndRead::writeJunctions(std::fstream &inp)
 
 void SWMMWriteAndRead::writeSubcatchments(std::fstream &inp)
 {
+    this->TotalImpervious = 0;
+
     //SUBCATCHMENTS
     //-------------------------//
     inp<<"[SUBCATCHMENTS]\n";
@@ -333,7 +343,6 @@ void SWMMWriteAndRead::writeSubcatchments(std::fstream &inp)
         std::stringstream area_check;
         area_check << area;
         if (area_check.str() == "nan") {
-            //Logger(Error) << "nan area " <<  area;
             continue;
         }
 
@@ -348,13 +357,11 @@ void SWMMWriteAndRead::writeSubcatchments(std::fstream &inp)
         double with = sqrt(area*10000.);
         double gradient = fabs(catchment_attr->getAttribute("Gradient")->getDouble());
         double imp = catchment_attr->getAttribute("Impervious")->getDouble();
-        /*if (imp < 0.2)
-            imp = 0.2;*/
         if (gradient > 0.01)
             gradient = 0.01;
         if (gradient < 0.001)
             gradient = 0.001;
-
+        this->TotalImpervious += area*imp;
 
         inp<<"sub"<<UUIDtoINT[CATCHMENT_ID]<<"\tRG01"<<"\t\tnode"<<id<<"\t" << area << "\t" <<imp*100 << "\t"<< with << "\t"<<gradient*100<<"\t1\n";
 
@@ -723,8 +730,11 @@ void SWMMWriteAndRead::writeLID_Usage(std::fstream &inp) {
         foreach (LinkAttribute la, infitration_systems) {
             DM::Component * infilt = city->getComponent(la.uuid);
             double treated = infilt->getAttribute("treated_area")->getDouble();
-            treated = (area*imp);
+
             inp << "sub" <<UUIDtoINT[CATCHMENT_ID] << "\t"  << "Infiltration"<< UUIDtoINT[la.uuid]  <<    "\t" <<  1 <<    "\t"     <<   infilt->getAttribute("area")->getDouble()   <<    "\t"  <<   "1"<<    "\t" <<       "0" <<    "\t" <<        treated  / (area*imp) * 100. <<    "\t" <<    "0" <<    "\n"; // << "\"report" << UUIDtoINT[CATCHMENT_ID] << ".txt\"" << "\n";
+            Logger(Debug) << "Catchment Area " << area;
+            Logger(Debug) << "Treated Area " << treated;
+
         }
     }
 }
@@ -1043,6 +1053,41 @@ std::vector<std::pair<string, double > > SWMMWriteAndRead::getFloodedNodes()
     return this->floodedNodes;
 }
 
+double SWMMWriteAndRead::getVp()
+{
+    return this->Vp;
+}
+
+double SWMMWriteAndRead::getVr()
+{
+    return this->Vr;
+}
+
+double SWMMWriteAndRead::getVwwtp()
+{
+    return this->Vwwtp;
+}
+
+double SWMMWriteAndRead::getVout()
+{
+    return this->Vout;
+}
+
+double SWMMWriteAndRead::getTotalImpervious()
+{
+    return this->TotalImpervious;
+}
+
+double SWMMWriteAndRead::getContinuityError()
+{
+    return this->ContinuityError;
+}
+
+void SWMMWriteAndRead::setCalculationTimeStep(int timeStep)
+{
+    this->setting_timestep = timeStep;
+}
+
 void SWMMWriteAndRead::runSWMM()
 {
     this->Vp = 0;
@@ -1174,11 +1219,14 @@ void SWMMWriteAndRead::writeSWMMheader(std::fstream &inp)
     inp<<"REPORT_STEP\t\t00:05:00\n";
     inp<<"WET_STEP\t\t00:01:00\n";
     inp<<"DRY_STEP\t\t00:01:00\n";
-    inp<<"ROUTING_STEP\t\t0:00:20\n";
+
+    if (setting_timestep < 10)  inp<<"ROUTING_STEP\t\t0:00:0"<<QString::number(setting_timestep).toStdString()<<"\n";
+    else  inp<<"ROUTING_STEP\t\t0:00:"<<QString::number(setting_timestep).toStdString()<<"\n";
+
     inp<<"ALLOW_PONDING\t\tNO\n";
     inp<<"INERTIAL_DAMPING\tPARTIAL\n";
     inp<<"VARIABLE_STEP\t\t0.75\n";
-    inp<<"LENGTHENING_STEP\t300\n";
+    inp<<"LENGTHENING_STEP\t10\n";
     inp<<"MIN_SURFAREA\t\t0\n";
     inp<<"NORMAL_FLOW_LIMITED\tBOTH\n";
     inp<<"SKIP_STEADY_STATE\tNO\n";
@@ -1204,7 +1252,7 @@ void SWMMWriteAndRead::writeSWMMheader(std::fstream &inp)
     inp<<"[RAINGAGES]\n";
     inp<<";;Name\tFormat\tInterval\tSCF\tDataSource\tSourceName\tunits\n";
     inp<<";;============================================================================\n";
-    inp<<"RG01\tVOLUME\t0:01\t1.0\tFILE\t";
+    inp<<"RG01\tVOLUME\t0:05\t1.0\tFILE\t";
     //inp<< "rain.dat";
     inp<< this->SWMMPath.absolutePath().toStdString() + "/" + "rain.dat";
     //mag mich nicht

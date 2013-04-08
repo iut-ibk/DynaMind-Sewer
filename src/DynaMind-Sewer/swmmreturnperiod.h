@@ -7,6 +7,8 @@
 #include <QDir>
 #include <sstream>
 
+#include "swmmwriteandread.h"
+
 
 class DM_HELPER_DLL_EXPORT SWMMReturnPeriod : public  DM::Module {
     DM_DECLARE_NODE (SWMMReturnPeriod)
@@ -44,15 +46,21 @@ class DM_HELPER_DLL_EXPORT SWMMReturnPeriod : public  DM::Module {
 
     void writeRainFile();
     int years;
+
+    int calculationTimestep;
+
+    //used to check if it's time to run
+    int internalTimestep;
+
     double counterRain;
 
     std::map<std::string, int> UUIDtoINT;
 
     std::stringstream curves;
-    void createEulerRainFile(double duration, double deltaT, double return_period);
+    void createEulerRainFile(double duration, double deltaT, double return_period, double cf);
 
 private:
-    void writeOutputFiles(DM::System * sys, double rp, std::vector<std::pair<std::string, double> > &  flooding_vec, std::string swmmuuid);
+    void writeOutputFiles(DM::System * sys, double rp, SWMMWriteAndRead &  swmmreeadfile, std::string swmmuuid, double cf);
 public:
     SWMMReturnPeriod();
     void run();
