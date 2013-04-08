@@ -520,18 +520,6 @@ void GenerateSewerNetwork::run() {
                 successfulAgents++;
             }
         }
-        //Reduction of Nodes
-
-        /*for (unsigned int j = 0; j < nov_agents; j++) {
-            Agent * a = agents[j];
-
-            if (!a->successful)
-                continue;
-            this->reducePath(a->path);
-            sumLengthAgentPath+=a->path.size();
-            a->path.clear();
-            successfulAgents++;
-        }*/
 
         GenerateSewerNetwork::MarkPathWithField(this->rConnectivityField, this->ConnectivityWidth);
 
