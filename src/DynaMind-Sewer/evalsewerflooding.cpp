@@ -43,7 +43,7 @@ void EvalSewerFlooding::run() {
     fname << this->FileName << "_" << current_year;
 
     std::fstream inp;
-    inp.open(fname.str(),ios::out);
+    inp.open(fname.str().c_str(),ios::out);
 
     std::vector<std::string> flooding_uuids = sys->getUUIDs(flooding_area);
     inp << fixed;
