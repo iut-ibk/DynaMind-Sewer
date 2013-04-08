@@ -197,7 +197,10 @@ class ImportSWMM(Module):
                 outfall = sewer.getNode(UUIDTranslator[o])
                 sewer.addComponentToView(outfall, self.outfalls) 
                 outfall.addAttribute("Z", float(vals[0]))
-                
+                if (o == self.NameWWTP):  
+                    print "wwtp found"
+                    sewer.addComponentToView(outfall, self.wwtps)    
+                    outfall.addAttribute("WWTP", 1.0)
             #Write Storage Units
             storages = results["[STORAGE]"]
             for s in storages:
@@ -225,8 +228,8 @@ class ImportSWMM(Module):
             ress = results["[CONDUITS]"]            
             for c in ress:
                 vals = ress[c]
-                start = sewer.getNode(UUIDTranslator[vals[0]])
-                end = sewer.getNode(UUIDTranslator[vals[1]])
+                end = sewer.getNode(UUIDTranslator[vals[0]])
+                start = sewer.getNode(UUIDTranslator[vals[1]])
                 e = sewer.addEdge(start, end, self.conduits)
                 e.addAttribute("SWMM_ID", str(c))
                 #Create XSection
