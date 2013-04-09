@@ -113,11 +113,11 @@ void SWMMReturnPeriod::init() {
     this->addData("City", views);
 }
 
-void SWMMReturnPeriod::createEulerRainFile(double duration, double deltaT, double return_period, double cf) {
+void SWMMReturnPeriod::createEulerRainFile(double duration, double deltaT, double return_period, double cf, std::string rfile) {
 
     QDateTime date(QDate(2000,1,1), QTime(0,0));
 
-    QString fileName = "/tmp/rain.dat";
+    QString fileName = QString::fromStdString(rfile);
     std::fstream out;
     out.open(fileName.toAscii(),ios::out);
 
@@ -168,7 +168,7 @@ void SWMMReturnPeriod::createEulerRainFile(double duration, double deltaT, doubl
 
 }
 
-void SWMMReturnPeriod::writeOutputFiles(DM::System * sys, double rp, SWMMWriteAndRead &swmmreeadfile, std::string swmmuuid, double cf)
+void SWMMReturnPeriod::writeOutputFiles(DM::System * sys, double rp, SWMMWriteAndRead &swmmreeadfile, std::string swmmuuid, double cf, double id)
 {
 
     std::vector< std::pair<std::string, double > > swmm = swmmreeadfile.getFloodedNodes();
@@ -181,7 +181,7 @@ void SWMMReturnPeriod::writeOutputFiles(DM::System * sys, double rp, SWMMWriteAn
     int current_year = city->getAttribute("year")->getDouble();
 
     std::stringstream fname;
-    fname << this->outputFiles  <<  current_year << "_" << rp <<  "_"  << ".cvs";
+    fname << this->outputFiles  <<  current_year << "_" << rp <<  "_"  << id << ".cvs";
 
     std::fstream inp;
     inp.open(fname.str().c_str(),ios::out);
@@ -228,11 +228,22 @@ void SWMMReturnPeriod::run() {
     return_periods.push_back(100);
     return_periods.push_back(200);*/
 
+    std::vector<double> climateChangeFactors;
+    climateChangeFactors.push_back(1.0);
+    climateChangeFactors.push_back(1.1);
+    climateChangeFactors.push_back(1.3);
+    climateChangeFactors.push_back(1.5);
+
+
     curves.str("");
     city = this->getData("City");
 
+    std::vector<double> cfs;
 
-    double cf = 1. + years / 20. * (this->climateChangeFactor - 1.);
+    foreach (double cf, climateChangeFactors) {
+        cfs.push_back(1. + years / 20. * (cf - 1.));
+    }
+
 
     this->years++;
 
@@ -244,50 +255,59 @@ void SWMMReturnPeriod::run() {
         return;
     }
 
+    int numberOfRPs = return_periods.size() * climateChangeFactors.size();
+    int numberOfcfs = climateChangeFactors.size();
 
-    foreach (double rp, return_periods) {
+
+    std::vector<SWMMWriteAndRead*> swmmruns;
+    for (int nof = 0; nof < numberOfRPs; nof++ ) {
+
+        int index_rp = nof / numberOfcfs;
+        int index_cf = nof % numberOfcfs;
+
+
+        double rp = return_periods[index_rp];
+        double cf = cfs[index_cf];
+        std::stringstream rfile;
+        rfile << "/tmp/rain_";
+        rfile << nof;
 
         DM::Logger(DM::Standard) << "return_period " <<  rp;
-        this->createEulerRainFile(30,5,rp,cf);
+        DM::Logger(DM::Standard) << "cf_period " <<  cf;
+        this->createEulerRainFile(30,5,rp,cf,rfile.str());
 
-        SWMMWriteAndRead swmm(city, "/tmp/rain.dat", this->FileName);
-
-        swmm.run();
-
-        std::vector<std::string> c_uuids = city->getUUIDs(this->flooding_area);
-
-        foreach (std::string c_uuid, c_uuids)
-            city->getComponent(c_uuid)->addAttribute("return_period", 0.0);
-
-        std::vector<std::pair <std::string, double > > flooded_nodes = swmm.getFloodedNodes();
-
-        typedef std::pair<std::string, double > rainnode;
-        foreach (rainnode fn, flooded_nodes ) {
-            DM::Component * f_node = city->getComponent(fn.first);
-            std::vector<DM::LinkAttribute> links = f_node->getAttribute("FLOODING_AREA")->getLinks();
-            if (links.size() == 0)
-                DM::Logger(DM::Debug) << "Not connected";
-            foreach (DM::LinkAttribute l, links) {
-                std::string c_uuid = l.uuid;
-
-                DM::Component * flooded = city->getComponent(c_uuid);
-
-                if (!flooded)
-                    continue;
-                if (flooded->getAttribute("return_period")->getDouble() < 0.00001) {
-                    flooded->addAttribute("return_period",rp);
-                }
-
-            }
-
-
-        }
-
-        DM::Logger(DM::Standard) << "Climate Change Factor " <<  cf;
-        DM::Logger(DM::Standard) << "Effected Nodes " <<  flooded_nodes.size();
-
-        writeOutputFiles(city, rp, swmm, swmm.getSWMMUUID(), cf);
+        SWMMWriteAndRead * swmm;
+        swmm = new SWMMWriteAndRead(city,rfile.str(), this->FileName);
+        swmm->setupSWMM();
+        swmmruns.push_back(swmm);
     }
 
+#pragma omp parallel for
+    for (int nof = 0; nof < numberOfRPs; nof++ ) {
+        swmmruns[nof]->runSWMM();
+
+    }
+
+    for (int nof = 0; nof < numberOfRPs; nof++ ) {
+
+        int index_rp = nof / numberOfcfs;
+        int index_cf = nof % numberOfcfs;
+
+
+        double rp = return_periods[index_rp];
+        double cf = cfs[index_cf];
+        SWMMWriteAndRead * swmm = swmmruns[nof];
+        swmm->readInReportFile();
+
+        writeOutputFiles(city, rp, *swmm, swmm->getSWMMUUID(), cf,climateChangeFactors[index_cf]);
+
+    }
+
+    for (int nof = 0; nof < numberOfRPs; nof++ ) {
+        delete swmmruns[nof];
+
+    }
+
+    swmmruns.clear();
 
 }

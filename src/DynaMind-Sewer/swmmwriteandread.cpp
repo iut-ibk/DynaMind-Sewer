@@ -40,7 +40,7 @@ SWMMWriteAndRead::SWMMWriteAndRead(DM::System * city, std::string rainfile, std:
     city(city),
     climateChangeFactor(1),
     rainfile(rainfile),
-    setting_timestep(5)
+    setting_timestep(7)
 {
     GLOBAL_Counter = 1;
     this->createViewDefinition();
@@ -1012,7 +1012,7 @@ void SWMMWriteAndRead::writeSWMMFile() {
 
 }
 
-void SWMMWriteAndRead::run()
+void SWMMWriteAndRead::setupSWMM()
 {
     floodedNodes.clear();
     foreach(std::string name , city->getUUIDsOfComponentsInView(conduit))
@@ -1039,8 +1039,8 @@ void SWMMWriteAndRead::run()
 
     this->writeSWMMFile();
     this->writeRainFile();
-    this->runSWMM();
-    this->readInReportFile();
+    //this->runSWMM();
+    //this->readInReportFile();
 }
 
 string SWMMWriteAndRead::getSWMMUUID()
@@ -1109,12 +1109,23 @@ void SWMMWriteAndRead::runSWMM()
     process.start(swmm.toStdString(),argument);
 #else
     Logger(Debug) << argument.join(" ").toStdString();
-    process.start(swmm,argument);
+
+
+    if (!(swmm.contains(".exe") )) process.start(swmm,argument);
+
+    else {
+        argument.insert(0, "/Users/christianurich/swmm5.0/swmm5.exe");
+        DM::Logger(DM::Standard) << argument.join(" ").toStdString();
+
+        process.start("/usr/local/bin/wine",argument);
+    }
+
+
 
 
 #endif
 
-    process.waitForFinished(300000);
+    process.waitForFinished(3000000);
 }
 
 void SWMMWriteAndRead::writeRainFile() {
@@ -1190,8 +1201,8 @@ void SWMMWriteAndRead::writeSWMMheader(std::fstream &inp)
     //inp<<"FLOW_ROUTING DYNWAVE\n";
     //inp<<"START_DATE 1/1/2000\n";
     //inp<<"START_TIME 00:00\n";
-    //inp<<"END_DATE 1/2/2000\n";
-    //inp<<"END_TIME 00:00\n";
+    //inp<<"END_DATE 1/1/2000\n";
+    //inp<<"END_TIME 12:00\n";
     //inp<<"WET_STEP 00:01:00\n";
     //inp<<"DRY_STEP 01:00:00\n";
     //inp<<"ROUTING_STEP 00:05:00\n";
@@ -1207,8 +1218,8 @@ void SWMMWriteAndRead::writeSWMMheader(std::fstream &inp)
     inp<<"START_DATE\t\t1/1/2000\n";
     inp<<"START_TIME\t\t00:00\n";
     //inp<<"END_DATE\t\t7/31/2008\n";
-    inp<<"END_DATE\t\t1/2/2000\n";
-    inp<<"END_TIME\t\t00:00\n";
+    inp<<"END_DATE\t\t1/1/2000\n";
+    inp<<"END_TIME\t\t12:00\n";
     inp<<"REPORT_START_DATE\t1/1/2000\n";
     inp<<"REPORT_START_TIME\t00:00\n";
 
