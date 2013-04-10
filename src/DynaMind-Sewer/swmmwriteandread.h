@@ -78,8 +78,8 @@ private:
     void createViewDefinition();
 
 
-    void readInReportFile();
-    void runSWMM();
+
+
 
     std::stringstream curves;
     std::string rainfile;
@@ -105,8 +105,10 @@ public:
     void setRainFile(std::string rainfile);
     void setClimateChangeFactor(int cf);
     void writeSWMMFile();
-    void run();
+    void setupSWMM();
     std::string getSWMMUUID();
+    void readInReportFile();
+    void runSWMM();
 
     std::vector<std::pair<string, double> > getFloodedNodes();
 

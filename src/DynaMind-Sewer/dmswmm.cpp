@@ -143,7 +143,7 @@ void DMSWMM::run() {
 
     swmm.setClimateChangeFactor(cf);
 
-    swmm.run();
+    swmm.setupSWMM();
 
     this->years++;
 
