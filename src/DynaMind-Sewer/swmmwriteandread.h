@@ -95,7 +95,9 @@ private:
     double ContinuityError;
     double climateChangeFactor;
 
-    std::vector<std::pair <std::string, double> > floodedNodes;
+    std::vector<std::pair <std::string, double> > floodedNodesVolume;
+
+    std::vector<std::pair <std::string, double> > nodeDepthSummery;
 
     QFile reportFile;
 
@@ -111,6 +113,7 @@ public:
     void runSWMM();
 
     std::vector<std::pair<string, double> > getFloodedNodes();
+    std::vector<std::pair<string, double> > getNodeDepthSummery();
 
     double getVp();
     double getVr();

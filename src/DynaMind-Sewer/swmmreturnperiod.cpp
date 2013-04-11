@@ -199,13 +199,31 @@ void SWMMReturnPeriod::writeOutputFiles(DM::System * sys, double rp, SWMMWriteAn
     inp << fixed;
 
     typedef std::pair<std::string, double > rainnode;
-
+    inp << "FLOODSECTION\t" << "\n";
     foreach (rainnode  fn, swmm) {
         inp << fn.first;
         inp << "\t";
         inp << fn.second;
         inp << "\n";
     }
+    inp << "END\t" << "\n";
+
+    std::vector< std::pair<std::string, double > > surcharge = swmmreeadfile.getNodeDepthSummery();
+
+    inp << "SURCHARGE" << "\n";
+
+    foreach (rainnode  fn, surcharge) {
+        DM::Component * n =  sys->getComponent(fn.first);
+        if (!n) continue;
+        inp << fn.first;
+        inp << "\t";
+        inp << n->getAttribute("D")->getDouble();
+        inp << "\t";
+        inp <<fn.second;
+        inp << "\n";
+    }
+
+    inp << "END" << "\n";
 
     inp.close();
 
