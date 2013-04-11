@@ -1148,9 +1148,9 @@ void SWMMWriteAndRead::runSWMM()
     QStringList argument;
     argument << this->SWMMPath.absolutePath() + "/"+ "swmm.inp" << this->SWMMPath.absolutePath() + "/" + "swmm.rep";
     QString swmm = swmmPath;
-#ifdef _WIN32
-    process.start(swmm.toStdString(),argument);
-#else
+/*#ifdef _WIN32
+    process.start(swmm,argument);
+#else*/
     Logger(Debug) << argument.join(" ").toStdString();
 
 
@@ -1166,7 +1166,7 @@ void SWMMWriteAndRead::runSWMM()
 
 
 
-#endif
+//#endif
 
     process.waitForFinished(3000000);
 }
