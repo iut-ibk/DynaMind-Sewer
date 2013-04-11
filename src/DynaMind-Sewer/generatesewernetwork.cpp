@@ -503,14 +503,22 @@ void GenerateSewerNetwork::run() {
     agentPathMap.clear();
     int sumLengthAgentPath = 0;
     int nov_agents = agents.size();
-    for (int i = 0; i < 1; i++) {
 
-//#pragma omp parallel for
-        for (int j = 0; j < nov_agents; j++) {
+	//omp_set_num_threads(2);
+	Logger(Debug) << "starting agents with " << omp_get_max_threads() << " threads";
+
+    for (int i = 0; i < 1; i++) 
+	{
+#pragma omp parallel for
+        for (int j = 0; j < nov_agents; j++)
+		{
+			Logger(Debug) << "starting agent #" << j << "with thread " << omp_get_thread_num();
             Agent * a = agents[j];
-            if (a->alive) {
+            if (a->alive) 
+			{
                 a->run();
-                if (!a->successful) {
+                if (!a->successful) 
+				{
                     continue;
                     a->path.clear();
                 }
