@@ -211,6 +211,8 @@ void ExtractNetwork::run() {
     multiplier = this->ConnectivityField->getCellSizeX();
     //Extract Conduits
 
+
+    Logger(Debug) << "Done with the Agent Baed Model";
     foreach(std::string name, city->getUUIDsOfComponentsInView(Conduits)) {
         DM::Component * c = city->getComponent(name);
         DM::Attribute attr("New", 1);
