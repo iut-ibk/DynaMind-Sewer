@@ -40,9 +40,6 @@ void InfiltrationTrench::run() {
     foreach (std::string uuid, catchment_uuids) {
         DM::Face * catchment = city->getFace(uuid);
 
-
-
-
         double roof_area_tot = catchment->getAttribute("roof_area_treated")->getDouble();
 
         double imp = catchment->getAttribute("Impervious")->getDouble();
