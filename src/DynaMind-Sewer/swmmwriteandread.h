@@ -88,10 +88,12 @@ private:
 
 
     double Vp;
-    double Vr;
+    double VsurfaceRunoff;
+    double VSurfaceStorage;
     double Vwwtp;
     double Vout;
     double TotalImpervious;
+    double Impervious_Infiltration;
     double ContinuityError;
     double climateChangeFactor;
 
@@ -116,11 +118,13 @@ public:
     std::vector<std::pair<string, double> > getNodeDepthSummery();
 
     double getVp();
-    double getVr();
+    double getVSurfaceRunoff();
+    double getVSurfaceStorage();
     double getVwwtp();
     double getVout();
     double getTotalImpervious();
     double getContinuityError();
+    double getImperiousInfiltration();
 
     /** @brief set caculation timestep for flow rounting in sec */
     void setCalculationTimeStep(int timeStep);
