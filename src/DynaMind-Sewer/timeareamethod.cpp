@@ -523,8 +523,8 @@ void TimeAreaMethod::run() {
 
 double TimeAreaMethod::chooseDiameter(double diameter) {
     QVector<double> vd;
-    vd.append(150);
-    vd.append(200);
+    /*vd.append(150);
+    vd.append(200);*/
     vd.append(250);
     vd.append(300);
     vd.append(350);

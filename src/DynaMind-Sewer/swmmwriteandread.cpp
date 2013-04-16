@@ -117,9 +117,12 @@ void SWMMWriteAndRead::readInReportFile() {
     bool SectionSurfaceRunoff = false;
     bool SectionOutfall = false;
     bool FlowRouting = false;
+    bool NodeDepthSummery = false;
     double SurfaceRunOff = 0;
+
     double Vp = 0;
     ContinuityError = 0;
+    VSurfaceStorage = 0;
     double Vwwtp = 0;
     double Voutfall = 0;
 
@@ -142,9 +145,13 @@ void SWMMWriteAndRead::readInReportFile() {
             FloodSection = true;
             continue;
         }
+
+        if (line.contains("Node Depth Summary") ) {
+            NodeDepthSummery = true;
+            continue;
+        }
         if (line.contains("Continuity Error") && FlowRouting == true) {
             QStringList data =line.split(QRegExp("\\s+"));
-            //foreach (QString s, data) Logger(Standard) << s.toStdString();
             this->ContinuityError = QString(data[data.size()-1]).toDouble();
             FlowRouting = false;
             continue;
@@ -157,8 +164,16 @@ void SWMMWriteAndRead::readInReportFile() {
                 SurfaceRunOff = QString(data[data.size()-2]).toDouble()*10;
             }
         }
-        if (SectionOutfall) {
 
+        if (SectionSurfaceRunoff) {
+            if (line.contains("Final Surface Storage")) {
+                //Start extract
+                QStringList data =line.split(QRegExp("\\s+"));
+                VSurfaceStorage = QString(data[data.size()-2]).toDouble()*10;
+            }
+        }
+
+        if (SectionOutfall) {
             if (line.contains("NODE")) {
                 //Start extract
                 QStringList data =line.split(QRegExp("\\s+"));
@@ -208,8 +223,38 @@ void SWMMWriteAndRead::readInReportFile() {
                     DM::Node * p = this->city->getNode(revUUIDtoINT[id]);
                     p->changeAttribute("flooding_V",  QString(data[5]).toDouble());
                     Vp += QString(data[5]).toDouble();
-                    floodedNodes.push_back(std::pair<std::string, double> (p->getUUID(),QString(data[5]).toDouble() ));
+                    floodedNodesVolume.push_back(std::pair<std::string, double> (p->getUUID(),QString(data[5]).toDouble() ));
+                }
 
+
+            }
+
+
+        }
+
+        if (NodeDepthSummery) {
+            if (line.contains("NODE")) {
+                //Start extract
+                QStringList data =line.split(QRegExp("\\s+"));
+                for (int j = 0; j < data.size(); j++) {
+                    if (data[j].size() == 0) {
+                        data.removeAt(j);
+                    }
+                }
+                //Extract Node id
+                if (data.size() != 7) {
+                    Logger(Error) << "Error in Extraction Flooded Nodes";
+
+                } else {
+                    QString id_asstring = data[0];
+                    id_asstring.remove("NODE");
+                    int id = id_asstring.toInt();
+                    DM::Node * p = this->city->getNode(revUUIDtoINT[id]);
+                    if (!p) {
+                        Logger(Warning) << id_asstring.toStdString()  << " doesn't exist : line: " << line.toStdString();
+                        continue;
+                    }
+                    nodeDepthSummery.push_back(std::pair<std::string, double> (p->getUUID(),QString(data[3]).toDouble() ));
                 }
 
 
@@ -221,6 +266,8 @@ void SWMMWriteAndRead::readInReportFile() {
             FloodSection = false;
             SectionSurfaceRunoff = false;
             SectionOutfall = false;
+            NodeDepthSummery = false;
+            //FlowRouting = false;
             counter = -1;
         }
         counter ++;
@@ -233,7 +280,7 @@ void SWMMWriteAndRead::readInReportFile() {
 
     this->Vp = Vp;
     this->Vwwtp = Vwwtp;
-    this->Vr = SurfaceRunOff;
+    this->VsurfaceRunoff = SurfaceRunOff;
     this->Vout = Voutfall;
 
     foreach (std::string s, this->city->getUUIDsOfComponentsInView(globals)) {
@@ -673,7 +720,8 @@ void SWMMWriteAndRead::writeLID_Controlls(std::fstream &inp) {
         foreach (LinkAttribute la, infitration_systems) {
             if (UUIDtoINT[la.uuid] == 0) {
                 UUIDtoINT[la.uuid] = GLOBAL_Counter++;
-            }
+            } else
+                continue;
             DM::Component * infilt = city->getComponent(la.uuid);
 
             inp << "Infiltration" << UUIDtoINT[la.uuid] << "\t"  << "IT" <<  "\n";
@@ -696,7 +744,7 @@ void SWMMWriteAndRead::writeLID_Usage(std::fstream &inp) {
     inp <<  "[LID_USAGE]"  << "\n";
     inp << ";;Subcatchment   LID Process      Number  Area       Width      InitSatur  FromImprv  ToPerv     Report File"  << "\n";
     inp << ";;-------------- ---------------- ------- ---------- ---------- ---------- ---------- ---------- -----------"  << "\n";
-
+    std::map<int, int> written_infils;
     foreach(std::string name, InletNames) {
         DM::Component * inlet_attr;
         inlet_attr = city->getComponent(name);
@@ -730,10 +778,14 @@ void SWMMWriteAndRead::writeLID_Usage(std::fstream &inp) {
         foreach (LinkAttribute la, infitration_systems) {
             DM::Component * infilt = city->getComponent(la.uuid);
             double treated = infilt->getAttribute("treated_area")->getDouble();
+            Impervious_Infiltration+=treated;
+
+            if (written_infils[UUIDtoINT[la.uuid]] != 0 ) continue;
 
             inp << "sub" <<UUIDtoINT[CATCHMENT_ID] << "\t"  << "Infiltration"<< UUIDtoINT[la.uuid]  <<    "\t" <<  1 <<    "\t"     <<   infilt->getAttribute("area")->getDouble()   <<    "\t"  <<   "1"<<    "\t" <<       "0" <<    "\t" <<        treated  / (area*imp) * 100. <<    "\t" <<    "0" <<    "\n"; // << "\"report" << UUIDtoINT[CATCHMENT_ID] << ".txt\"" << "\n";
             Logger(Debug) << "Catchment Area " << area;
             Logger(Debug) << "Treated Area " << treated;
+            written_infils[UUIDtoINT[la.uuid]] = 1;
 
         }
     }
@@ -990,6 +1042,9 @@ void SWMMWriteAndRead::writeCoordinates(std::fstream &inp)
 }
 
 void SWMMWriteAndRead::writeSWMMFile() {
+    Impervious_Infiltration = 0;
+    this->TotalImpervious = 0;
+
     QString fileName = this->SWMMPath.absolutePath()+ "/"+ "swmm.inp";
     std::fstream inp;
     inp.open(fileName.toAscii(),ios::out);
@@ -1014,7 +1069,9 @@ void SWMMWriteAndRead::writeSWMMFile() {
 
 void SWMMWriteAndRead::setupSWMM()
 {
-    floodedNodes.clear();
+    floodedNodesVolume.clear();
+    nodeDepthSummery.clear();
+
     foreach(std::string name , city->getUUIDsOfComponentsInView(conduit))
     {
 
@@ -1050,7 +1107,12 @@ string SWMMWriteAndRead::getSWMMUUID()
 
 std::vector<std::pair<string, double > > SWMMWriteAndRead::getFloodedNodes()
 {
-    return this->floodedNodes;
+    return this->floodedNodesVolume;
+}
+
+std::vector<std::pair<string, double> > SWMMWriteAndRead::getNodeDepthSummery()
+{
+    return this->nodeDepthSummery;
 }
 
 double SWMMWriteAndRead::getVp()
@@ -1058,9 +1120,14 @@ double SWMMWriteAndRead::getVp()
     return this->Vp;
 }
 
-double SWMMWriteAndRead::getVr()
+double SWMMWriteAndRead::getVSurfaceRunoff()
 {
-    return this->Vr;
+    return this->VsurfaceRunoff;
+}
+
+double SWMMWriteAndRead::getVSurfaceStorage()
+{
+    return this->VSurfaceStorage;
 }
 
 double SWMMWriteAndRead::getVwwtp()
@@ -1083,6 +1150,11 @@ double SWMMWriteAndRead::getContinuityError()
     return this->ContinuityError;
 }
 
+double SWMMWriteAndRead::getImperiousInfiltration()
+{
+    return this->Impervious_Infiltration;
+}
+
 void SWMMWriteAndRead::setCalculationTimeStep(int timeStep)
 {
     this->setting_timestep = timeStep;
@@ -1092,7 +1164,7 @@ void SWMMWriteAndRead::runSWMM()
 {
     this->Vp = 0;
     this->Vwwtp = 0;
-    this->Vr = 0;
+    this->VsurfaceRunoff = 0;
     //Find Temp Directory
     QDir tmpPath = QDir::tempPath();
     tmpPath.mkdir("vibeswmm");
@@ -1105,7 +1177,7 @@ void SWMMWriteAndRead::runSWMM()
     QStringList argument;
     argument << this->SWMMPath.absolutePath() + "/"+ "swmm.inp" << this->SWMMPath.absolutePath() + "/" + "swmm.rep";
     QString swmm = swmmPath;
-/*#ifdef _WIN32
+    /*#ifdef _WIN32
     process.start(swmm,argument);
 #else*/
     Logger(Debug) << argument.join(" ").toStdString();
@@ -1123,7 +1195,7 @@ void SWMMWriteAndRead::runSWMM()
 
 
 
-//#endif
+    //#endif
 
     process.waitForFinished(3000000);
 }

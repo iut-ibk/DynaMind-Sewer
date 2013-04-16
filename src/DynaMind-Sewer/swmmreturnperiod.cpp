@@ -184,10 +184,12 @@ void SWMMReturnPeriod::writeOutputFiles(DM::System * sys, double rp, SWMMWriteAn
     fname << this->outputFiles  <<  current_year << "_" << rp <<  "_"  << id << ".cvs";
 
     std::fstream inp;
+    double effective_runoff = swmmreeadfile.getVSurfaceRunoff() + swmmreeadfile.getVSurfaceStorage();
+
     inp.open(fname.str().c_str(),ios::out);
     inp << "ImperviousTotal\t" << swmmreeadfile.getTotalImpervious()<< "\n";
-    inp << "ImperviousInfitration\t" << 0.0<< "\n";
-    inp << "Vr\t" << swmmreeadfile.getVr()<< "\n";
+    inp << "ImperviousInfitration\t" << swmmreeadfile.getImperiousInfiltration() / 10000.<< "\n";
+    inp << "Vr\t" << effective_runoff << "\n";
     inp << "Vp\t" << swmmreeadfile.getVp()<< "\n";
     inp << "Vwwtp\t" << swmmreeadfile.getVwwtp()<< "\n";
     inp << "Vout\t" << swmmreeadfile.getVout()<< "\n";
@@ -195,17 +197,36 @@ void SWMMReturnPeriod::writeOutputFiles(DM::System * sys, double rp, SWMMWriteAn
     inp << "climatechangefactor\t" <<cf<< "\n";
     inp << "swmmuuid\t"<< swmmuuid << "\n";
     inp << "floodednodes\t" << swmm.size() << "\n";
+    inp << "Vstorage" << swmmreeadfile.getVSurfaceStorage()<< "\n";
     inp << "END\t" << swmm.size() << "\n";
     inp << fixed;
 
     typedef std::pair<std::string, double > rainnode;
-
+    inp << "FLOODSECTION\t" << "\n";
     foreach (rainnode  fn, swmm) {
         inp << fn.first;
         inp << "\t";
         inp << fn.second;
         inp << "\n";
     }
+    inp << "END\t" << "\n";
+
+    std::vector< std::pair<std::string, double > > surcharge = swmmreeadfile.getNodeDepthSummery();
+
+    inp << "SURCHARGE" << "\n";
+
+    foreach (rainnode  fn, surcharge) {
+        DM::Component * n =  sys->getComponent(fn.first);
+        if (!n) continue;
+        inp << fn.first;
+        inp << "\t";
+        inp << n->getAttribute("D")->getDouble();
+        inp << "\t";
+        inp <<fn.second;
+        inp << "\n";
+    }
+
+    inp << "END" << "\n";
 
     inp.close();
 
