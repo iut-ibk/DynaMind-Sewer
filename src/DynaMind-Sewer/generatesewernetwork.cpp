@@ -25,7 +25,7 @@
  */
 #include "generatesewernetwork.h"
 #include "csg_s_operations.h"
-#ifdef _OPENMP
+#ifndef __clang__
 #include <omp.h>
 #endif
 
