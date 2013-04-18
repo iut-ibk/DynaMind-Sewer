@@ -25,10 +25,9 @@
  */
 #include "generatesewernetwork.h"
 #include "csg_s_operations.h"
-#ifndef __clang__
+#ifdef _OPENMP
 #include <omp.h>
 #endif
-
 
 
 DM_DECLARE_NODE_NAME(GenerateSewerNetwork, Sewer)
@@ -504,24 +503,27 @@ void GenerateSewerNetwork::run() {
     int sumLengthAgentPath = 0;
     int nov_agents = agents.size();
 
-	//omp_set_num_threads(2);
-	Logger(Debug) << "starting agents with " << omp_get_max_threads() << " threads";
-
+#ifdef _OPENMP
+    omp_set_num_threads(3);
+    Logger(Standard) << "starting agents with " << omp_get_max_threads() << " threads";
+#endif
     for (int i = 0; i < 1; i++) 
 	{
 #pragma omp parallel for
         for (int j = 0; j < nov_agents; j++)
 		{
-			Logger(Debug) << "starting agent #" << j << "with thread " << omp_get_thread_num();
+#ifdef _OPENMP
+            Logger(Debug) << "starting agent #" << j << "with thread " << omp_get_thread_num();
+#endif
             Agent * a = agents[j];
             if (a->alive) 
 			{
                 a->run();
                 if (!a->successful) 
 				{
-                    continue;
                     a->path.clear();
-                }
+                    continue;
+                } 
                 this->reducePath(a->path);
                 sumLengthAgentPath+=a->path.size();
                 a->path.clear();
