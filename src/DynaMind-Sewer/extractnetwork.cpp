@@ -212,12 +212,14 @@ void ExtractNetwork::run() {
     //Extract Conduits
 
 
-    Logger(Debug) << "Done with the Agent Baed Model";
-    foreach(std::string name, city->getUUIDsOfComponentsInView(Conduits)) {
+    Logger(Debug) << "Done with the Agent Based Model";
+    /*foreach(std::string name, city->getUUIDsOfComponentsInView(Conduits)) {
         DM::Component * c = city->getComponent(name);
         DM::Attribute attr("New", 1);
         c->changeAttribute(attr);
-    }
+    }*/
+	mforeach(Component *c, city->getAllComponentsInView(Conduits))
+		c->changeAttribute("New", 1);
 
     Logger(Debug) << "multiplier" << multiplier;
 
