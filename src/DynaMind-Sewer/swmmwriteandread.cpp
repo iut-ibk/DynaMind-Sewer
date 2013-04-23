@@ -1177,16 +1177,17 @@ void SWMMWriteAndRead::runSWMM()
     QStringList argument;
     argument << this->SWMMPath.absolutePath() + "/"+ "swmm.inp" << this->SWMMPath.absolutePath() + "/" + "swmm.rep";
     QString swmm = swmmPath;
-    /*#ifdef _WIN32
+
+#ifdef _WIN32
     process.start(swmm,argument);
-#else*/
+#else
     Logger(Debug) << argument.join(" ").toStdString();
 
 
     if (!(swmm.contains(".exe") )) process.start(swmm,argument);
 
     else {
-        argument.insert(0, "/Users/christianurich/swmm5.0/swmm5.exe");
+        argument.insert(0, swmm);
         DM::Logger(DM::Standard) << argument.join(" ").toStdString();
 
         process.start("/usr/local/bin/wine",argument);
@@ -1195,7 +1196,7 @@ void SWMMWriteAndRead::runSWMM()
 
 
 
-    //#endif
+#endif
 
     process.waitForFinished(3000000);
 }
