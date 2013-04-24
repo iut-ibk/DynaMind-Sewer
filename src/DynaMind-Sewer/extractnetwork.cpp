@@ -215,17 +215,10 @@ void ExtractNetwork::run() {
     multiplier = this->ConnectivityField->getCellSizeX();
     //Extract Conduits
 
+    Logger(Debug) << "Done with the Agent Based Model";
 
-    Logger(Debug) << "Done with the Agent Baed Model";
-    std::vector<std::string> uuid_conduits = city->getUUIDsOfComponentsInView(Inlets);
-    counter = 0;
-    foreach(std::string name, uuid_conduits) {
-        counter++;
-        Logger(Standard) << counter << "/" << uuid_conduits.size();
-        DM::Component * c = city->getComponent(name);
-        DM::Attribute attr("New", 1);
-        c->changeAttribute(attr);
-    }
+	mforeach(Component *c, city->getAllComponentsInView(Conduits))
+		c->changeAttribute("New", 1);
 
     Logger(Debug) << "multiplier" << multiplier;
 

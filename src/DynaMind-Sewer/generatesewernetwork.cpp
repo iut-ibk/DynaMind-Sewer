@@ -505,7 +505,11 @@ void GenerateSewerNetwork::run() {
     for (int i = 0; i < 1; i++) 
 	{
         //Until performance of DB is fixed
-        //#pragma omp parallel for
+
+#ifdef _OPENMP
+		DM::Logger(Debug) << "starting omp with " << omp_get_max_threads() << " threads";
+#endif
+        #pragma omp parallel for
         for (int j = 0; j < nov_agents; j++)
 		{
             Agent * a = agents[j];
