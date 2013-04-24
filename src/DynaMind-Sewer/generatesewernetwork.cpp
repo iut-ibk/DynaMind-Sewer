@@ -507,6 +507,7 @@ void GenerateSewerNetwork::run() {
         //Until performance of DB is fixed
 
 #ifdef _OPENMP
+        omp_set_num_threads(1);
 		DM::Logger(Debug) << "starting omp with " << omp_get_max_threads() << " threads";
 #endif
         #pragma omp parallel for
