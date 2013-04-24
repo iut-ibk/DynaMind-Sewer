@@ -173,7 +173,11 @@ void ExtractNetwork::run() {
     std::vector<AgentExtraxtor * > agents;
 
     std::vector<DM::Node*> StartPos;
-    foreach (std::string inlet, city->getUUIDsOfComponentsInView(Inlets))  {
+    std::vector<std::string> uuid_inlets = city->getUUIDsOfComponentsInView(Inlets);
+    int counter = 0;
+    foreach (std::string inlet, uuid_inlets)  {
+        counter++;
+        //Logger(Standard) << counter << "/" << uuid_inlets.size();
         DM::Node * n = city->getNode(inlet);
         std::string ID_CA = n->getAttribute("CATCHMENT")->getLink().uuid;
         DM::Face * catchment = city->getFace(ID_CA);
@@ -213,7 +217,11 @@ void ExtractNetwork::run() {
 
 
     Logger(Debug) << "Done with the Agent Baed Model";
-    foreach(std::string name, city->getUUIDsOfComponentsInView(Conduits)) {
+    std::vector<std::string> uuid_conduits = city->getUUIDsOfComponentsInView(Inlets);
+    counter = 0;
+    foreach(std::string name, uuid_conduits) {
+        counter++;
+        Logger(Standard) << counter << "/" << uuid_conduits.size();
         DM::Component * c = city->getComponent(name);
         DM::Attribute attr("New", 1);
         c->changeAttribute(attr);
@@ -270,7 +278,7 @@ void ExtractNetwork::run() {
         }
     }
 
-Logger(DM::Standard) << "Successful " << agents.size() << "/" << successfulAgents;
+    Logger(DM::Standard) << "Successful " << agents.size() << "/" << successfulAgents;
 
 
     for (unsigned int j = 0; j < agents.size(); j++) {
@@ -290,12 +298,19 @@ Logger(DM::Standard) << "Successful " << agents.size() << "/" << successfulAgent
 
 
     DM::SpatialNodeHashMap spnh(city, 100, false);
+    counter = 0;
     foreach (std::string uuid, endNodeList) {
+        counter++;
+        Logger(Debug)  << "export " << counter << "/" << endNodeList.size();
         spnh.addNodeToSpatialNodeHashMap(city->getNode(uuid));
     }
+
+    DM::SpatialNodeHashMap spnh_inlets(city, 100, true, Inlets);
+
+    Logger(Debug) << "Start with points to place";
     foreach (std::vector<Node> pl, PointsToPlace) {
         Node * n = 0;
-        n  = TBVectorData::addNodeToSystem2D(city, Inlets, pl[0],offset, false);
+        n  = spnh_inlets.findNode( pl[0].getX(), pl[0].getY(), offset);
 
         if (n == 0) {
             n = city->addNode(pl[0], Junction);
@@ -307,6 +322,8 @@ Logger(DM::Standard) << "Successful " << agents.size() << "/" << successfulAgent
         nl.push_back(n);
         Points_For_Conduits.push_back(nl);
     }
+
+    Logger(Debug) << "Done with points to place";
 
 
     //Point extraction starts from 1
@@ -336,7 +353,7 @@ Logger(DM::Standard) << "Successful " << agents.size() << "/" << successfulAgent
         Points_For_Conduits_tmp.push_back(nl);
     }
     Points_For_Conduits = Points_For_Conduits_tmp;
-
+    Logger(Debug) << "Done with point extraction";
     foreach (std::vector<Node*> pl, Points_For_Conduits) {
         for (int i = 1; i < pl.size(); i++) {
             if (TBVectorData::getEdge(this->city, Conduits, pl[i-1], pl[i]) != 0)
@@ -352,21 +369,32 @@ Logger(DM::Standard) << "Successful " << agents.size() << "/" << successfulAgent
         }
     }
     int id = 1;
-    foreach (std::string name, this->city->getUUIDsOfComponentsInView(Junction)) {
+    Logger(Debug) << "Done with adding plan date extraction";
+    std::vector<std::string> JunctionNames =  this->city->getUUIDsOfComponentsInView(Junction);
+    counter = 0;
+    foreach (std::string name, JunctionNames) {
+        counter++;
+        Logger(Debug) << JunctionNames.size() << "/" << counter;
         DM::Node * n =this->city->getNode(name);
         int x = (n->getX() - offsetX)/cellSizeX;
         int y = (n->getY() - offsetY)/cellSizeY;
+        Logger(Debug) << "start topo";
         double z = this->Topology->getCell(x,y);
+        Logger(Debug) << "end topo";
 
         if (n->getAttribute("existing")->getDouble() >0.01)
             continue;
 
         n->changeAttribute("Z", z);
         n->addAttribute("id", id++);
-
-
     }
-    foreach (std::string name, this->city->getUUIDsOfComponentsInView(EndPoint)) {
+
+    Logger(Debug) << "Done with adding junctions date extraction";
+    std::vector<std::string> EndNames =  this->city->getUUIDsOfComponentsInView(EndPoint);
+    counter = 0;
+    foreach (std::string name, EndNames) {
+        counter++;
+        Logger(Debug) << EndNames.size() << "/" << counter;
         DM::Node * n =this->city->getNode(name);
         if (n->getAttribute("existing")->getDouble() >0.01)
             continue;
@@ -375,6 +403,7 @@ Logger(DM::Standard) << "Successful " << agents.size() << "/" << successfulAgent
         double z = this->Topology->getCell(x,y);
         n->changeAttribute("Z", z-3);
     }
+    Logger(Debug) << "Start smoothing";
     smoothNetwork();
 
 }
@@ -426,8 +455,12 @@ void ExtractNetwork::smoothNetwork() {
     Logger(Debug) << "Endpoint Thing";
 
     std::vector<DM::Node *> EndPoints;
-    foreach (std::string n, this->city->getUUIDsOfComponentsInView(this->EndPoint))
+
+    std::vector<std::string> endPoints =  this->city->getUUIDsOfComponentsInView(this->EndPoint);
+
+    foreach (std::string n,endPoints) {
         EndPoints.push_back(this->city->getNode(n));
+    }
     while (EndPoints.size() > 0) {
         std::vector<DM::Node*> new_endPointList;
         foreach (DM::Node * p, EndPoints) {
