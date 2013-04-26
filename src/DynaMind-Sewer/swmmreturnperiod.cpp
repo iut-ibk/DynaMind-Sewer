@@ -25,6 +25,7 @@ SWMMReturnPeriod::SWMMReturnPeriod()
     junctions.addAttribute("FLOODING_AREA");
 
     endnodes = DM::View("OUTFALL", DM::NODE, DM::READ);
+    endnodes.addAttribute("OutfallVolume");
 
     catchment = DM::View("CATCHMENT", DM::FACE, DM::READ);
     catchment.getAttribute("WasteWater");
@@ -177,7 +178,10 @@ void SWMMReturnPeriod::writeOutputFiles(DM::System * sys, double rp, SWMMWriteAn
     if (!v_cities.size()) return;
 
     DM::Component * city = sys->getComponent(v_cities[0]);
-
+    if (!city) {
+        DM::Logger(DM::Warning) << "City nor found ";
+        return;
+    }
     int current_year = city->getAttribute("year")->getDouble();
 
     std::stringstream fname;
@@ -302,15 +306,15 @@ void SWMMReturnPeriod::run() {
         swmm->setupSWMM();
         swmmruns.push_back(swmm);
     }
-
+    DM::Logger(DM::Debug) << "Done with preparing swmm";
 #pragma omp parallel for
     for (int nof = 0; nof < numberOfRPs; nof++ ) {
         swmmruns[nof]->runSWMM();
 
     }
-
+    DM::Logger(DM::Debug) << "Start write output files";
     for (int nof = 0; nof < numberOfRPs; nof++ ) {
-
+        DM::Logger(DM::Debug) << "Start read in  " << nof;
         int index_rp = nof / numberOfcfs;
         int index_cf = nof % numberOfcfs;
 
@@ -323,7 +327,7 @@ void SWMMReturnPeriod::run() {
         writeOutputFiles(city, rp, *swmm, swmm->getSWMMUUID(), cf,climateChangeFactors[index_cf]);
 
     }
-
+    DM::Logger(DM::Debug) << "Done with swmm";
     for (int nof = 0; nof < numberOfRPs; nof++ ) {
         delete swmmruns[nof];
 
