@@ -75,10 +75,15 @@ void SWMMWriteAndRead::setClimateChangeFactor(int cf)
 
 void SWMMWriteAndRead::readInReportFile() {
 
-    std::map<int, std::string> revUUIDtoINT;
+
+    Logger(Debug) << "Read inputfile " << this->SWMMPath.absolutePath() + "/" + "swmm.rep";
+
+    QMap<int, std::string> revUUIDtoINT;
+
+
 
     for (std::map<std::string, int>::const_iterator it = UUIDtoINT.begin(); it !=UUIDtoINT.end(); ++it) {
-        revUUIDtoINT[it->second] = it->first;
+        revUUIDtoINT[it->second] =  it->first;
     }
 
     this->reportFile.setFileName(this->SWMMPath.absolutePath() + "/" + "swmm.rep");
@@ -98,6 +103,9 @@ void SWMMWriteAndRead::readInReportFile() {
     this->reportFile.close();
 
     //Search for Errors
+
+    Logger(Debug) << "Search errors ";
+
 
     foreach (QString l, fileContent) {
         //if (l.contains("WARNING")) Logger(Warning) << l.toStdString();
@@ -125,7 +133,7 @@ void SWMMWriteAndRead::readInReportFile() {
     VSurfaceStorage = 0;
     double Vwwtp = 0;
     double Voutfall = 0;
-
+    Logger(Debug) << "Start reading Sections ";
     int counter = 0;
     for (int i = 0; i < fileContent.size(); i++) {
         line = fileContent[i];
