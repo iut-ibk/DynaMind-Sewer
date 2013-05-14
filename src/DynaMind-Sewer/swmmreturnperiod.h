@@ -57,11 +57,12 @@ class DM_HELPER_DLL_EXPORT SWMMReturnPeriod : public  DM::Module {
     std::map<std::string, int> UUIDtoINT;
 
     std::stringstream curves;
-    void createEulerRainFile(double duration, double deltaT, double return_period, double cf, string rfile);
+
 
 private:
     void writeOutputFiles(DM::System * sys, double rp, SWMMWriteAndRead &  swmmreeadfile, std::string swmmuuid, double cf, double id);
 public:
+    static void CreateEulerRainFile(double duration, double deltaT, double return_period, double cf, string rfile);
     SWMMReturnPeriod();
     void run();
     void init();

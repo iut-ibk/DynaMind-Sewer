@@ -114,7 +114,7 @@ void SWMMReturnPeriod::init() {
     this->addData("City", views);
 }
 
-void SWMMReturnPeriod::createEulerRainFile(double duration, double deltaT, double return_period, double cf, std::string rfile) {
+void SWMMReturnPeriod::CreateEulerRainFile(double duration, double deltaT, double return_period, double cf, std::string rfile) {
 
     QDateTime date(QDate(2000,1,1), QTime(0,0));
 
@@ -163,10 +163,7 @@ void SWMMReturnPeriod::createEulerRainFile(double duration, double deltaT, doubl
         out << "\n";
     }
 
-
-
     out.close();
-
 }
 
 void SWMMReturnPeriod::writeOutputFiles(DM::System * sys, double rp, SWMMWriteAndRead &swmmreeadfile, std::string swmmuuid, double cf, double id)
@@ -299,7 +296,7 @@ void SWMMReturnPeriod::run() {
 
         DM::Logger(DM::Standard) << "return_period " <<  rp;
         DM::Logger(DM::Standard) << "cf_period " <<  cf;
-        this->createEulerRainFile(30,5,rp,cf,rfile.str());
+        this->CreateEulerRainFile(30,5,rp,cf,rfile.str());
 
         SWMMWriteAndRead * swmm;
         swmm = new SWMMWriteAndRead(city,rfile.str(), this->FileName);
