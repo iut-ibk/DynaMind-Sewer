@@ -34,6 +34,7 @@
 #include <math.h>
 #include <algorithm>
 #include <swmmwriteandread.h>
+#include <swmmreturnperiod.h>
 
 
 
@@ -45,6 +46,8 @@ DMSWMM::DMSWMM()
     GLOBAL_Counter = 1;
     conduit = DM::View("CONDUIT", DM::EDGE, DM::READ);
     conduit.getAttribute("Diameter");
+    conduit.addAttribute("capacity");
+    conduit.addAttribute("velocity");
 
     inlet = DM::View("INLET", DM::NODE, DM::READ);
     inlet.getAttribute("CATCHMENT");
@@ -96,6 +99,8 @@ DMSWMM::DMSWMM()
     this->FileName = "";
     this->climateChangeFactor = 1;
     this->RainFile = "";
+    this->use_euler = true;
+    this->return_period = 1;
 
     years = 0;
 
@@ -103,6 +108,8 @@ DMSWMM::DMSWMM()
     this->addParameter("Folder", DM::STRING, &this->FileName);
     this->addParameter("RainFile", DM::FILENAME, &this->RainFile);
     this->addParameter("ClimateChangeFactor", DM::DOUBLE, & this->climateChangeFactor);
+    this->addParameter("use euler", DM::BOOL, & this->use_euler);
+    this->addParameter("return period", DM::DOUBLE, &this->return_period);
     this->addParameter("combined system", DM::BOOL, &this->isCombined);
 
     counterRain =0;
@@ -137,17 +144,40 @@ void DMSWMM::run() {
     curves.str("");
     city = this->getData("City");
 
-    SWMMWriteAndRead swmm(city, this->RainFile, this->FileName);
-
+    SWMMWriteAndRead * swmm;
     double cf = 1. + years / 20. * (this->climateChangeFactor - 1.);
 
-    swmm.setClimateChangeFactor(cf);
+    if (!this->use_euler)
+        swmm = new SWMMWriteAndRead(city, this->RainFile, this->FileName);
 
-    swmm.setupSWMM();
+
+    else {
+        std::stringstream rfile;
+        rfile << "/tmp/rain_"<< this->getUuid();
+        SWMMReturnPeriod::CreateEulerRainFile(60, 5, this->return_period, 1, rfile.str());
+        swmm = new SWMMWriteAndRead(city, rfile.str(), this->FileName);
+    }
+
+    swmm->setClimateChangeFactor(cf);
+    swmm->setupSWMM();
+    swmm->runSWMM();
+    swmm->readInReportFile();
+
+    std::vector<std::pair<std::string, double> > capacity = swmm->getLinkFlowSummeryCapacity();
+    for (int i = 0; i < capacity.size(); i++) {
+        std::pair<std::string, double> cap = capacity[i];
+        DM::Component * c = city->getComponent(cap.first);
+        c->addAttribute("capacity", cap.second);
+    }
+
+    std::vector<std::pair<std::string, double> > velocity = swmm->getLinkFlowSummeryVelocity();
+    for (int i = 0; i < velocity.size(); i++) {
+        std::pair<std::string, double> velo = velocity[i];
+        DM::Component * c = city->getComponent(velo.first);
+        c->addAttribute("velocity", velo.second);
+    }
+
+    delete swmm;
 
     this->years++;
-
-
-
-
 }

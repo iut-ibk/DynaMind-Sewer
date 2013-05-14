@@ -56,8 +56,8 @@ class DM_HELPER_DLL_EXPORT DMSWMM : public  DM::Module {
     std::vector<DM::Node*> PointList;
     bool isCombined;
 
-
-
+    bool use_euler;
+    double return_period;
     double climateChangeFactor;
 
 
