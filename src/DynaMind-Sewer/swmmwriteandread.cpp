@@ -126,6 +126,7 @@ void SWMMWriteAndRead::readInReportFile() {
     bool SectionOutfall = false;
     bool FlowRouting = false;
     bool NodeDepthSummery = false;
+    bool LinkFlowSummary = false;
     double SurfaceRunOff = 0;
 
     double Vp = 0;
@@ -153,9 +154,12 @@ void SWMMWriteAndRead::readInReportFile() {
             FloodSection = true;
             continue;
         }
-
         if (line.contains("Node Depth Summary") ) {
             NodeDepthSummery = true;
+            continue;
+        }
+        if (line.contains("Link Flow Summary") ) {
+            LinkFlowSummary = true;
             continue;
         }
         if (line.contains("Continuity Error") && FlowRouting == true) {
@@ -233,11 +237,7 @@ void SWMMWriteAndRead::readInReportFile() {
                     Vp += QString(data[5]).toDouble();
                     floodedNodesVolume.push_back(std::pair<std::string, double> (p->getUUID(),QString(data[5]).toDouble() ));
                 }
-
-
             }
-
-
         }
 
         if (NodeDepthSummery) {
@@ -264,18 +264,43 @@ void SWMMWriteAndRead::readInReportFile() {
                     }
                     nodeDepthSummery.push_back(std::pair<std::string, double> (p->getUUID(),QString(data[3]).toDouble() ));
                 }
-
-
             }
-
-
         }
+
+        if (LinkFlowSummary) {
+            if (line.contains("LINK")) {
+                //Start extract
+                QStringList data =line.split(QRegExp("\\s+"));
+                for (int j = 0; j < data.size(); j++) {
+                    if (data[j].size() == 0) {
+                        data.removeAt(j);
+                    }
+                }
+                //Extract Node id
+                if (data.size() != 8) {
+                    Logger(Error) << "Error in Extraction Link Flow Summary";
+
+                } else {
+                    QString id_asstring = data[0];
+                    id_asstring.remove("LINK");
+                    int id = id_asstring.toInt();
+                    DM::Edge * p = this->city->getEdge(revUUIDtoINT[id]);
+                    if (!p) {
+                        Logger(Warning) << id_asstring.toStdString()  << " doesn't exist : line: " << line.toStdString();
+                        continue;
+                    }
+                    linkFlowSummery_capacity.push_back(std::pair<std::string, double> (p->getUUID(),QString(data[7]).toDouble() ));
+                    linkFlowSummery_velocity.push_back(std::pair<std::string, double> (p->getUUID(),QString(data[6]).toDouble() ));
+                }
+            }
+        }
+
         if (counter > 0 && line.contains("************")) {
             FloodSection = false;
             SectionSurfaceRunoff = false;
             SectionOutfall = false;
             NodeDepthSummery = false;
-            //FlowRouting = false;
+            LinkFlowSummary = false;
             counter = -1;
         }
         counter ++;
@@ -1104,8 +1129,6 @@ void SWMMWriteAndRead::setupSWMM()
 
     this->writeSWMMFile();
     this->writeRainFile();
-    //this->runSWMM();
-    //this->readInReportFile();
 }
 
 string SWMMWriteAndRead::getSWMMUUID()
@@ -1121,6 +1144,17 @@ std::vector<std::pair<string, double > > SWMMWriteAndRead::getFloodedNodes()
 std::vector<std::pair<string, double> > SWMMWriteAndRead::getNodeDepthSummery()
 {
     return this->nodeDepthSummery;
+}
+
+std::vector<std::pair<string, double> > SWMMWriteAndRead::getLinkFlowSummeryCapacity()
+{
+
+    return this->linkFlowSummery_capacity;
+}
+
+std::vector<std::pair<string, double> > SWMMWriteAndRead::getLinkFlowSummeryVelocity()
+{
+    return this->linkFlowSummery_velocity;
 }
 
 double SWMMWriteAndRead::getVp()

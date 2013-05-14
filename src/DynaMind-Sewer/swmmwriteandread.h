@@ -34,6 +34,34 @@
 
 class SWMMWriteAndRead
 {
+public:
+    SWMMWriteAndRead(DM::System * city, std::string rainfile, std::string filename  = "");
+    void setRainFile(std::string rainfile);
+    void setClimateChangeFactor(int cf);
+    void writeSWMMFile();
+    void setupSWMM();
+    std::string getSWMMUUID();
+    void readInReportFile();
+    void runSWMM();
+
+    std::vector<std::pair<string, double> > getFloodedNodes();
+    std::vector<std::pair<string, double> > getNodeDepthSummery();
+
+    std::vector<std::pair<string, double> > getLinkFlowSummeryCapacity();
+    std::vector<std::pair<string, double> > getLinkFlowSummeryVelocity();
+
+    double getVp();
+    double getVSurfaceRunoff();
+    double getVSurfaceStorage();
+    double getVwwtp();
+    double getVout();
+    double getTotalImpervious();
+    double getContinuityError();
+    double getImperiousInfiltration();
+
+    /** @brief set caculation timestep for flow rounting in sec */
+    void setCalculationTimeStep(int timeStep);
+
 private:
 
     int setting_timestep;
@@ -101,38 +129,11 @@ private:
 
     std::vector<std::pair <std::string, double> > nodeDepthSummery;
 
+    std::vector<std::pair <std::string, double> > linkFlowSummery_capacity;
+
+    std::vector<std::pair <std::string, double> > linkFlowSummery_velocity;
+
     QFile reportFile;
-
-
-public:
-    SWMMWriteAndRead(DM::System * city, std::string rainfile, std::string filename  = "");
-    void setRainFile(std::string rainfile);
-    void setClimateChangeFactor(int cf);
-    void writeSWMMFile();
-    void setupSWMM();
-    std::string getSWMMUUID();
-    void readInReportFile();
-    void runSWMM();
-
-    std::vector<std::pair<string, double> > getFloodedNodes();
-    std::vector<std::pair<string, double> > getNodeDepthSummery();
-
-    double getVp();
-    double getVSurfaceRunoff();
-    double getVSurfaceStorage();
-    double getVwwtp();
-    double getVout();
-    double getTotalImpervious();
-    double getContinuityError();
-    double getImperiousInfiltration();
-
-    /** @brief set caculation timestep for flow rounting in sec */
-    void setCalculationTimeStep(int timeStep);
-
-
-
-
-
 
 };
 
