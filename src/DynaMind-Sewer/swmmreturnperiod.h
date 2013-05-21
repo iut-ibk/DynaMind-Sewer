@@ -29,6 +29,7 @@ class DM_HELPER_DLL_EXPORT SWMMReturnPeriod : public  DM::Module {
     DM::View globals;
     DM::View flooding_area;
 
+
     DM::View vcity;
 
 
@@ -37,6 +38,7 @@ class DM_HELPER_DLL_EXPORT SWMMReturnPeriod : public  DM::Module {
     std::string outputFiles;
     std::vector<DM::Node*> PointList;
     bool isCombined;
+    bool cfRand;
 
 
 
@@ -60,7 +62,9 @@ class DM_HELPER_DLL_EXPORT SWMMReturnPeriod : public  DM::Module {
 
 
 private:
-    void writeOutputFiles(DM::System * sys, double rp, SWMMWriteAndRead &  swmmreeadfile, std::string swmmuuid, double cf, double id);
+    void writeOutputFiles(DM::System * sys, double rp, SWMMWriteAndRead &  swmmreeadfile, std::string swmmuuid, double cf, double id, double cf_tot);
+
+    std::vector<double> climateChangeFactors;
 public:
     static void CreateEulerRainFile(double duration, double deltaT, double return_period, double cf, string rfile);
     SWMMReturnPeriod();
