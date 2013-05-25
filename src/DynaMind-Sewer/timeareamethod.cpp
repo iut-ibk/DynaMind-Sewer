@@ -269,6 +269,9 @@ void TimeAreaMethod::run() {
         double DeltaStorage = 0;
 
         DM::Logger(DM::Debug) << "JUNCTION " << inlet_attr->getAttribute("JUNCTION")->getLink().uuid;
+        if ( inlet_attr->getAttribute("JUNCTION")->getLink().uuid.empty()) {
+            DM::Logger(DM::Warning) << "Inlet not connected to junction";
+        }
         DM::Node * id = city->getNode(inlet_attr->getAttribute("JUNCTION")->getLink().uuid);
         if (!id)
             continue;
@@ -307,11 +310,11 @@ void TimeAreaMethod::run() {
 
             }
 
-            if ( id->getAttribute("StrandLength")->getDouble() < StrangL)
-                id->getAttribute("StrandLength")->setDouble(StrangL);
+            if ( id->getAttribute("StrangLength")->getDouble() < StrangL)
+                id->getAttribute("StrangLength")->setDouble(StrangL);
 
-            if ( id->getAttribute("StrandLengthTotal")->getDouble() < StrangL_Total)
-                id->getAttribute("StrandLengthTotal")->setDouble(StrangL_Total);
+            if ( id->getAttribute("StrangLengthTotal")->getDouble() < StrangL_Total)
+                id->getAttribute("StrangLengthTotal")->setDouble(StrangL_Total);
 
             id->getAttribute("QrKritPerShaft_total")->setDouble(QKrit);
             id->getAttribute("Area_total")->setDouble(id->getAttribute("AreaPerShaft")->getDouble() - DeltaA);
@@ -354,11 +357,11 @@ void TimeAreaMethod::run() {
                         StrangL_Total += sqrt(dp.getX()*dp.getX() + dp.getY()*dp.getY() + dp.getZ()*dp.getZ());
                     }
 
-                    id->getAttribute("StrandLength")->getDouble();
-                    if ( id->getAttribute("StrandLength")->getDouble() < StrangL)
-                        id->getAttribute("StrandLength")->setDouble(StrangL);
-                    if ( id->getAttribute("StrandLengthTotal")->getDouble() < StrangL_Total)
-                        id->getAttribute("StrandLengthTotal")->setDouble(StrangL_Total);
+                    id->getAttribute("StrangLength")->getDouble();
+                    if ( id->getAttribute("StrangLength")->getDouble() < StrangL)
+                        id->getAttribute("StrangLength")->setDouble(StrangL);
+                    if ( id->getAttribute("StrangLengthTotal")->getDouble() < StrangL_Total)
+                        id->getAttribute("StrangLengthTotal")->setDouble(StrangL_Total);
                     break;
                 }
             }
@@ -374,8 +377,8 @@ void TimeAreaMethod::run() {
     for (int i = 0; i <junctionnames.size(); i++) {
         DM::Node * p = city->getNode(junctionnames[i]);
 
-        p->getAttribute("Time")->setDouble( p->getAttribute("StrandLength")->getDouble()/this->v + 1*60);
-        p->getAttribute("TimeTotal")->setDouble( p->getAttribute("StrandLengthTotal")->getDouble()/this->v + 1*60);
+        p->getAttribute("Time")->setDouble( p->getAttribute("StrangLength")->getDouble()/this->v + 1*60);
+        p->getAttribute("TimeTotal")->setDouble( p->getAttribute("StrangLengthTotal")->getDouble()/this->v + 1*60);
         double QrKritPerShaft_total =  p->getAttribute("QrKritPerShaft_total")->getDouble();
 
 
