@@ -137,10 +137,20 @@ void DMSWMM::init() {
     views.push_back(globals);
 
     this->addData("City", views);
+
+    if (!QDir(QString::fromStdString(this->FileName)).exists()) {
+        DM::Logger(DM::Warning) <<  this->FileName << "  does not exist!";
+    }
 }
 
 
 void DMSWMM::run() {
+
+    if (!QDir(QString::fromStdString(this->FileName)).exists()){
+        DM::Logger(DM::Error) <<  this->FileName << "  does not exist!";
+        return;
+    }
+
     curves.str("");
     city = this->getData("City");
 
