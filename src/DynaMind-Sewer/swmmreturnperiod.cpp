@@ -3,6 +3,7 @@
 #include <ctime>
 #include <fstream>
 #include <QDateTime>
+#include <QUuid>
 
 DM_DECLARE_NODE_NAME(SWMMReturnPeriod, Sewer)
 SWMMReturnPeriod::SWMMReturnPeriod()
@@ -318,8 +319,8 @@ void SWMMReturnPeriod::run() {
         double rp = return_periods[index_rp];
         double cf = cfs[index_cf];
         std::stringstream rfile;
-        rfile << "/tmp/rain_";
-        rfile << nof;
+        rfile << QDir::tempPath().toStdString() << "/";
+        rfile << "rain_" << QUuid::createUuid().toString().toStdString();
 
         DM::Logger(DM::Standard) << "return_period " <<  rp;
         DM::Logger(DM::Standard) << "cf_period " <<  cf;
