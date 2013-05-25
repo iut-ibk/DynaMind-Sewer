@@ -58,7 +58,7 @@ void OutfallStructure::run()
         DM::Node * outfall = city->addNode(*n + offset, view_outfalls);
         outfall->addAttribute("Z",n->getAttribute("Z")->getDouble());
         DM::Edge * e = city->addEdge(n, outfall, view_conduits);
-        e->addAttribute("Diameter", 4000);
+        e->addAttribute("Diameter", 4);
         e->addAttribute("Length", 15.);
 
     }
