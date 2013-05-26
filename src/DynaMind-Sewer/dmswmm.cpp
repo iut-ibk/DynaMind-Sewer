@@ -101,6 +101,7 @@ DMSWMM::DMSWMM()
     this->RainFile = "";
     this->use_euler = true;
     this->return_period = 1;
+    this->use_linear_cf = true;
 
     years = 0;
 
@@ -111,6 +112,7 @@ DMSWMM::DMSWMM()
     this->addParameter("use euler", DM::BOOL, & this->use_euler);
     this->addParameter("return period", DM::DOUBLE, &this->return_period);
     this->addParameter("combined system", DM::BOOL, &this->isCombined);
+    this->addParameter("use_linear_cf", DM::BOOL, &this->use_linear_cf);
 
     counterRain =0;
 
@@ -155,16 +157,17 @@ void DMSWMM::run() {
     city = this->getData("City");
 
     SWMMWriteAndRead * swmm;
-    double cf = 1. + years / 20. * (this->climateChangeFactor - 1.);
+    double cf = this->climateChangeFactor;
+
+    if (this->use_linear_cf) cf = 1. + years / 20. * (this->climateChangeFactor - 1.);
+
 
     if (!this->use_euler)
         swmm = new SWMMWriteAndRead(city, this->RainFile, this->FileName);
-
-
     else {
         std::stringstream rfile;
         rfile << "/tmp/rain_"<< this->getUuid();
-        SWMMReturnPeriod::CreateEulerRainFile(60, 5, this->return_period, 1, rfile.str());
+        SWMMReturnPeriod::CreateEulerRainFile(60, 5, this->return_period, cf, rfile.str());
         swmm = new SWMMWriteAndRead(city, rfile.str(), this->FileName);
     }
 

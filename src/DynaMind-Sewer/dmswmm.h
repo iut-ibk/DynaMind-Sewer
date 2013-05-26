@@ -55,6 +55,7 @@ class DM_HELPER_DLL_EXPORT DMSWMM : public  DM::Module {
     std::string FileName;
     std::vector<DM::Node*> PointList;
     bool isCombined;
+    bool use_linear_cf;
 
     bool use_euler;
     double return_period;
