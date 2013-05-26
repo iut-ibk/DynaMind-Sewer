@@ -56,6 +56,7 @@ DMSWMM::DMSWMM()
     junctions = DM::View("JUNCTION", DM::NODE, DM::READ);
     junctions.getAttribute("D");
     junctions.addAttribute("flooding_V");
+    junctions.addAttribute("node_depth");
 
     endnodes = DM::View("OUTFALL", DM::NODE, DM::READ);
 
@@ -74,8 +75,6 @@ DMSWMM::DMSWMM()
 
     storage = DM::View("STORAGE", DM::NODE, DM::READ);
     storage.getAttribute("Z");
-    //storage.getAttribute("Storage");
-
 
     globals = DM::View("CITY", DM::COMPONENT, DM::READ);
     globals.addAttribute("SWMM_ID");
@@ -114,7 +113,7 @@ DMSWMM::DMSWMM()
     this->addParameter("combined system", DM::BOOL, &this->isCombined);
     this->addParameter("use_linear_cf", DM::BOOL, &this->use_linear_cf);
 
-    counterRain =0;
+    counterRain = 0;
 
 
     this->addData("City", views);
@@ -176,15 +175,29 @@ void DMSWMM::run() {
     swmm->runSWMM();
     swmm->readInReportFile();
 
+    std::vector<std::pair<std::string, double> > flooding = swmm->getFloodedNodes();
+    for (uint i = 0; i < flooding.size(); i++) {
+        std::pair<std::string, double> flo = flooding[i];
+        DM::Component * c = city->getComponent(flo.first);
+        c->addAttribute("flooding_V", flo.second);
+    }
+
+    std::vector<std::pair<std::string, double> > node_depth = swmm->getNodeDepthSummery();
+    for (uint i = 0; i < node_depth.size(); i++) {
+        std::pair<std::string, double> no = node_depth[i];
+        DM::Component * c = city->getComponent(no.first);
+        c->addAttribute("node_depth", no.second);
+    }
+
     std::vector<std::pair<std::string, double> > capacity = swmm->getLinkFlowSummeryCapacity();
-    for (int i = 0; i < capacity.size(); i++) {
+    for (uint i = 0; i < capacity.size(); i++) {
         std::pair<std::string, double> cap = capacity[i];
         DM::Component * c = city->getComponent(cap.first);
         c->addAttribute("capacity", cap.second);
     }
 
     std::vector<std::pair<std::string, double> > velocity = swmm->getLinkFlowSummeryVelocity();
-    for (int i = 0; i < velocity.size(); i++) {
+    for (uint i = 0; i < velocity.size(); i++) {
         std::pair<std::string, double> velo = velocity[i];
         DM::Component * c = city->getComponent(velo.first);
         c->addAttribute("velocity", velo.second);
