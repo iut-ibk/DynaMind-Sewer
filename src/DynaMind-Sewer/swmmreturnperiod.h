@@ -37,8 +37,11 @@ class DM_HELPER_DLL_EXPORT SWMMReturnPeriod : public  DM::Module {
     std::string FileName;
     std::string outputFiles;
     std::vector<DM::Node*> PointList;
+    std::string returnPeriods;
     bool isCombined;
     bool cfRand;
+    bool use_linear_cf;
+    int CFSamples;
 
 
 
@@ -50,7 +53,6 @@ class DM_HELPER_DLL_EXPORT SWMMReturnPeriod : public  DM::Module {
     int years;
 
     int calculationTimestep;
-
     //used to check if it's time to run
     int internalTimestep;
 
