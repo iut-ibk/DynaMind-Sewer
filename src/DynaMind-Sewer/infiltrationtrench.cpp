@@ -9,8 +9,6 @@ InfiltrationTrench::InfiltrationTrench()
     this->addParameter("R", DM::DOUBLE, &this->R);
     this->addParameter("D", DM::DOUBLE, &this->D);
 
-
-
     view_infitration_system = DM::View("INFILTRATION_SYSTEM", DM::COMPONENT, DM::WRITE);
     view_infitration_system.addAttribute("treated_area");
     view_infitration_system.addAttribute("area");
@@ -86,9 +84,4 @@ void InfiltrationTrench::run() {
 
     }
     DM::Logger(DM::Standard) << "Number of placed infiltration systems " << numberOfPlacedSystem;
-
-
-
-
-
 }
