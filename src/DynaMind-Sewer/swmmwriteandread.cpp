@@ -58,9 +58,6 @@ SWMMWriteAndRead::SWMMWriteAndRead(DM::System * city, std::string rainfile, std:
 
     tmpPath.mkdir(UUIDPath);
     this->SWMMPath.setPath(tmpPath.absolutePath() + "/" + UUIDPath);
-
-
-
 }
 
 void SWMMWriteAndRead::setRainFile(string rainfile)
@@ -74,8 +71,6 @@ void SWMMWriteAndRead::setClimateChangeFactor(int cf)
 }
 
 void SWMMWriteAndRead::readInReportFile() {
-
-
     Logger(Debug) << "Read inputfile " << this->SWMMPath.absolutePath() + "/" + "swmm.rep";
 
     QMap<int, std::string> revUUIDtoINT;
@@ -324,6 +319,7 @@ void SWMMWriteAndRead::readInReportFile() {
         c->getAttribute("SWMM_ID")->setString(QString(this->SWMMPath.path()).toStdString());
     }
 
+    this->evalWaterLevelInJunctions();
 }
 
 void SWMMWriteAndRead::writeJunctions(std::fstream &inp)
@@ -1131,7 +1127,7 @@ void SWMMWriteAndRead::setupSWMM()
     this->writeRainFile();
 }
 
-string SWMMWriteAndRead::getSWMMUUID()
+string SWMMWriteAndRead::getSWMMUUIDPath()
 {
     return this->SWMMPath.absolutePath().toStdString();
 }
@@ -1197,6 +1193,33 @@ double SWMMWriteAndRead::getImperiousInfiltration()
     return this->Impervious_Infiltration;
 }
 
+double SWMMWriteAndRead::getAverageCapacity()
+{
+    typedef std::pair<std::string, double > rainnode;
+    std::vector< std::pair<std::string, double > > valume_capacity = this->getLinkFlowSummeryCapacity();
+    double volume_cap = 0;
+
+    foreach (rainnode  fn, valume_capacity) {
+        volume_cap+=fn.second;
+    }
+    return volume_cap/=valume_capacity.size();
+}
+
+double SWMMWriteAndRead::getWaterLeveleBelow0()
+{
+    return this->water_level_below_0;
+}
+
+double SWMMWriteAndRead::getWaterLeveleBelow10()
+{
+    return this->water_level_below_10;
+}
+
+double SWMMWriteAndRead::getWaterLeveleBelow20()
+{
+    return this->water_level_below_20;
+}
+
 void SWMMWriteAndRead::setCalculationTimeStep(int timeStep)
 {
     this->setting_timestep = timeStep;
@@ -1234,10 +1257,6 @@ void SWMMWriteAndRead::runSWMM()
 
         process.start("/usr/local/bin/wine",argument);
     }
-
-
-
-
 #endif
 
     process.waitForFinished(3000000);
@@ -1301,6 +1320,28 @@ void SWMMWriteAndRead::createViewDefinition()
 
     storage = DM::View("STORAGE", DM::NODE, DM::READ);
     storage.getAttribute("Z");
+}
+
+void SWMMWriteAndRead::evalWaterLevelInJunctions()
+{
+    typedef std::pair<std::string, double > rainnode;
+    water_level_below_0 = 0;
+    water_level_below_10 = 0;
+    water_level_below_20 = 0;
+
+    std::vector< std::pair<std::string, double > > surcharge = this->getNodeDepthSummery();
+    foreach (rainnode  fn, surcharge) {
+        DM::Component * n =  this->city->getComponent(fn.first);
+        if (!n) continue;
+        double D = n->getAttribute("D")->getDouble();
+        if (D - fn.second < 0.001) water_level_below_0++;
+        if (D - fn.second < 0.10) water_level_below_10++;
+        if (D - fn.second < 0.20) water_level_below_20++;
+    }
+
+    water_level_below_0/=surcharge.size();
+    water_level_below_10/=surcharge.size();
+    water_level_below_20/=surcharge.size();
 }
 
 void SWMMWriteAndRead::writeSWMMheader(std::fstream &inp)
@@ -1389,3 +1430,6 @@ void SWMMWriteAndRead::writeSWMMheader(std::fstream &inp)
     //-------------------------//
 
 }
+
+
+

@@ -40,7 +40,7 @@ public:
     void setClimateChangeFactor(int cf);
     void writeSWMMFile();
     void setupSWMM();
-    std::string getSWMMUUID();
+    std::string getSWMMUUIDPath();
     void readInReportFile();
     void runSWMM();
 
@@ -58,6 +58,12 @@ public:
     double getTotalImpervious();
     double getContinuityError();
     double getImperiousInfiltration();
+    double getAverageCapacity();
+
+    double getWaterLeveleBelow0();
+    double getWaterLeveleBelow10();
+    double getWaterLeveleBelow20();
+
 
     /** @brief set caculation timestep for flow rounting in sec */
     void setCalculationTimeStep(int timeStep);
@@ -105,11 +111,6 @@ private:
 
     void createViewDefinition();
 
-
-
-
-
-
     std::stringstream curves;
     std::string rainfile;
 
@@ -126,6 +127,8 @@ private:
     double ContinuityError;
     double climateChangeFactor;
 
+    void evalWaterLevelInJunctions();
+
     std::vector<std::pair <std::string, double> > floodedNodesVolume;
 
     std::vector<std::pair <std::string, double> > nodeDepthSummery;
@@ -133,6 +136,11 @@ private:
     std::vector<std::pair <std::string, double> > linkFlowSummery_capacity;
 
     std::vector<std::pair <std::string, double> > linkFlowSummery_velocity;
+
+    //Water level in percent
+    double water_level_below_0;
+    double water_level_below_10;
+    double water_level_below_20;
 
     QFile reportFile;
 
