@@ -56,10 +56,14 @@ class DM_HELPER_DLL_EXPORT DMSWMM : public  DM::Module {
     std::vector<DM::Node*> PointList;
     bool isCombined;
     bool use_linear_cf;
+    bool writeResultFile;
 
     bool use_euler;
     double return_period;
     double climateChangeFactor;
+    bool climateChangeFactorFromCity;
+    int calculationTimestep;
+    int internalTimestep;
 
 
 
@@ -70,6 +74,8 @@ class DM_HELPER_DLL_EXPORT DMSWMM : public  DM::Module {
     std::map<std::string, int> UUIDtoINT;
 
     std::stringstream curves;
+
+    std::string unique_name;
 
 public:
     DMSWMM();

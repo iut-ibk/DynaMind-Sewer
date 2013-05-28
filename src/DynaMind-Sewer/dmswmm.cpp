@@ -35,7 +35,7 @@
 #include <algorithm>
 #include <swmmwriteandread.h>
 #include <swmmreturnperiod.h>
-
+#include <drainagehelper.h>
 
 
 using namespace DM;
@@ -44,6 +44,8 @@ DMSWMM::DMSWMM()
 {
 
     GLOBAL_Counter = 1;
+    internalTimestep = 0;
+
     conduit = DM::View("CONDUIT", DM::EDGE, DM::READ);
     conduit.getAttribute("Diameter");
     conduit.addAttribute("capacity");
@@ -80,7 +82,9 @@ DMSWMM::DMSWMM()
     globals.addAttribute("SWMM_ID");
     globals.addAttribute("Vr");
     globals.addAttribute("Vp");
+    globals.addAttribute("Vout");
     globals.addAttribute("Vwwtp");
+    globals.addAttribute("drainage_capacity");
 
     std::vector<DM::View> views;
 
@@ -101,7 +105,9 @@ DMSWMM::DMSWMM()
     this->use_euler = true;
     this->return_period = 1;
     this->use_linear_cf = true;
-
+    this->writeResultFile = false;
+    this->climateChangeFactorFromCity = false;
+    this->calculationTimestep = 1;
     years = 0;
 
     this->isCombined = false;
@@ -112,11 +118,12 @@ DMSWMM::DMSWMM()
     this->addParameter("return period", DM::DOUBLE, &this->return_period);
     this->addParameter("combined system", DM::BOOL, &this->isCombined);
     this->addParameter("use_linear_cf", DM::BOOL, &this->use_linear_cf);
-
+    this->addParameter("writeResultFile", DM::BOOL, &this->writeResultFile);
+    this->addParameter("climateChangeFactorFromCity", DM::BOOL, &this->climateChangeFactorFromCity);
+    this->addParameter("calculationTimestep", DM::INT, & this->calculationTimestep);
     counterRain = 0;
-
-
     this->addData("City", views);
+    unique_name = QUuid::createUuid().toString().toStdString();
 
 }
 
@@ -151,22 +158,40 @@ void DMSWMM::run() {
         DM::Logger(DM::Error) <<  this->FileName << "  does not exist!";
         return;
     }
-
-    curves.str("");
     city = this->getData("City");
 
-    SWMMWriteAndRead * swmm;
+    std::vector<std::string>v_cities = city->getUUIDs(globals);
+    DM::Component * c = city->getComponent(v_cities[0]);
+    if (!c) {
+        DM::Logger(DM::Error) << "City not found ";
+        return;
+    }
+
     double cf = this->climateChangeFactor;
+
+    if (this->climateChangeFactorFromCity) {
+        cf = c->getAttribute("climate_change_factor")->getDouble();
+    }
 
     if (this->use_linear_cf) cf = 1. + years / 20. * (this->climateChangeFactor - 1.);
 
+    this->years++;
+
+    if (this->internalTimestep == this->calculationTimestep) this->internalTimestep = 0;
+    this->internalTimestep++;
+
+    if (this->internalTimestep != 1) {
+        return;
+    }
+
+    SWMMWriteAndRead * swmm;
 
     if (!this->use_euler)
         swmm = new SWMMWriteAndRead(city, this->RainFile, this->FileName);
     else {
         std::stringstream rfile;
-        rfile << "/tmp/rain_"<< this->getUuid();
-        SWMMReturnPeriod::CreateEulerRainFile(60, 5, this->return_period, cf, rfile.str());
+        rfile << "/tmp/rain_"<< QUuid::createUuid().toString().toStdString();
+        DrainageHelper::CreateEulerRainFile(60, 5, this->return_period, cf, rfile.str());
         swmm = new SWMMWriteAndRead(city, rfile.str(), this->FileName);
     }
 
@@ -203,7 +228,34 @@ void DMSWMM::run() {
         c->addAttribute("velocity", velo.second);
     }
 
-    delete swmm;
+    c->addAttribute("drainage_capacity", swmm->getAverageCapacity());
+    c->addAttribute("SWMM_ID", swmm->getSWMMUUIDPath());
+    c->addAttribute("Vr", swmm->getVSurfaceRunoff());
+    c->addAttribute("Vp", swmm->getVp());
+    c->addAttribute("Vwwtp", swmm->getVwwtp());
+    c->addAttribute("Vout", swmm->getVout());
 
-    this->years++;
+
+    if (!writeResultFile) {
+        delete swmm;
+        return;
+    }
+
+    int current_year = c->getAttribute("year")->getDouble();
+
+    DM::Logger(DM::Debug) << "Start write output files";
+    std::map<std::string, std::string> additionalParameter;
+    additionalParameter["year"] = QString::number(current_year).toStdString();
+    additionalParameter["population_growth"] = QString::number(city->getAttribute("pop_growth")->getDouble()).toStdString();
+    additionalParameter["climate_change_factor\t"] = QString::number(cf).toStdString();
+    additionalParameter["return_period"] =  QString::number(this->return_period).toStdString();
+    additionalParameter["renewal_rate"] =  QString::number(c->getAttribute("renewal_rate")->getDouble()).toStdString();
+
+    std::stringstream fname;
+    Logger(Standard) << "Start Write Report File " <<fname.str();
+    fname << this->FileName << "/"  <<  current_year << "_" << unique_name << ".cvs";
+
+    DrainageHelper::WriteOutputFiles(fname.str(), city, *swmm, additionalParameter);
+
+    delete swmm;
 }
