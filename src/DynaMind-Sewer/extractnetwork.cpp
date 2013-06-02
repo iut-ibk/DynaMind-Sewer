@@ -217,8 +217,8 @@ void ExtractNetwork::run() {
 
     Logger(Debug) << "Done with the Agent Based Model";
 
-	mforeach(Component *c, city->getAllComponentsInView(Conduits))
-		c->changeAttribute("New", 1);
+    mforeach(Component *c, city->getAllComponentsInView(Conduits))
+            c->changeAttribute("New", 1);
 
     Logger(Debug) << "multiplier" << multiplier;
 
@@ -266,6 +266,12 @@ void ExtractNetwork::run() {
             start->changeAttribute("Used",1);
             start->changeAttribute("New", 0);
             start->changeAttribute("Connected", 1);
+            Logger(Standard) << "Existing Links " << start->getAttribute("JUNCTION")->getLinks().size();
+
+            std::vector<LinkAttribute> links;
+            start->getAttribute("JUNCTION")->setLinks(links);
+            start->getAttribute("INLET")->setLinks(links);
+
             start->getAttribute("JUNCTION")->setLink("JUNCTION", start->getUUID());
             start->getAttribute("INLET")->setLink("INLET", start->getUUID());
         }
