@@ -86,6 +86,7 @@ SWMMReturnPeriod::SWMMReturnPeriod()
     this->use_linear_cf = true;
     this->CFSamples = 1;
     cfRand = false;
+    this->consider_built_time = false;
     years = 0;
 
     this->isCombined = false;
@@ -98,6 +99,7 @@ SWMMReturnPeriod::SWMMReturnPeriod()
     this->addParameter("cfRand", DM::BOOL, & this->cfRand);
     this->addParameter("use_linear_cf", DM::BOOL, &this->use_linear_cf);
     this->addParameter("CFSamples", DM::INT, &this->CFSamples);
+    this->addParameter("consider_build_time", DM::BOOL, & this->consider_built_time);
     counterRain = 0;
     this->addData("City", views);
 }
@@ -144,9 +146,9 @@ void SWMMReturnPeriod::run() {
 
     //return_periods.push_back(0.25);
     //return_periods.push_back(0.5);
-    return_periods.push_back(1);
+    //return_periods.push_back(1);
     return_periods.push_back(2);
-    //return_periods.push_back(5);
+    return_periods.push_back(5);
     //return_periods.push_back(10);
     /*return_periods.push_back(20);
     return_periods.push_back(30);
@@ -195,6 +197,7 @@ void SWMMReturnPeriod::run() {
 
         SWMMWriteAndRead * swmm;
         swmm = new SWMMWriteAndRead(city,rfile.str(), this->FileName);
+        swmm->setBuildYearConsidered(this->consider_built_time);
         swmm->setupSWMM();
         swmmruns.push_back(swmm);
     }

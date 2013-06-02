@@ -40,7 +40,8 @@ SWMMWriteAndRead::SWMMWriteAndRead(DM::System * city, std::string rainfile, std:
     city(city),
     climateChangeFactor(1),
     rainfile(rainfile),
-    setting_timestep(7)
+    setting_timestep(7),
+    built_year_considered(false)
 {
     GLOBAL_Counter = 1;
     this->createViewDefinition();
@@ -305,6 +306,8 @@ void SWMMWriteAndRead::readInReportFile() {
     Logger (Standard)  << "Vwwtp " << Vwwtp;
     Logger (Standard)  << "Voutfall " << Voutfall;
     Logger (Standard)  << "Continuty Error " << this->ContinuityError;
+    Logger (Standard)  << "Average Capacity " << this->getAverageCapacity();
+
 
     this->Vp = Vp;
     this->Vwwtp = Vwwtp;
@@ -320,6 +323,7 @@ void SWMMWriteAndRead::readInReportFile() {
     }
 
     this->evalWaterLevelInJunctions();
+    Logger (Standard)  << "Flooded Nodes " << this->getWaterLeveleBelow0();
 }
 
 void SWMMWriteAndRead::writeJunctions(std::fstream &inp)
@@ -348,6 +352,8 @@ void SWMMWriteAndRead::writeJunctions(std::fstream &inp)
         if (p->isInView( storage ))
             continue;
         if (p->getAttribute("Storage")->getDouble() == 1)
+            continue;
+        if (UUIDtoINT.find(p->getUUID()) == UUIDtoINT.end())
             continue;
 
         int id = UUIDtoINT[p->getUUID()];
@@ -640,7 +646,8 @@ void SWMMWriteAndRead:: writeOutfalls(std::fstream &inp) {
     std::vector<std::string> OutfallNames = city->getUUIDsOfComponentsInView(outfalls);
     for (unsigned int i = 0; i < OutfallNames.size(); i++ ) {
         DM::Node * p = city->getNode(OutfallNames[i]);
-
+        /*if (UUIDtoINT.find(p->getUUID()) == UUIDtoINT.end())
+            continue;*/
         if (UUIDtoINT[p->getUUID()] == 0) {
             UUIDtoINT[p->getUUID()] = GLOBAL_Counter++;
             this->PointList.push_back(p);
@@ -666,6 +673,8 @@ void SWMMWriteAndRead::writeConduits(std::fstream &inp) {
         foreach(std::string name, ConduitNames) {
             DM::Edge * link = city->getEdge(name);
 
+            if (UUIDtoINT.find(link->getUUID()) == UUIDtoINT.end())
+                continue;
 
 
             DM::Node * nStartNode = city->getNode(link->getStartpointName());
@@ -936,9 +945,11 @@ void SWMMWriteAndRead::writeWeir(std::fstream &inp)
 
         if (UUIDtoINT[startn->getUUID()] == 0) {
             UUIDtoINT[startn->getUUID()] = GLOBAL_Counter++;
+            //this->PointList.push_back(startn);
         }
         if (UUIDtoINT[outfall->getUUID()] == 0) {
             UUIDtoINT[outfall->getUUID()] = GLOBAL_Counter++;
+            //this->PointList.push_back(outfall);
         }
 
         if (UUIDtoINT[weir->getUUID()] == 0) {
@@ -1098,17 +1109,34 @@ void SWMMWriteAndRead::writeSWMMFile() {
 
 void SWMMWriteAndRead::setupSWMM()
 {
+    //Get current year from simulation
+    std::vector<std::string> c_uuid = city->getUUIDs(DM::View("CITY", DM::COMPONENT, DM::READ));
+
+    if (c_uuid.size() < 1) {
+        DM::Logger(DM::Error) << "City not found";
+        return;
+    }
+    this->currentYear = city->getComponent(c_uuid[0])->getAttribute("year")->getDouble();
+
     floodedNodesVolume.clear();
     nodeDepthSummery.clear();
 
     foreach(std::string name , city->getUUIDsOfComponentsInView(conduit))
     {
-
-
         DM::Edge * e = city->getEdge(name);
+        //If conduit is not added no id is created
+        if (this->built_year_considered) {
+            if (e->getAttribute("built_year")->getDouble() == 0.0  || e->getAttribute("built_year")->getDouble() > this->currentYear ) {
+                continue;
+            }
+        }
+
         DM::Node * p1 = city->getNode(e->getStartpointName());
         DM::Node * p2 = city->getNode(e->getEndpointName());
 
+        if (UUIDtoINT[e->getUUID()] == 0) {
+            UUIDtoINT[e->getUUID()] = GLOBAL_Counter++;
+        }
 
         if (UUIDtoINT[p1->getUUID()] == 0) {
             UUIDtoINT[p1->getUUID()] = GLOBAL_Counter++;
@@ -1119,9 +1147,7 @@ void SWMMWriteAndRead::setupSWMM()
             UUIDtoINT[p2->getUUID()] = GLOBAL_Counter++;
             this->PointList.push_back(p2);
         }
-
     }
-
 
     this->writeSWMMFile();
     this->writeRainFile();
@@ -1223,6 +1249,11 @@ double SWMMWriteAndRead::getWaterLeveleBelow20()
 void SWMMWriteAndRead::setCalculationTimeStep(int timeStep)
 {
     this->setting_timestep = timeStep;
+}
+
+void SWMMWriteAndRead::setBuildYearConsidered(bool buildyear)
+{
+    this->built_year_considered = buildyear;
 }
 
 void SWMMWriteAndRead::runSWMM()

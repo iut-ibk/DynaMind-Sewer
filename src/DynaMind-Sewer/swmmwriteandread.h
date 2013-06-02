@@ -68,8 +68,11 @@ public:
     /** @brief set caculation timestep for flow rounting in sec */
     void setCalculationTimeStep(int timeStep);
 
-private:
+    /** @brief set built_year considered */
+    void setBuildYearConsidered(bool buildyear);
 
+private:
+    bool built_year_considered;
     int setting_timestep;
 
     int GLOBAL_Counter;
@@ -141,6 +144,8 @@ private:
     double water_level_below_0;
     double water_level_below_10;
     double water_level_below_20;
+
+    double currentYear;
 
     QFile reportFile;
 

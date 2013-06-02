@@ -42,6 +42,7 @@ class DM_HELPER_DLL_EXPORT SWMMReturnPeriod : public  DM::Module {
     bool cfRand;
     bool use_linear_cf;
     int CFSamples;
+    bool consider_built_time;
 
 
 
