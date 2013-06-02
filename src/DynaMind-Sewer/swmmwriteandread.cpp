@@ -1324,17 +1324,24 @@ void SWMMWriteAndRead::createViewDefinition()
 
 void SWMMWriteAndRead::evalWaterLevelInJunctions()
 {
-    typedef std::pair<std::string, double > rainnode;
     water_level_below_0 = 0;
     water_level_below_10 = 0;
     water_level_below_20 = 0;
+    //Filter Nodes that area acutally flooded
+    typedef std::pair<std::string, double > rainnode;
+    std::vector< std::pair<std::string, double > > flooded = this->getFloodedNodes();
+
+    foreach (rainnode f, flooded) {
+        if (f.second > 0.0) water_level_below_0++;
+
+    }
 
     std::vector< std::pair<std::string, double > > surcharge = this->getNodeDepthSummery();
     foreach (rainnode  fn, surcharge) {
         DM::Component * n =  this->city->getComponent(fn.first);
+        if (fn.second < 0.009) continue;
         if (!n) continue;
         double D = n->getAttribute("D")->getDouble();
-        if (D - fn.second < 0.001) water_level_below_0++;
         if (D - fn.second < 0.10) water_level_below_10++;
         if (D - fn.second < 0.20) water_level_below_20++;
     }
