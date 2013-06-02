@@ -125,11 +125,9 @@ void TimeAreaMethod::init() {
 }
 
 double TimeAreaMethod::caluclateAPhi(DM::Component * attr, double r15)  const {
-
     double n = 1.;
     double T = 10.;
     double phi10 = (38./(T+9.)*(pow(n,(-1/4))-0,369));
-    //double r10 = r15 * phi10;
 
     T = attr->getAttribute("Time")->getDouble() / 60.;
     if (T < 10) {
@@ -138,8 +136,6 @@ double TimeAreaMethod::caluclateAPhi(DM::Component * attr, double r15)  const {
     double phiT = (38./(T+9.)*(pow(n,(-1/4))-0,369));
 
     return phiT/phi10;
-
-
 }
 
 
