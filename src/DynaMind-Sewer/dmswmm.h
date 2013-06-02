@@ -62,6 +62,7 @@ class DM_HELPER_DLL_EXPORT DMSWMM : public  DM::Module {
     double return_period;
     double climateChangeFactor;
     bool climateChangeFactorFromCity;
+    bool consider_built_time;
     int calculationTimestep;
     int internalTimestep;
 

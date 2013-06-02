@@ -108,6 +108,7 @@ DMSWMM::DMSWMM()
     this->writeResultFile = false;
     this->climateChangeFactorFromCity = false;
     this->calculationTimestep = 1;
+    this->consider_built_time = false;
     years = 0;
 
     this->isCombined = false;
@@ -121,6 +122,8 @@ DMSWMM::DMSWMM()
     this->addParameter("writeResultFile", DM::BOOL, &this->writeResultFile);
     this->addParameter("climateChangeFactorFromCity", DM::BOOL, &this->climateChangeFactorFromCity);
     this->addParameter("calculationTimestep", DM::INT, & this->calculationTimestep);
+    this->addParameter("consider_build_time", DM::BOOL, & this->consider_built_time);
+
     counterRain = 0;
     this->addData("City", views);
     unique_name = QUuid::createUuid().toString().toStdString();
@@ -195,6 +198,7 @@ void DMSWMM::run() {
         swmm = new SWMMWriteAndRead(city, rfile.str(), this->FileName);
     }
 
+    swmm->setBuildYearConsidered(this->consider_built_time);
     swmm->setClimateChangeFactor(cf);
     swmm->setupSWMM();
     swmm->runSWMM();
