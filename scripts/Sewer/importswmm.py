@@ -32,6 +32,7 @@ class ImportSWMM(Module):
         Module.__init__(self)
         self.conduits = View("CONDUIT", EDGE, WRITE)
         self.conduits.addAttribute("Diameter")
+        self.conduits.addAttribute("built_year")
         
         self.xsections = View("XSECTION",COMPONENT,WRITE)     
         self.xsections.addAttribute("type")
@@ -43,6 +44,7 @@ class ImportSWMM(Module):
         self.junctions = View("JUNCTION", NODE, WRITE)
         self.junctions.addAttribute("Z")
         self.junctions.addAttribute("D")
+        self.junctions.addAttribute("built_year")
 
         self.outfalls = View("OUTFALL", NODE, WRITE)
         self.outfalls.addAttribute("Z")
@@ -86,6 +88,9 @@ class ImportSWMM(Module):
         self.filename = ""
         self.createParameter("NameWWTP", STRING, "Identifier WWTP")
         self.NameWWTP = "MD020"
+
+        self.createParameter("defaultBuiltYear", INT, "Default_Built_Year")
+        self.defaultBuiltYear = 1900
         
         self.curves = {}
         self.curves_types = {}      
@@ -186,6 +191,7 @@ class ImportSWMM(Module):
                 juntion.addAttribute("SWMM_ID", str(c))
                 juntion.addAttribute("Z", (float(attributes[0])))
                 juntion.addAttribute("D", (float(attributes[1])))
+                juntion.addAttribute("built_year", self.defaultBuiltYear)
                 if (c == self.NameWWTP):  
                     print "wwtp found"
                     sewer.addComponentToView(juntion, self.wwtps)                    
@@ -236,6 +242,7 @@ class ImportSWMM(Module):
                 e.addAttribute("Diameter", float(xsections[c][1]))
                 e.addAttribute("inlet_offset", float(vals[4]))
                 e.addAttribute("outlet_offset", float(vals[5]))
+                e.addAttribute("built_year", self.defaultBuiltYear)
                 xsection = self.createXSection(sewer, xsections[c])
                 e.getAttribute("XSECTION").setLink("XSECTION", xsection.getUUID())
 
