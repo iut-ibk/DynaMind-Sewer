@@ -11,6 +11,7 @@ class DM_HELPER_DLL_EXPORT PipeAge : public DM::Module
     DM::View view_inlet;
     DM::View view_catchment;
     DM::View view_conduit;
+    DM::View view_junction;
 public:
         void run();
         PipeAge();
