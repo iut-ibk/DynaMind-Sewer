@@ -88,6 +88,9 @@ SWMMReturnPeriod::SWMMReturnPeriod()
     cfRand = false;
     this->consider_built_time = false;
     years = 0;
+    this->upper_cf = 1.5;
+    this->lower_cf = 1.0;
+    this->numberOfThreds = 2;
 
     this->isCombined = false;
     this->addParameter("Folder", DM::STRING, &this->FileName);
@@ -100,6 +103,9 @@ SWMMReturnPeriod::SWMMReturnPeriod()
     this->addParameter("use_linear_cf", DM::BOOL, &this->use_linear_cf);
     this->addParameter("CFSamples", DM::INT, &this->CFSamples);
     this->addParameter("consider_build_time", DM::BOOL, & this->consider_built_time);
+    this->addParameter("upper_cf", DM::DOUBLE, &this->upper_cf);
+    this->addParameter("lower_cf", DM::DOUBLE, & this->lower_cf);
+    this->addParameter("numberOfThreds", DM::INT, & this->numberOfThreds);
     counterRain = 0;
     this->addData("City", views);
 }
@@ -137,7 +143,7 @@ void SWMMReturnPeriod::run() {
             climateChangeFactors.push_back(1.5);
         } else {
             for (int i = 0; i < this->CFSamples; i++) {
-                climateChangeFactors.push_back( (float)rand()/((float)RAND_MAX/0.5) + 1);
+                climateChangeFactors.push_back( (float)rand()/((float)RAND_MAX/(this->upper_cf- this->lower_cf)) + this->lower_cf);
             }
         }
     }
@@ -148,7 +154,7 @@ void SWMMReturnPeriod::run() {
     //return_periods.push_back(0.5);
     //return_periods.push_back(1);
     return_periods.push_back(2);
-    return_periods.push_back(5);
+    //return_periods.push_back(5);
     //return_periods.push_back(10);
     /*return_periods.push_back(20);
     return_periods.push_back(30);
@@ -203,7 +209,7 @@ void SWMMReturnPeriod::run() {
     }
     DM::Logger(DM::Debug) << "Done with preparing swmm";
 #ifdef _OPENMP
-    omp_set_num_threads(8);
+    omp_set_num_threads(this->numberOfThreds);
     DM::Logger(DM::Standard) << "starting omp with " << omp_get_max_threads() << " threads";
 #endif
 #pragma omp parallel for
@@ -239,6 +245,7 @@ void SWMMReturnPeriod::run() {
         additionalParameter["cf_tot\t"] = QString::number(cf).toStdString();
         additionalParameter["climatechangefactor\t"] = QString::number(climateChangeFactors[index_cf]).toStdString();
         additionalParameter["return_period"] = QString::number(rp).toStdString();
+        additionalParameter["year"] = QString::number(city->getAttribute("year")->getDouble()).toStdString();
 
         if (!cfRand) {
             std::stringstream fname;
