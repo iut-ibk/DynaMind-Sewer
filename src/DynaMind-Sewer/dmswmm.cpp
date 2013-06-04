@@ -250,10 +250,11 @@ void DMSWMM::run() {
     DM::Logger(DM::Debug) << "Start write output files";
     std::map<std::string, std::string> additionalParameter;
     additionalParameter["year"] = QString::number(current_year).toStdString();
-    additionalParameter["population_growth"] = QString::number(city->getAttribute("pop_growth")->getDouble()).toStdString();
+    additionalParameter["population_growth"] = QString::number(c->getAttribute("pop_growth")->getDouble()).toStdString();
     additionalParameter["climate_change_factor\t"] = QString::number(cf).toStdString();
     additionalParameter["return_period"] =  QString::number(this->return_period).toStdString();
     additionalParameter["renewal_rate"] =  QString::number(c->getAttribute("renewal_rate")->getDouble()).toStdString();
+    additionalParameter["masterplan_id"] =  QString::number(c->getAttribute("masterplan_id")->getDouble()).toStdString();
 
     std::stringstream fname;
     Logger(Standard) << "Start Write Report File " <<fname.str();
