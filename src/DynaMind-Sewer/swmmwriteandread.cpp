@@ -1256,6 +1256,26 @@ void SWMMWriteAndRead::setBuildYearConsidered(bool buildyear)
     this->built_year_considered = buildyear;
 }
 
+SWMMWriteAndRead::~SWMMWriteAndRead()
+{
+
+
+    QString dirName = this->SWMMPath.absolutePath();
+    QDir dir(dirName);
+    bool result;
+
+    if (dir.exists(dirName)) {
+        Q_FOREACH(QFileInfo info, dir.entryInfoList(QDir::NoDotAndDotDot | QDir::System | QDir::Hidden  | QDir::AllDirs | QDir::Files, QDir::DirsFirst)) {
+            result = QFile::remove(info.absoluteFilePath());
+            if (!result) {
+                return;
+            }
+        }
+        result = dir.rmdir(dirName);
+    }
+
+}
+
 void SWMMWriteAndRead::runSWMM()
 {
     this->Vp = 0;

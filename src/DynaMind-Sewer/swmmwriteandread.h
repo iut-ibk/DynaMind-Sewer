@@ -71,6 +71,8 @@ public:
     /** @brief set built_year considered */
     void setBuildYearConsidered(bool buildyear);
 
+    ~SWMMWriteAndRead();
+
 private:
     bool built_year_considered;
     int setting_timestep;
