@@ -144,7 +144,7 @@ ExtractNetwork::ExtractNetwork()
     /** todo easy way out, needs a proper bugfix */
     //city.push_back(EndPoint);
     offset = 10;
-    this->addParameter("Offset", DM::DOUBLE, &offset);
+    //this->addParameter("Offset", DM::DOUBLE, &offset);
 
     this->addData("City", city);
 
@@ -165,8 +165,8 @@ void ExtractNetwork::run() {
     offsetY = this->ConnectivityField->getYOffset();
     double cellSizeX = this->ConnectivityField->getCellSizeX();
     double cellSizeY = this->ConnectivityField->getCellSizeY();
-
     cellsize = cellSizeX;
+    offset = this->cellsize/2;
     this->Path->setSize(width, height, cellSizeX,cellSizeY,offsetX,offsetY);
     this->Path->clear();
 
@@ -241,8 +241,6 @@ void ExtractNetwork::run() {
             std::vector<Node> points_for_total;
             for (int i = 0; i < a->path.size(); i++) {
                 this->Path->setCell(a->path[i].x, a->path[i].y, 1);
-
-
                 //Find connecting Node
                 if (i == a->path.size()-1) {
                     DM::Node * n = existing_nodes.findNode(a->path[i].x * multiplier + offset + this->offsetX, a->path[i].y * multiplier + offset + this->offsetY, cellsize-0.001);
@@ -255,9 +253,9 @@ void ExtractNetwork::run() {
                         endNodeList.push_back(n->getUUID());
                     }
                 } else
-
                     points_for_total.push_back(Node(a->path[i].x * multiplier + offset + this->offsetX, a->path[i].y * multiplier + offset + this->offsetY,a->path[i].h));
             }
+
             Logger(Debug) << "Successful Agent Path Length" << a->path.size();
             Points_After_Agent_Extraction.push_back(points_for_total);
             //Set Inlet Point to Used
@@ -266,7 +264,7 @@ void ExtractNetwork::run() {
             start->changeAttribute("Used",1);
             start->changeAttribute("New", 0);
             start->changeAttribute("Connected", 1);
-            Logger(Standard) << "Existing Links " << start->getAttribute("JUNCTION")->getLinks().size();
+            Logger(Debug) << "Existing Links " << start->getAttribute("JUNCTION")->getLinks().size();
 
             std::vector<LinkAttribute> links;
             start->getAttribute("JUNCTION")->setLinks(links);
