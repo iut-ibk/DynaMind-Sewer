@@ -38,7 +38,7 @@ RemoveStrahler::RemoveStrahler()
 
     this->conduits = DM::View("CONDUIT", DM::EDGE, DM::MODIFY);
     this->inlets = DM::View("INLET", DM::NODE, DM::READ);
-    this->conduits.getAttribute("Strahler");
+    this->conduits.getAttribute("strahler");
     until = 1;
     this->addParameter("StrahlerNumber", DM::INT,&until);
 
@@ -90,7 +90,7 @@ void RemoveStrahler::run()
                     DM::Logger(DM::Standard) << "EEEEEEERRRROROORO";
                     continue;
                 }
-                int currentStrahler = (int) e->getAttribute("Strahler")->getDouble();
+                int currentStrahler = (int) e->getAttribute("strahler")->getDouble();
                 if (currentStrahler > i) {
                     id = 0;
                     continue;

@@ -33,7 +33,7 @@ OutfallPlacement::OutfallPlacement()
 {
     Junction = DM::View("JUNCTION", DM::NODE, DM::READ);
     Conduit = DM::View("CONDUIT", DM::EDGE, DM::MODIFY);
-    Conduit.getAttribute("Strahler");
+    Conduit.getAttribute("strahler");
     Storage = DM::View("STORAGE", DM::NODE, DM::WRITE);
     Storage.addAttribute("Storage");
     Inlet = DM::View("INLET", DM::NODE, DM::READ);
@@ -139,8 +139,8 @@ void OutfallPlacement::run() {
     DM::ComponentMap cmp = city->getAllComponentsInView(Conduit);
     for (DM::ComponentMap::const_iterator it = cmp.begin(); it != cmp.end(); ++it){
         DM::Component * c = it->second;
-        if (Strahler_Max < c->getAttribute("Strahler")->getDouble())
-            Strahler_Max = c->getAttribute("Strahler")->getDouble();
+        if (Strahler_Max < c->getAttribute("strahler")->getDouble())
+            Strahler_Max = c->getAttribute("strahler")->getDouble();
     }
 
 
@@ -159,7 +159,7 @@ void OutfallPlacement::run() {
         //std::vector<std::string> VisitedConduits;
         while (connectedConduits.size() == 1) {
             DM::Edge * e = connectedConduits[0];
-            int currentStrahler = e->getAttribute("Strahler")->getDouble();
+            int currentStrahler = e->getAttribute("strahler")->getDouble();
             //Check for Placement after MaxStrahlerNumber
             int chooser = rand() % 100+1;
             int deltaStrahler = -1;

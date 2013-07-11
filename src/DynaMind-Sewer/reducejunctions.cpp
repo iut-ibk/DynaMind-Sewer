@@ -33,7 +33,7 @@ ReduceJunctions::ReduceJunctions()
     junctions = DM::View("JUNCTION", DM::NODE, DM::MODIFY);
     junctions.addAttribute("end_counter");
     conduits = DM::View("CONDUIT", DM::EDGE, DM::MODIFY);
-    conduits.getAttribute("Strahler");
+    conduits.getAttribute("strahler");
     inlets = DM::View("INLET", DM::NODE, DM::READ);
     inlets.getAttribute("JUNCTION");
     conduit_new = DM::View("CONDUIT", DM::EDGE, DM::WRITE);
@@ -62,7 +62,7 @@ void ReduceJunctions::createJunctions(DM::System * city, std::vector<DM::Node *>
         junction_map_Counter[nodes[i]] = 1;
         junction_map_Counter[nodes[i+1]] = 1;
         DM::Edge * e = city->addEdge(nodes[i], nodes[i+1], conduit_new);
-        e->addAttribute("Strahler", strahlerNumber);
+        e->addAttribute("strahler", strahlerNumber);
 
     }
     DM::Node * lastNode = nodes[numberOfEdges];
@@ -156,7 +156,7 @@ void ReduceJunctions::run()
             }
 
             if (currrentStrahler == -1) {
-                currrentStrahler = (int) c->getAttribute("Strahler")->getDouble();
+                currrentStrahler = (int) c->getAttribute("strahler")->getDouble();
             }
 
             current_j->addAttribute("visited",1);
@@ -173,7 +173,7 @@ void ReduceJunctions::run()
 
             //current node is start for next conduit
             new_conduits.push_back(current_j);
-            currrentStrahler =  (int) c->getAttribute("Strahler")->getDouble();
+            currrentStrahler =  (int) c->getAttribute("strahler")->getDouble();
 
 
 
