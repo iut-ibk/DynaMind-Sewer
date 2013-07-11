@@ -31,30 +31,33 @@ DM_DECLARE_NODE_NAME(NetworkAnalysis, Sewer)
 NetworkAnalysis::NetworkAnalysis()
 {
 
-    this->network = DM::View("CONDUIT", DM::EDGE, DM::READ);
-    this->globals = DM::View("GLOBALS_SEWER", DM::NODE, DM::WRITE);
+    this->EdgeName = "CONDUIT";
+    this->addParameter("EdgeName", DM::STRING, &this->EdgeName);
 
-    this->network.addAttribute("Strahler");
     std::vector<DM::View> views;
-    views.push_back(this->network);
-    views.push_back(this->globals);
+    views.push_back(DM::View("dummy", DM::EDGE, DM::MODIFY));
     this->addData("City", views);
+}
+
+void NetworkAnalysis::init()
+{
+    std::vector<DM::View> views;
+    this->network = DM::View(this->EdgeName, DM::EDGE, DM::READ);
+    this->network.addAttribute("strahler");
+
+    views.push_back(this->network);
+    this->addData("City", views);
+}
+
+std::string NetworkAnalysis::getHelpUrl()
+{
+    return "https://github.com/iut-ibk/DynaMind-ToolBox/wiki/NetworkAnalysis";
 }
 
 void NetworkAnalysis::run() {
     DM::System * city = this->getData("City");
 
-    DM::Node sewerGlobal = DM::Node(0,0,0);
-    DM::Node * sg = city->addNode(sewerGlobal, this->globals);
-
-    DM::Attribute attr("UUID");
-    attr.setString(QUuid::createUuid().toString().toStdString());
-    sg->addAttribute(attr);
-
-
-
     std::vector<std::string> names = city->getUUIDsOfComponentsInView(this->network);
-    double offset = 10;
 
     std::map<DM::Node *, std::vector<DM::Edge*> > StartNodeSortedEdges;
     std::map<DM::Node *, std::vector<DM::Edge*> > EndNodeSortedEdges;
@@ -101,7 +104,7 @@ void NetworkAnalysis::run() {
 
     foreach(std::string name , names)  {
         DM::Edge * e = city->getEdge(name);
-        e->addAttribute("Strahler", 0);
+        e->addAttribute("strahler", 0);
         DM::Node * startnode = city->getNode(e->getStartpointName());
         //if (EndNodeSortedEdges[startnode].size() == 0)
             StartNodes.push_back(startnode);
@@ -111,7 +114,7 @@ void NetworkAnalysis::run() {
     foreach(DM::Node * StartID, StartNodes) {
         std::vector<DM::Edge*> ids = StartNodeSortedEdges[StartID];
         foreach(DM::Edge * id, ids) {
-            id->getAttribute("Strahler")->setDouble(1);
+            id->getAttribute("strahler")->setDouble(1);
         }
     }
 
@@ -176,25 +179,25 @@ void NetworkAnalysis::run() {
             int strahlerCounter = 0;
             foreach(DM::Edge * up, upstreamEdges) {
                 if (e != outgoing_id) {
-                    if (maxStrahlerInNode < up->getAttribute("Strahler")->getDouble()) {
-                        maxStrahlerInNode = up->getAttribute("Strahler")->getDouble();
+                    if (maxStrahlerInNode < up->getAttribute("strahler")->getDouble()) {
+                        maxStrahlerInNode = up->getAttribute("strahler")->getDouble();
                         strahlerCounter = 1;
-                    } else if (maxStrahlerInNode == up->getAttribute("Strahler")->getDouble()) {
+                    } else if (maxStrahlerInNode == up->getAttribute("strahler")->getDouble()) {
                         strahlerCounter++;
                     }
 
                 }
             }
             if (strahlerCounter > 1) {
-                if ( outgoing_id->getAttribute("Strahler")->getDouble() < maxStrahlerInNode+1 )
-                    outgoing_id->getAttribute("Strahler")->setDouble( maxStrahlerInNode+1 );
+                if ( outgoing_id->getAttribute("strahler")->getDouble() < maxStrahlerInNode+1 )
+                    outgoing_id->getAttribute("strahler")->setDouble( maxStrahlerInNode+1 );
 
             } else {
-                if (outgoing_id->getAttribute("Strahler")->getDouble() < prevStrahler) {
-                    outgoing_id->getAttribute("Strahler")->setDouble( prevStrahler );
+                if (outgoing_id->getAttribute("strahler")->getDouble() < prevStrahler) {
+                    outgoing_id->getAttribute("strahler")->setDouble( prevStrahler );
                 }
             }
-            prevStrahler = outgoing_id->getAttribute("Strahler")->getDouble();
+            prevStrahler = outgoing_id->getAttribute("strahler")->getDouble();
             nextID = nextid_tmp;
             if (nextID->getAttribute("existing")->getDouble() > 0.01) {
                 nextID = 0;
@@ -213,3 +216,5 @@ void NetworkAnalysis::run() {
 
     }
 }
+
+

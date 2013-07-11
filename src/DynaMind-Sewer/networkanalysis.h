@@ -40,12 +40,15 @@ class DM_HELPER_DLL_EXPORT NetworkAnalysis : public  DM::Module {
 
     private:
         DM::View network;
-    DM::View globals;
+        //DM::View globals;
+    std::string EdgeName;
 
 
 public:
     NetworkAnalysis();
     void run();
+    void init();
+    std::string getHelpUrl();
 
 
 };
