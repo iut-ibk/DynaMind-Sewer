@@ -266,7 +266,7 @@ void TimeAreaMethod::run() {
 
         DM::Logger(DM::Debug) << "JUNCTION " << inlet_attr->getAttribute("JUNCTION")->getLink().uuid;
         if ( inlet_attr->getAttribute("JUNCTION")->getLink().uuid.empty()) {
-            DM::Logger(DM::Warning) << "Inlet not connected to junction";
+            DM::Logger(DM::Debug) << "Inlet not connected to junction";
         }
         DM::Node * id = city->getNode(inlet_attr->getAttribute("JUNCTION")->getLink().uuid);
         if (!id)
