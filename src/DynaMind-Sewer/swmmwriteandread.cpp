@@ -820,7 +820,12 @@ void SWMMWriteAndRead::writeLID_Usage(std::fstream &inp) {
 
             if (written_infils[UUIDtoINT[la.uuid]] != 0 ) continue;
 
-            inp << "sub" <<UUIDtoINT[CATCHMENT_ID] << "\t"  << "Infiltration"<< UUIDtoINT[la.uuid]  <<    "\t" <<  1 <<    "\t"     <<   infilt->getAttribute("area")->getDouble()   <<    "\t"  <<   "1"<<    "\t" <<       "0" <<    "\t" <<        treated  / (area*imp) * 100. <<    "\t" <<    "0" <<    "\n"; // << "\"report" << UUIDtoINT[CATCHMENT_ID] << ".txt\"" << "\n";
+            double treated_area = treated  / (area*imp) * 100.;
+
+            treated_area = (treated_area < 100.) ? treated_area : 100.;
+
+
+            inp << "sub" <<UUIDtoINT[CATCHMENT_ID] << "\t"  << "Infiltration"<< UUIDtoINT[la.uuid]  <<    "\t" <<  1 <<    "\t"     <<   infilt->getAttribute("area")->getDouble()   <<    "\t"  <<   "1"<<    "\t" <<       "0" <<    "\t" <<        treated_area <<    "\t" <<    "0" <<    "\n"; // << "\"report" << UUIDtoINT[CATCHMENT_ID] << ".txt\"" << "\n";
             Logger(Debug) << "Catchment Area " << area;
             Logger(Debug) << "Treated Area " << treated;
             written_infils[UUIDtoINT[la.uuid]] = 1;
@@ -1260,7 +1265,7 @@ SWMMWriteAndRead::~SWMMWriteAndRead()
 {
 
 
-    QString dirName = this->SWMMPath.absolutePath();
+    /*QString dirName = this->SWMMPath.absolutePath();
     QDir dir(dirName);
     bool result;
 
@@ -1272,7 +1277,7 @@ SWMMWriteAndRead::~SWMMWriteAndRead()
             }
         }
         result = dir.rmdir(dirName);
-    }
+    }*/
 
 }
 
