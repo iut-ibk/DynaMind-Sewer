@@ -130,6 +130,7 @@ ExtractNetwork::ExtractNetwork()
     Inlets.modifyAttribute("New");
     Inlets.addAttribute("Used");
     Inlets.addAttribute("Connected");
+    Inlets.getAttribute("success");
     Inlets.addLinks("JUNCTION", Junction);
     Junction= DM::View("JUNCTION",  DM::NODE, DM::WRITE);
     Junction.addAttribute("D");
@@ -182,10 +183,8 @@ void ExtractNetwork::run() {
         std::string ID_CA = n->getAttribute("CATCHMENT")->getLink().uuid;
         DM::Face * catchment = city->getFace(ID_CA);
         //Just For Now
-        n->changeAttribute("New", 0);
-        if (catchment->getAttribute("Active")->getDouble() > 0.1) {
-            n->changeAttribute("New", 1);
-            n->addAttribute("BuildYear", catchment->getAttribute("BuildYear")->getDouble());
+        if ( n->getAttribute("success")->getDouble()   > 0.01) {
+             n->addAttribute("BuildYear", catchment->getAttribute("BuildYear")->getDouble());
             StartPos.push_back(n);
         }
     }

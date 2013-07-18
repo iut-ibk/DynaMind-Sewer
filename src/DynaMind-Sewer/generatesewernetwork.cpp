@@ -43,7 +43,6 @@ GenerateSewerNetwork::Agent::Agent(Pos StartPos) {
     this->neigh = std::vector<double>(9);
     this->decissionVector = std::vector<double>(9);
     this->ProbabilityVector = std::vector<double>(9);
-
 }
 
 void GenerateSewerNetwork::Agent::run() {
@@ -109,7 +108,7 @@ void GenerateSewerNetwork::Agent::run() {
 
 
         int ra = rand()%100;
-        // Logger(vibens::Standard) << ra;
+
         double prob = 0;
         int direction = -1;
         for (int i = 0; i < 9; i++) {
@@ -137,12 +136,10 @@ void GenerateSewerNetwork::Agent::run() {
 
 
         MarkPath->setCell(currentPos.x, currentPos.y, 1);
+        Trace->setCell(currentPos.x, currentPos.y,Trace->getCell(currentPos.x, currentPos.y)+1);
 
         if (currentPos.x < 0 || currentPos.y < 0 || currentPos.x > Topology->getWidth()-2 || currentPos.y >  Topology->getHeight()-2) {
             this->alive = false;
-            //this->successful = true;
-            //this->path.push_back(currentPos);
-            //Logger(vibens::Debug) << "Successful";
             break;
 
 
@@ -367,12 +364,16 @@ GenerateSewerNetwork::GenerateSewerNetwork() : mMutex()
     this->addParameter("StablizierLastDir", DM::INT, &this->StablizierLastDir);
 
 
+
     Topology = DM::View("Topology", DM::RASTERDATA, DM::READ);
     std::vector<DM::View> city;
 
     Inlets = DM::View("INLET", DM::NODE, DM::READ);
-    Inlets.getAttribute("New");
+    Inlets.modifyAttribute("New");
+
     Inlets.getAttribute("CATCHMENT");
+    Inlets.addAttribute("success");
+
 
     catchment = DM::View("CATCHMENT", DM::FACE, DM::READ);
     catchment.getAttribute("Active");
@@ -405,6 +406,7 @@ GenerateSewerNetwork::GenerateSewerNetwork() : mMutex()
     Path = DM::View("Path", DM::RASTERDATA, DM::WRITE);
     sewerGeneration_out.push_back(Path);
     sewerGeneration_out.push_back(ConnectivityField);
+    sewerGeneration_out.push_back(DM::View("Trace", DM::RASTERDATA, DM::WRITE));
     this->addData("sewerGeneration_Out", sewerGeneration_out);
 
 }
@@ -421,6 +423,7 @@ void GenerateSewerNetwork::run() {
     rPath  = this->getRasterData("sewerGeneration_Out", Path);
     rConnectivityField = this->getRasterData("sewerGeneration_Out", ConnectivityField);
 
+    rTrace = this->getRasterData("sewerGeneration_Out", DM::View("Trace", DM::RASTERDATA, DM::WRITE));
 
     long width = this->rTopology->getWidth();
     long height = this->rTopology->getHeight();
@@ -431,14 +434,14 @@ void GenerateSewerNetwork::run() {
     double OffsetY = this->rTopology->getYOffset();
 
     rasterSize = cellSizeX;
-
+    this->rTrace->setSize(width, height, cellSizeX,cellSizeY,OffsetX,OffsetY);
     this->rConnectivityField->setSize(width, height, cellSizeX,cellSizeY,OffsetX,OffsetY);
     Logger(Debug) << "Conn Max " << this->rConnectivityField_in->getMaxValue();
     Logger(Debug) << "Conn Min " << this->rConnectivityField_in->getMinValue();
-    //Logger(Debug) << "DebugVal " << this->rConnectivityField_in->getDebugValue();
     for (int i = 0; i < width; i++) {
         for (int j = 0; j < height; j++ ) {
             this->rConnectivityField->setCell(i,j, this->rConnectivityField_in->getCell(i,j)*0.5);
+            this->rTrace->setCell(i,j, 0);
         }
     }
     this->rConnectivityField->setDebugValue(rConnectivityField_in->getDebugValue()+1);
@@ -457,7 +460,8 @@ void GenerateSewerNetwork::run() {
             continue;
         }
         n->changeAttribute("New", 0);
-        if (catchment->getAttribute("Active")->getDouble() > 0.1) {
+        n->changeAttribute("success", 0);
+        if (catchment->getAttribute("Active")->getDouble() > 0.1 && n->getAttribute("Connected")->getDouble()  <  0.01) {
             n->changeAttribute("New", 1);
             StartPos.push_back(n);
         }
@@ -495,6 +499,7 @@ void GenerateSewerNetwork::run() {
         a->Hmin = this->Hmin;
         a->ForbiddenAreas = this->rForbiddenAreas;
         a->StablizierLastDir = this->StablizierLastDir;
+        a->Trace = rTrace;
         agents.push_back(a);
 
     }
@@ -525,6 +530,8 @@ void GenerateSewerNetwork::run() {
                 this->reducePath(a->path);
                 sumLengthAgentPath+=a->path.size();
                 a->path.clear();
+                StartPos[j]->addAttribute("success",1);
+
                 successfulAgents++;
             }
         }

@@ -89,6 +89,7 @@ public:
         RasterData * ConnectivityField;
         RasterData * Goals;
         RasterData * ForbiddenAreas;
+        RasterData * Trace;
         long steps;
         double AttractionTopology;
         double AttractionConnectivity;
@@ -128,6 +129,7 @@ private:
     DM::RasterData *  rPath;
     DM::RasterData *  rGoals;
     DM::RasterData *  rForbiddenAreas;
+    DM::RasterData *  rTrace;
 
     DM::System * city;
     DM::System * sewerGeneration;
