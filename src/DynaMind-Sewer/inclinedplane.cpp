@@ -8,6 +8,7 @@ InclinedPlane::InclinedPlane()
     width = 100;
     cellsize = 10;
     slope = -3./1000;
+    appendToStream = false;
 
     v_plane = DM::View("Topology", DM::RASTERDATA, DM::WRITE);
 
@@ -15,9 +16,22 @@ InclinedPlane::InclinedPlane()
     this->addParameter("Width", DM::LONG, &width);
     this->addParameter("CellSize", DM::DOUBLE, &cellsize);
     this->addParameter("Slope", DM::DOUBLE, &slope);
+    this->addParameter("appendToStream", DM::BOOL, &appendToStream);
+
 
     std::vector<DM::View> datastream;
     datastream.push_back(v_plane);
+    this->addData("city", datastream);
+}
+
+void InclinedPlane::init() {
+
+
+    if (!appendToStream)
+        return;
+    std::vector<DM::View> datastream;
+    datastream.push_back(v_plane);
+    datastream.push_back(DM::View("dummy", DM::SUBSYSTEM, DM::READ));
     this->addData("city", datastream);
 }
 

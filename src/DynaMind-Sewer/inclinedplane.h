@@ -13,10 +13,14 @@ class DM_HELPER_DLL_EXPORT InclinedPlane : public DM::Module
     double slope;
 
     DM::View v_plane;
+    bool appendToStream;
 
 public:
     InclinedPlane();
     void run();
+    void init();
+
+
 
 };
 
