@@ -122,6 +122,11 @@ void GenerateSewerNetwork::Agent::run() {
 
         lastdir = direction;
 
+        if(direction == -1) {
+            this->alive = false;
+            break;
+        }
+
         this->currentPos.x+=csg_s::csg_s_operations::returnPositionX(direction);
         this->currentPos.y+=csg_s::csg_s_operations::returnPositionY(direction);
         double deltaH = Hcurrent - this->Topology->getCell(currentPos.x, currentPos.y);
@@ -506,12 +511,11 @@ void GenerateSewerNetwork::run() {
         Agent * a = agents[j];
         if (a->alive) {
             a->run();
-            if (!a->successful)  {
+            if (!a->successful || a->path.size() < 1)  {
                 a->path.clear();
                 continue;
             }
-            if (a->path.size() < 1)
-                continue;
+
             this->reducePath(a->path);
             sumLengthAgentPath+=a->path.size();
 
@@ -522,9 +526,9 @@ void GenerateSewerNetwork::run() {
                     rSuccess->setCell(p.x, p.y, 1);
 
                 }
-            }
-            if (rSuccess)
                 rSuccess->setCell(  a->path[a->path.size()-1].x,   a->path[a->path.size()-1].y, 10);
+            }
+
             a->path.clear();
             successfulAgents++;
         }
