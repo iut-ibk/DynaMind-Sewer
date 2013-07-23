@@ -272,7 +272,7 @@ void ExtractNetwork::run() {
         }
     }
 
-    Logger(DM::Standard) << "Successful " << agents.size() << "/" << successfulAgents;
+    Logger(DM::Standard) << "Successful " << successfulAgents << "/" <<  agents.size();
 
 
     for (unsigned int j = 0; j < agents.size(); j++) {
