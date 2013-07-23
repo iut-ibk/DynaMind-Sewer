@@ -144,10 +144,11 @@ private:
     long steps;
     double Hmin;
     int StablizierLastDir;
+    bool DebugMode;
     std::string IdentifierStartPoins;
     QMutex mMutex;
 
-    QHash<QPair<int, int> , Pos> agentPathMap;
+    std::map<std::pair<int,int> , Pos> agentPathMap;
     void reducePath(std::vector<Pos> &path);
 
 public:
@@ -155,9 +156,8 @@ public:
     void run();
 
     void MarkPathWithField(RasterData * ConnectivityField, int ConnectivityWidth);
-    void addRadiusValueADD(int x, int y, RasterData * layer, int rmax, double value);
-    void addRadiusValue(int x, int y, RasterData * layer, int rmax, double value, double **);
-    static int indexOfMinValue(const std::vector<double> & vec);
+    void addRadiusValue(int x, int y, RasterData * layer, int rmax, double value, double **, double nodeata);
+    static int indexOfMinValue(const std::vector<double> & vec, double noValue);
 
 };
 

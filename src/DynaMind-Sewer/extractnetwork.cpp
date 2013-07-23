@@ -31,7 +31,7 @@
 
 DM_DECLARE_NODE_NAME(ExtractNetwork, Sewer)
 void ExtractNetwork::AgentExtraxtor::run() {
-
+    double noData = this->Topology->getNoValue();
     this->path.clear();
     for (int i = 0; i < this->steps; i++) {
         this->path.push_back(currentPos);
@@ -40,9 +40,8 @@ void ExtractNetwork::AgentExtraxtor::run() {
         double hcurrent = currentPos.h;
         //Influence Topology
         ConnectivityField->getMoorNeighbourhood(neigh, currentPos.x,currentPos.y);
-        int index = GenerateSewerNetwork::indexOfMinValue(neigh);
+        int index = GenerateSewerNetwork::indexOfMinValue(neigh, noData);
         for (int i = 0; i < 9; i++) {
-
             if (index == i) {
                 decissionVector[i] = 1;
             } else {
@@ -59,6 +58,7 @@ void ExtractNetwork::AgentExtraxtor::run() {
 
         if (index == -1) {
             this->alive = false;
+            //Logger(Standard) << "index -1";
             break;
         }
 
@@ -77,20 +77,18 @@ void ExtractNetwork::AgentExtraxtor::run() {
             currentPos.h=hcurrent-deltaH;
         }
 
-        if (currentPos.x < 0 || currentPos.y < 0 || currentPos.x > MarkPath->getWidth()-2 || currentPos.y >  MarkPath->getHeight()-2) {
+        if (currentPos.x < 0 || currentPos.y < 0 || currentPos.x > Topology->getWidth()-2 || currentPos.y >  Topology->getHeight()-2) {
             this->alive = false;
             break;
 
 
         }
-        //if (Goals->getCell(currentPos.x, currentPos.y ) > 0 || this->MarkPath->getCell(currentPos.x, currentPos.y) > 0) {
-        if (Goals->getCell(currentPos.x, currentPos.y ) > 0) {
-            if (currentPos.h < Hmin) {
-                this->alive = false;
-                this->successful = true;
-                this->path.push_back(currentPos);
-                break;
-            }
+        if (Goals->getCell(currentPos.x, currentPos.y )> 0.01 && currentPos.h <= this->Hmin) {
+            this->alive = false;
+            this->successful = true;
+            this->path.push_back(currentPos);
+            break;
+
         }
 
 
@@ -184,7 +182,7 @@ void ExtractNetwork::run() {
         DM::Face * catchment = city->getFace(ID_CA);
         //Just For Now
         if ( n->getAttribute("success")->getDouble()   > 0.01) {
-             n->addAttribute("BuildYear", catchment->getAttribute("BuildYear")->getDouble());
+            n->addAttribute("BuildYear", catchment->getAttribute("BuildYear")->getDouble());
             StartPos.push_back(n);
         }
     }

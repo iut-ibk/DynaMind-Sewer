@@ -47,6 +47,8 @@ GenerateSewerNetwork::Agent::Agent(Pos StartPos) {
 
 void GenerateSewerNetwork::Agent::run() {
     this->path.clear();
+    this->successful = false;
+    double noData =  Topology->getNoValue();
     for (int i = 0; i < this->steps; i++) {
         this->currentPos.z = this->Topology->getCell(currentPos.x, currentPos.y);
         double Hcurrent = this->currentPos.z;
@@ -56,9 +58,9 @@ void GenerateSewerNetwork::Agent::run() {
         //Influence Topology
         Topology->getMoorNeighbourhood(neigh, currentPos.x,currentPos.y);
         double currentHeight = neigh[4];
-        int index = GenerateSewerNetwork::indexOfMinValue(neigh);
+        int index = GenerateSewerNetwork::indexOfMinValue(neigh,noData);
         for (int i = 0; i < 9; i++) {
-            if (currentHeight + (this->Hmin - this->currentPos.h) >= neigh[i]) {
+            if (currentHeight + (this->Hmin - this->currentPos.h) >= neigh[i] && neigh[i] != noData) {
                 if (index == i )
                     decissionVector[i] = MultiplyerCenterTop*this->AttractionTopology;
                 else
@@ -73,9 +75,9 @@ void GenerateSewerNetwork::Agent::run() {
         //Influence Topology
         ConnectivityField->getMoorNeighbourhood(neigh, currentPos.x,currentPos.y);
         currentHeight = neigh[4];
-        index = GenerateSewerNetwork::indexOfMinValue(neigh);
+        index = GenerateSewerNetwork::indexOfMinValue(neigh, noData);
         for (int i = 0; i < 9; i++) {
-            if (currentHeight > neigh[i]) {
+            if (currentHeight > neigh[i]  && neigh[i] != noData) {
                 if (index == i)
                     decissionVector[i] += MultiplyerCenterCon*this->AttractionConnectivity;
                 else
@@ -83,8 +85,6 @@ void GenerateSewerNetwork::Agent::run() {
             } else {
                 decissionVector[i] += 0;
             }
-
-
         }
 
 
@@ -134,19 +134,17 @@ void GenerateSewerNetwork::Agent::run() {
             currentPos.h=hcurrent-deltaH;
         }
 
-
-        MarkPath->setCell(currentPos.x, currentPos.y, 1);
-        Trace->setCell(currentPos.x, currentPos.y,Trace->getCell(currentPos.x, currentPos.y)+1);
-
+        if (MarkPath) {
+            MarkPath->setCell(currentPos.x, currentPos.y, 1);
+            Trace->setCell(currentPos.x, currentPos.y,Trace->getCell(currentPos.x, currentPos.y)+1);
+        }
         if (currentPos.x < 0 || currentPos.y < 0 || currentPos.x > Topology->getWidth()-2 || currentPos.y >  Topology->getHeight()-2) {
             this->alive = false;
             break;
-
-
         }
 
         //Check current Pos is < 3 to secure connections
-        if (Goals->getCell(currentPos.x, currentPos.y ) > 0 && currentPos.h <= this->Hmin) {
+        if (Goals->getCell(currentPos.x, currentPos.y ) > 0.01 && currentPos.h <= this->Hmin) {
             this->alive = false;
             this->successful = true;
             this->path.push_back(currentPos);
@@ -159,33 +157,7 @@ void GenerateSewerNetwork::Agent::run() {
     this->alive = false;
 }
 
-void GenerateSewerNetwork::addRadiusValueADD(int x, int y, RasterData *layer, int rmax, double value) {
-    int level = rmax;
-    if (rmax > 500) {
-        rmax = 500;
-    }
-    int i = x - rmax;
-    int j = y - rmax;
-
-    if (i < 0) i = 0;
-    if (j < 0) j = 0;
-
-    int imax = 10;
-    int jmax = 10;
-    int k = 0;
-    double z = rmax*rmax;
-    for (; i < rmax+x;  i++) {
-        j = y - rmax;
-
-        for (;  j < rmax+y; j++) {
-            double r = double((i-x)*(i-x) + (j-y)*(j-y));
-            double val = ((r-z)/10.)*(value);
-            if (layer->getCell(i,j) > val )
-                layer->setCell(i,j, val);
-        }
-    }
-}
-void GenerateSewerNetwork::addRadiusValue(int x, int y, RasterData * layer, int rmax, double value, double ** stamp) {
+void GenerateSewerNetwork::addRadiusValue(int x, int y, RasterData * layer, int rmax, double value, double ** stamp, double nodeata) {
 
     if (rmax > 500) {
         rmax = 500;
@@ -208,7 +180,8 @@ void GenerateSewerNetwork::addRadiusValue(int x, int y, RasterData * layer, int 
             if (i < 0 || j < 0)
                 continue;
             double val =  stamp[i_small][j_small] * value;
-            if (layer->getCell(i,j) > val ) {
+            double cur_val = layer->getCell(i,j);
+            if (layer->getCell(i,j) > val || cur_val == nodeata ) {
                 layer->setCell(i,j,val );
             }
 
@@ -221,7 +194,8 @@ void GenerateSewerNetwork::MarkPathWithField(RasterData * ConnectivityField, int
 
 
     RasterData Buffer;
-    Buffer.setSize(ConnectivityField->getWidth(), ConnectivityField->getHeight(), ConnectivityField->getCellSizeX(),ConnectivityField->getCellSizeY(),ConnectivityField->getXOffset(),ConnectivityField->getXOffset());
+    double noData = ConnectivityField->getNoValue();
+    Buffer.setSize(ConnectivityField->getWidth(), ConnectivityField->getHeight(), ConnectivityField->getCellSizeX(),ConnectivityField->getCellSizeY(),ConnectivityField->getXOffset(),ConnectivityField->getYOffset());
     Buffer.clear();
 
 
@@ -251,9 +225,9 @@ void GenerateSewerNetwork::MarkPathWithField(RasterData * ConnectivityField, int
         }
     }
 
-    foreach(Pos p, agentPathMap){
-        //Logger(Debug) << p.val;
-        GenerateSewerNetwork::addRadiusValue(p.x,  p.y, ConnectivityField, ConnectivityWidth,  p.val, stamp);
+    for (std::map<std::pair<int,int>, Pos>::const_iterator it = agentPathMap.begin(); it != agentPathMap.end(); ++it ) {
+        Pos p = it->second;
+        GenerateSewerNetwork::addRadiusValue(p.x,  p.y, ConnectivityField, ConnectivityWidth,  p.val, stamp, noData);
     }
 
 
@@ -261,37 +235,37 @@ void GenerateSewerNetwork::MarkPathWithField(RasterData * ConnectivityField, int
         delete[] stamp[i];
     }
     delete[] stamp;
-
-    /*for (unsigned int i = 0; i < ConnectivityField->getHeight(); i++) {
-        for (unsigned int j = 0; j < ConnectivityField->getWidth(); j++) {
-            double val = ConnectivityField->getCell(j, i);
-            double val2 = Buffer.getCell(j, i);
-            if (val > val2) {
-                ConnectivityField->setCell(j, i, val2);
-            }
-        }
-    }*/
 }
 
-int GenerateSewerNetwork::indexOfMinValue(const vector<double> &vec) {
-    double val = vec[0];
-    int index = 0;
-    for (int i = 1; i < 9; i++) {
-        if (vec[i] < val) {
+int GenerateSewerNetwork::indexOfMinValue(const vector<double> &vec, double noValue) {
+    double val = noValue;
+    int index = -1;
+
+    for (int i = 0; i < 9; i++) {
+        if (val == noValue && vec[i] != noValue) {
+            val =  vec[i];
+            index = i;
+            continue;
+        }
+        if (vec[i] < val && vec[i] != noValue) {
             val = vec[i];
             index = i;
         }
     }
 
     //Check if alone
-    int n = 0;
+    std::vector<int> indizes;
     for (int i = 0; i < 9; i++) {
         if (vec[i] == val) {
-            n++;
+            indizes.push_back(i);
         }
     }
-    if (n > 1)
-        index = -1;
+
+    //if index exists more often return random
+    if (indizes.size() > 1) {
+        int i_ran = rand() % indizes.size();
+        index = indizes[i_ran];
+    }
     return index;
 }
 
@@ -321,21 +295,23 @@ void GenerateSewerNetwork::reducePath(std::vector<GenerateSewerNetwork::Pos> & p
 
         int x_1 = path[i].x;
         int y_1 = path[i].y;
-        QPair<int,int> hash(x_1,y_1);
-        if (!agentPathMap.contains(hash)) {
-            Pos p = path[i];
-            p.val = val;
+        std::pair<int,int> hash(x_1,y_1);
+        Pos p = path[i];
+        p.val = val;
+
+
+        if (agentPathMap.find(hash) == agentPathMap.end()) {
             agentPathMap[hash] = p;
-            continue;
         } else {
-            if (val < agentPathMap[hash].val) {
-                continue;
+            if (agentPathMap[hash].val < p.val ) {
+                agentPathMap[hash] = p;
             }
-            Pos p = path[i];
-            p.val = val;
-            agentPathMap[hash] = p;
         }
+
+
+
     }
+
 }
 
 GenerateSewerNetwork::GenerateSewerNetwork() : mMutex()
@@ -348,6 +324,7 @@ GenerateSewerNetwork::GenerateSewerNetwork() : mMutex()
     this->IdentifierStartPoins = "";
     this->steps = 1000;
     this->Hmin = 8;
+    this->DebugMode = false;
     MultiplyerCenterCon = 1;
     MultiplyerCenterTop = 1;
     StablizierLastDir = 1;
@@ -362,7 +339,7 @@ GenerateSewerNetwork::GenerateSewerNetwork() : mMutex()
     this->addParameter("MultiplyerCenterCon", DM::DOUBLE, & this->MultiplyerCenterCon);
     this->addParameter("MultiplyerCenterTop", DM::DOUBLE, & this->MultiplyerCenterTop);
     this->addParameter("StablizierLastDir", DM::INT, &this->StablizierLastDir);
-
+    this->addParameter("Debug", DM::BOOL, &this->DebugMode);
 
 
     Topology = DM::View("Topology", DM::RASTERDATA, DM::READ);
@@ -407,6 +384,8 @@ GenerateSewerNetwork::GenerateSewerNetwork() : mMutex()
     sewerGeneration_out.push_back(Path);
     sewerGeneration_out.push_back(ConnectivityField);
     sewerGeneration_out.push_back(DM::View("Trace", DM::RASTERDATA, DM::WRITE));
+
+    sewerGeneration_out.push_back(DM::View("PathSuccess", DM::RASTERDATA, DM::WRITE));
     this->addData("sewerGeneration_Out", sewerGeneration_out);
 
 }
@@ -414,39 +393,54 @@ void GenerateSewerNetwork::run() {
     this->city = this->getData("City");
 
     rTopology = this->getRasterData("City", Topology);
-
-
     rConnectivityField_in = this->getRasterData("sewerGeneration_con", ConnectivityField_in);
     rForbiddenAreas  = this->getRasterData("sewerGeneration_In", ForbiddenAreas);
     rGoals = this->getRasterData("sewerGeneration_In", Goals);
 
-    rPath  = this->getRasterData("sewerGeneration_Out", Path);
+
+
     rConnectivityField = this->getRasterData("sewerGeneration_Out", ConnectivityField);
 
-    rTrace = this->getRasterData("sewerGeneration_Out", DM::View("Trace", DM::RASTERDATA, DM::WRITE));
+    rPath = 0;
+    rTrace = 0;
+    DM::RasterData * rSuccess;
+    rSuccess = 0;
+
 
     long width = this->rTopology->getWidth();
     long height = this->rTopology->getHeight();
+    double noValue = this->rConnectivityField_in->getNoValue();
     double cellSizeX = this->rTopology->getCellSizeX();
     double cellSizeY = this->rTopology->getCellSizeY();
-
     double OffsetX = this->rTopology->getXOffset();
     double OffsetY = this->rTopology->getYOffset();
 
     rasterSize = cellSizeX;
-    this->rTrace->setSize(width, height, cellSizeX,cellSizeY,OffsetX,OffsetY);
+
     this->rConnectivityField->setSize(width, height, cellSizeX,cellSizeY,OffsetX,OffsetY);
     Logger(Debug) << "Conn Max " << this->rConnectivityField_in->getMaxValue();
     Logger(Debug) << "Conn Min " << this->rConnectivityField_in->getMinValue();
     for (int i = 0; i < width; i++) {
         for (int j = 0; j < height; j++ ) {
-            this->rConnectivityField->setCell(i,j, this->rConnectivityField_in->getCell(i,j)*0.5);
-            this->rTrace->setCell(i,j, 0);
+            double val = this->rConnectivityField_in->getCell(i,j);
+            if (val !=noValue )
+                this->rConnectivityField->setCell(i,j, val*0.5);
         }
     }
     this->rConnectivityField->setDebugValue(rConnectivityField_in->getDebugValue()+1);
-    this->rPath->setSize(width, height, cellSizeX,cellSizeY,OffsetX,OffsetY);
-    this->rPath->clear();
+
+    if (this->DebugMode) {
+        rTrace = this->getRasterData("sewerGeneration_Out", DM::View("Trace", DM::RASTERDATA, DM::WRITE));
+        rSuccess = this->getRasterData("sewerGeneration_Out", DM::View("PathSuccess", DM::RASTERDATA, DM::WRITE));
+        rPath  = this->getRasterData("sewerGeneration_Out", Path);
+
+        this->rPath->setSize(width, height, cellSizeX,cellSizeY,OffsetX,OffsetY);
+        this->rPath->clear();
+        this->rTrace->setSize(width, height, cellSizeX,cellSizeY,OffsetX,OffsetY);
+        rSuccess->setSize(width, height, cellSizeX,cellSizeY,OffsetX,OffsetY);
+
+    }
+
     std::vector<Agent * > agents;
 
 
@@ -507,39 +501,39 @@ void GenerateSewerNetwork::run() {
     agentPathMap.clear();
     int sumLengthAgentPath = 0;
     int nov_agents = agents.size();
-    for (int i = 0; i < 1; i++) 
-	{
-        //Until performance of DB is fixed
-
-#ifdef _OPENMP
-        omp_set_num_threads(1);
-		DM::Logger(Debug) << "starting omp with " << omp_get_max_threads() << " threads";
-#endif
-        //#pragma omp parallel for
-        for (int j = 0; j < nov_agents; j++)
-		{
-            Agent * a = agents[j];
-            if (a->alive) 
-			{
-                a->run();
-                if (!a->successful) 
-				{
-                    a->path.clear();
-                    continue;
-                } 
-                this->reducePath(a->path);
-                sumLengthAgentPath+=a->path.size();
+    for (int j = 0; j < nov_agents; j++)
+    {
+        Agent * a = agents[j];
+        if (a->alive) {
+            a->run();
+            if (!a->successful)  {
                 a->path.clear();
-                StartPos[j]->addAttribute("success",1);
-
-                successfulAgents++;
+                continue;
             }
+            if (a->path.size() < 1)
+                continue;
+            this->reducePath(a->path);
+            sumLengthAgentPath+=a->path.size();
+
+            StartPos[j]->addAttribute("success",1);
+
+            if (rSuccess) {
+                foreach (Pos p , a->path) {
+                    rSuccess->setCell(p.x, p.y, 1);
+
+                }
+            }
+            if (rSuccess)
+                rSuccess->setCell(  a->path[a->path.size()-1].x,   a->path[a->path.size()-1].y, 10);
+            a->path.clear();
+            successfulAgents++;
         }
 
-        GenerateSewerNetwork::MarkPathWithField(this->rConnectivityField, this->ConnectivityWidth);
 
     }
-    Logger(DM::Standard) << "Successful " << nov_agents << "/" << successfulAgents;
+
+    GenerateSewerNetwork::MarkPathWithField(this->rConnectivityField, this->ConnectivityWidth);
+    Logger(DM::Standard) << "Successful " << successfulAgents << "/" << nov_agents;
 
 
     for (int j = 0; j < agents.size(); j++) {
