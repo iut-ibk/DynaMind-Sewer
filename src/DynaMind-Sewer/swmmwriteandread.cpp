@@ -367,7 +367,7 @@ void SWMMWriteAndRead::writeJunctions(std::fstream &inp)
         inp << "\t";
         inp << "\t";
         //Get Val
-        inp << p->getAttribute("Z")->getDouble();
+        inp << p->getAttribute("invert_elevation")->getDouble();
 
         inp << "\t";
         inp <<  p->getAttribute("D")->getDouble();
@@ -738,7 +738,7 @@ void SWMMWriteAndRead::writeLID_Controlls(std::fstream &inp) {
             continue;
         }
 
-        double area = catchment_attr->getAttribute("Area")->getDouble();// node->area/10000.;
+        double area = catchment_attr->getAttribute("area")->getDouble();// node->area/10000.;
 
         int numberOfInfiltrationSystems = catchment_attr->getAttribute("INFILTRATION_SYSTEM")->getLinks().size();
 
