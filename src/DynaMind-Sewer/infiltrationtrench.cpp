@@ -85,3 +85,8 @@ void InfiltrationTrench::run() {
     }
     DM::Logger(DM::Standard) << "Number of placed infiltration systems " << numberOfPlacedSystem;
 }
+
+string InfiltrationTrench::getHelpUrl()
+{
+    return "https://github.com/iut-ibk/DynaMind-ToolBox/wiki/Infiltrationtrench";
+}

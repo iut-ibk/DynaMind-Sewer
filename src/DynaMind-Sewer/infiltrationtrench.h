@@ -18,6 +18,7 @@ private:
 public:
     InfiltrationTrench();
     void run();
+    std::string getHelpUrl();
 
 };
 
