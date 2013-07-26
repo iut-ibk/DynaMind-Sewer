@@ -39,6 +39,7 @@ private:
 public:
     OutfallStructure();
     void run();
+    std::string getHelpUrl();
 };
 
 #endif // OUTFALLSTRUCTURE_H

@@ -33,6 +33,8 @@ OutfallStructure::OutfallStructure()
     view_outlets = DM::View("OUTLET", DM::NODE, DM::READ);
     view_outfalls = DM::View("OUTFALL", DM::NODE, DM::WRITE);
     view_conduits = DM::View("CONDUIT", DM::EDGE, DM::WRITE);
+    view_conduits.addAttribute("Diameter");
+    view_conduits.addAttribute("Length");
 
     std::vector<DM::View> datastream;
 
@@ -62,4 +64,9 @@ void OutfallStructure::run()
         e->addAttribute("Length", 15.);
 
     }
+}
+
+string OutfallStructure::getHelpUrl()
+{
+    return "https://github.com/iut-ibk/DynaMind-ToolBox/wiki/Outfallstructure";
 }
