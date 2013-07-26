@@ -82,6 +82,7 @@ public:
     DMSWMM();
     void run();
     void init();
+    std::string getHelpUrl();
 };
 
 #endif // VIBESWMM_H

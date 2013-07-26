@@ -57,6 +57,8 @@ DMSWMM::DMSWMM()
 
     junctions = DM::View("JUNCTION", DM::NODE, DM::READ);
     junctions.getAttribute("D");
+    junctions.getAttribute("Z");
+    junctions.getAttribute("invert_elevation");
     junctions.addAttribute("flooding_V");
     junctions.addAttribute("node_depth");
 
@@ -65,6 +67,7 @@ DMSWMM::DMSWMM()
     catchment = DM::View("CATCHMENT", DM::FACE, DM::READ);
     catchment.getAttribute("WasteWater");
     catchment.getAttribute("area");
+    //catchment.getAttribute("Gradient");
     catchment.getAttribute("Impervious");
 
     outfalls= DM::View("OUTFALL", DM::NODE, DM::READ);
@@ -152,6 +155,11 @@ void DMSWMM::init() {
     if (!QDir(QString::fromStdString(this->FileName)).exists()) {
         DM::Logger(DM::Warning) <<  this->FileName << "  does not exist!";
     }
+}
+
+string DMSWMM::getHelpUrl()
+{
+    return "https://github.com/iut-ibk/DynaMind-ToolBox/wiki/DMSWMM";
 }
 
 
