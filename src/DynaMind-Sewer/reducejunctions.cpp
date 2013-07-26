@@ -120,6 +120,7 @@ void ReduceJunctions::run()
         DM::Node * jun = city->getNode(j_uuid);
         int counter = endPointCounter[jun];
         jun->addAttribute("end_counter",(double) counter);
+        jun->addAttribute("visited",0); // reset when used in loop
         if (jun->getAttribute("existing")->getDouble() > 0.01 )
             continue;
         if (counter!=0)
