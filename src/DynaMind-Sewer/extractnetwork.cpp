@@ -58,7 +58,6 @@ void ExtractNetwork::AgentExtraxtor::run() {
 
         if (index == -1) {
             this->alive = false;
-            //Logger(Standard) << "index -1";
             break;
         }
 
@@ -100,13 +99,13 @@ void ExtractNetwork::AgentExtraxtor::run() {
 ExtractNetwork::ExtractNetwork()
 {
     this->steps = 1000;
-    this->ConduitLength = 200;
     this->Hmin = 3.1;
+    smooth = true;
 
 
     this->addParameter("Steps", DM::LONG, & this->steps);
     this->addParameter("MaxDeph", DM::DOUBLE, &this->Hmin);
-    this->addParameter("ConduitLength", DM::DOUBLE, &this->ConduitLength);
+    this->addParameter("Smooth", DM::BOOL, &this->smooth);
 
     confield = DM::View("ConnectivityField_in", DM::RASTERDATA, DM::READ);
     path =DM::View("Path", DM::RASTERDATA, DM::READ);
@@ -133,6 +132,7 @@ ExtractNetwork::ExtractNetwork()
     Junction= DM::View("JUNCTION",  DM::NODE, DM::WRITE);
     Junction.addAttribute("D");
     Junction.addAttribute("Z");
+    Junction.addAttribute("invert_elevation");
     Junction.addAttribute("id");
     EndPoint = DM::View("OUTLET", DM::NODE, DM::READ);
 
@@ -149,25 +149,20 @@ ExtractNetwork::ExtractNetwork()
 
 }
 void ExtractNetwork::run() {
-    ///nodeListToCompare.clear();
     this->city = this->getData("City");
 
     this->ConnectivityField = this->getRasterData("sewerGeneration", confield);
     this->Goals = this->getRasterData("sewerGeneration", goals);
-    this->Path =  this->getRasterData("sewerGeneration", path);
     this->ForbiddenAreas = this->getRasterData("sewerGeneration", forb);
     this->Topology = this->getRasterData("City", topo);
 
-    long width = this->ConnectivityField->getWidth();
-    long height = this->ConnectivityField->getHeight();
     offsetX = this->ConnectivityField->getXOffset();
     offsetY = this->ConnectivityField->getYOffset();
     double cellSizeX = this->ConnectivityField->getCellSizeX();
     double cellSizeY = this->ConnectivityField->getCellSizeY();
     cellsize = cellSizeX;
     offset = this->cellsize/2;
-    this->Path->setSize(width, height, cellSizeX,cellSizeY,offsetX,offsetY);
-    this->Path->clear();
+
 
     std::vector<AgentExtraxtor * > agents;
 
@@ -195,7 +190,7 @@ void ExtractNetwork::run() {
         AgentExtraxtor * a = new AgentExtraxtor(GenerateSewerNetwork::Pos(x,y));
         a->startNode = p;
         a->Topology = this->Topology;
-        a->MarkPath = this->Path;
+        a->MarkPath = 0;
         a->ConnectivityField = this->ConnectivityField;
         a->ForbiddenAreas = this->ForbiddenAreas;
         a->Goals = this->Goals;
@@ -237,14 +232,13 @@ void ExtractNetwork::run() {
             successfulAgents++;
             std::vector<Node> points_for_total;
             for (int i = 0; i < a->path.size(); i++) {
-                this->Path->setCell(a->path[i].x, a->path[i].y, 1);
-                //Find connecting Node
                 if (i == a->path.size()-1) {
                     DM::Node * n = existing_nodes.findNode(a->path[i].x * multiplier + offset + this->offsetX, a->path[i].y * multiplier + offset + this->offsetY, cellsize-0.001);
                     if (!n){
                         Logger(Error) << "Couldn't find endnode";
                         continue;
                     }
+                    n->getAttribute("D")->setDouble(-1);
                     points_for_total.push_back(Node(n->getX(), n->getY(), a->path[i].h));
                     if (find(endNodeList.begin(), endNodeList.end(), n->getUUID()) == endNodeList.end()) {
                         endNodeList.push_back(n->getUUID());
@@ -308,7 +302,7 @@ void ExtractNetwork::run() {
 
         if (n == 0) {
             n = city->addNode(pl[0], Junction);
-            Logger(Warning) << "Starting point is not an inlet";
+            Logger(Warning) << "Starting point is not an inlet " << pl[0].getX() << "/" << pl[0].getY();
         }
 
         city->addComponentToView(n, Junction);
@@ -321,28 +315,32 @@ void ExtractNetwork::run() {
 
 
     //Point extraction starts from 1
+    //goes through all strains extracted from the agent based model.
+    //and creates new map for the conduit generation.
     std::vector<std::vector<Node *> > Points_For_Conduits_tmp;
     for(int j = 0; j < PointsToPlace.size(); j++){
         std::vector<Node> pl = PointsToPlace[j];
+        bool foundNode = false;
         std::vector<DM::Node * > nl = Points_For_Conduits[j];
+        bool placeNode = true;
         for (int i = 1; i < pl.size(); i++) {
-            bool foundNode = false;
+            if (foundNode) placeNode = false;
+
             if (spnh.findNode(pl[i].getX(), pl[i].getY(), cellsize-0.0001)) {
                 foundNode = true;
             }
             DM::Node * n = spnh.addNode(pl[i].getX(), pl[i].getY(), pl[i].getZ(), cellsize-0.0001, Junction);
-            if (n->getAttribute("D")->getDouble() > pl[i].getZ()) {
-                n->setZ(n->getAttribute("D")->getDouble());
+            if (n->getAttribute("D")->getDouble() < pl[i].getZ()) {
+                n->getAttribute("D")->setDouble( pl[i].getZ());
             }
-            n->setZ(n->getAttribute("D")->getDouble());
 
             if (n->getUUID() == this->EndNode){
                 Logger(Debug) << "EndNode found";
             }
-            n->changeAttribute("D", pl[i].getZ());
-            nl.push_back(n);
-            if (foundNode && i != 0)
-                break;
+
+            if (placeNode)
+                 nl.push_back(n);
+
         }
         Points_For_Conduits_tmp.push_back(nl);
     }
@@ -380,10 +378,12 @@ void ExtractNetwork::run() {
             continue;
 
         n->changeAttribute("Z", z);
+        double invert_elevation = n->getAttribute("Z")->getDouble() - n->getAttribute("D")->getDouble();
+        n->getAttribute("invert_elevation")->setDouble(invert_elevation);
         n->addAttribute("id", id++);
     }
 
-    Logger(Debug) << "Done with adding junctions date extraction";
+    /*Logger(Debug) << "Done with adding junctions date extraction";
     std::vector<std::string> EndNames =  this->city->getUUIDsOfComponentsInView(EndPoint);
     counter = 0;
     foreach (std::string name, EndNames) {
@@ -395,10 +395,16 @@ void ExtractNetwork::run() {
         int x = (n->getX() -  offsetX)/cellSizeX;
         int y = (n->getY() - offsetY)/cellSizeY;
         double z = this->Topology->getCell(x,y);
-        n->changeAttribute("Z", z-3);
+        n->changeAttribute("Z", z);
+        double invert_elevation = n->getAttribute("Z")->getDouble() - 3.;
+        n->getAttribute("invert_elevation")->setDouble(invert_elevation);
+    }*/
+
+
+    if( smooth ) {
+        Logger(Standard) << "Start smoothing";
+        smoothNetwork();
     }
-    Logger(Debug) << "Start smoothing";
-    smoothNetwork();
 
 }
 

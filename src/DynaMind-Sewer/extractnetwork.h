@@ -70,6 +70,7 @@ private:
     double Hmin;
     double offset;
     double cellsize;
+    bool smooth;
 
     DM::System * city;
 
