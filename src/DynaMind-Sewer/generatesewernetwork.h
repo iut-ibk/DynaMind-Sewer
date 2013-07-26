@@ -96,6 +96,7 @@ public:
         double MultiplyerCenterCon;
         double MultiplyerCenterTop;
         double StablizierLastDir;
+        double HConnection;
         double Hmin;
         int lastdir;
         Agent(Pos);
@@ -143,6 +144,7 @@ private:
     double MultiplyerCenterTop;
     long steps;
     double Hmin;
+    double HConnection;
     int StablizierLastDir;
     bool DebugMode;
     std::string IdentifierStartPoins;

@@ -39,6 +39,7 @@ GenerateSewerNetwork::Agent::Agent(Pos StartPos) {
     this->currentPos.y = StartPos.y;
     this->currentPos.z = 0;
     this->currentPos.h = 3;
+    this->HConnection = 3;
     this->lastdir = -1;
     this->neigh = std::vector<double>(9);
     this->decissionVector = std::vector<double>(9);
@@ -55,36 +56,37 @@ void GenerateSewerNetwork::Agent::run() {
         double hcurrent = this->currentPos.h;
         this->path.push_back(currentPos);
 
-        //Influence Topology
-        Topology->getMoorNeighbourhood(neigh, currentPos.x,currentPos.y);
-        double currentHeight = neigh[4];
-        int index = GenerateSewerNetwork::indexOfMinValue(neigh,noData);
-        for (int i = 0; i < 9; i++) {
-            if (currentHeight + (this->Hmin - this->currentPos.h) >= neigh[i] && neigh[i] != noData) {
-                if (index == i )
-                    decissionVector[i] = MultiplyerCenterTop*this->AttractionTopology;
-                else
-                    decissionVector[i] = 1*this->AttractionTopology;
 
-            } else {
-                decissionVector[i] = 0;
-            }
-
-        }
-
-        //Influence Topology
+        //Influence Connectifity flield
         ConnectivityField->getMoorNeighbourhood(neigh, currentPos.x,currentPos.y);
-        currentHeight = neigh[4];
-        index = GenerateSewerNetwork::indexOfMinValue(neigh, noData);
+        double currentHeight = neigh[4];
+        int index = GenerateSewerNetwork::indexOfMinValue(neigh, noData);
         for (int i = 0; i < 9; i++) {
             if (currentHeight > neigh[i]  && neigh[i] != noData) {
                 if (index == i)
-                    decissionVector[i] += MultiplyerCenterCon*this->AttractionConnectivity;
+                    decissionVector[i] = MultiplyerCenterCon*this->AttractionConnectivity;
                 else
-                    decissionVector[i] += 1*this->AttractionConnectivity;
+                    decissionVector[i] = 1*this->AttractionConnectivity;
             } else {
-                decissionVector[i] += 0;
+                decissionVector[i] = 0;
             }
+        }
+
+        //Influence Topology add psossible dem connection, set probability to 0 if no suitable neighbour can be found
+        Topology->getMoorNeighbourhood(neigh, currentPos.x,currentPos.y);
+        currentHeight = neigh[4];
+        index = GenerateSewerNetwork::indexOfMinValue(neigh,noData);
+        for (int i = 0; i < 9; i++) {
+            if (currentHeight + (this->Hmin - this->currentPos.h) >= neigh[i] && neigh[i] != noData) {
+                if (index == i )
+                    decissionVector[i] += MultiplyerCenterTop*this->AttractionTopology;
+                else
+                    decissionVector[i] += 1*this->AttractionTopology;
+
+            } else { //set zerro if a connection is not possbile
+                decissionVector[i] = 0;
+            }
+
         }
 
 
@@ -103,18 +105,18 @@ void GenerateSewerNetwork::Agent::run() {
         }
 
         for (int i = 0; i < 9; i++) {
-            ProbabilityVector[i] = decissionVector[i] /sumVec * 100;
+            ProbabilityVector[i] = decissionVector[i] /sumVec * 100.;
         }
 
 
-        int ra = rand()%100;
+        int ra = rand()%100+1; // +1 otherwise if ra == 0 possbile that agent picks a pos with 0% probability
 
         double prob = 0;
         int direction = -1;
         for (int i = 0; i < 9; i++) {
             prob += ProbabilityVector[i];
 
-            if (ra <= prob) {
+            if (ra <= (int) prob) {
                 direction = i;
                 break;
             }
@@ -149,7 +151,7 @@ void GenerateSewerNetwork::Agent::run() {
         }
 
         //Check current Pos is < 3 to secure connections
-        if (Goals->getCell(currentPos.x, currentPos.y ) > 0.01 && currentPos.h <= this->Hmin) {
+        if (Goals->getCell(currentPos.x, currentPos.y ) > 0.01 && currentPos.h <= this->HConnection) {
             this->alive = false;
             this->successful = true;
             this->path.push_back(currentPos);
@@ -329,6 +331,7 @@ GenerateSewerNetwork::GenerateSewerNetwork() : mMutex()
     this->IdentifierStartPoins = "";
     this->steps = 1000;
     this->Hmin = 8;
+    this->HConnection = 3;
     this->DebugMode = false;
     MultiplyerCenterCon = 1;
     MultiplyerCenterTop = 1;
@@ -337,6 +340,7 @@ GenerateSewerNetwork::GenerateSewerNetwork() : mMutex()
 
 
     this->addParameter("MaxDeph", DM::DOUBLE, &this->Hmin);
+    this->addParameter("MaxDepthConnection", DM::DOUBLE, &this->HConnection);
     this->addParameter("Steps", DM::LONG, & this->steps);
     this->addParameter("ConnectivityWidth", DM::INT, & this->ConnectivityWidth);
     this->addParameter("AttractionTopology", DM::DOUBLE, & this->AttractionTopology);
@@ -498,6 +502,7 @@ void GenerateSewerNetwork::run() {
         a->Hmin = this->Hmin;
         a->ForbiddenAreas = this->rForbiddenAreas;
         a->StablizierLastDir = this->StablizierLastDir;
+        a->HConnection = this->HConnection;
         a->Trace = rTrace;
         agents.push_back(a);
 
