@@ -35,6 +35,11 @@ void InclinedPlane::init() {
     this->addData("city", datastream);
 }
 
+string InclinedPlane::getHelpUrl()
+{
+    return "https://github.com/iut-ibk/DynaMind-ToolBox/wiki/Inclinedplane";
+}
+
 void InclinedPlane::run()
 {
     DM::RasterData * plane = this->getRasterData("city", v_plane);
