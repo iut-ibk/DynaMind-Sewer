@@ -120,17 +120,11 @@ void NetworkAnalysis::run() {
 
     foreach(DM::Node * StartID, StartNodes) {
         std::vector<DM::Edge*> ids = StartNodeSortedEdges[StartID];
-        /*if (ids.size()!= 1) {
-            //DM::Logger(DM::Error) << "No Start Node";
-            continue;
-        }*/
+
         DM::Edge * e = ids[0];
-        //DM::Node * n1 = city->getNode(e->getStartpointName());
         DM::Node * n2 = city->getNode(e->getEndpointName());
 
         DM::Node *  nextID = 0;
-        //if (n1 != StartID)
-        //nextID = n1;
         if (n2 != StartID)
             nextID = n2;
         if (nextID == 0) {
