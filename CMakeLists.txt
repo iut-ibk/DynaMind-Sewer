@@ -65,5 +65,6 @@ ELSE()
     SET(SCRIPT_PATH ${dynamind-sewer_BINARY_DIR}/PythonModules )
 ENDIF()
 ADD_SUBDIRECTORY(scripts)
+ADD_SUBDIRECTORY(doc)
 ADD_SUBDIRECTORY(src/DynaMind-Sewer)
 
