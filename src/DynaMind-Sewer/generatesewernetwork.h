@@ -153,14 +153,15 @@ private:
     std::map<std::pair<int,int> , Pos> agentPathMap;
     void reducePath(std::vector<Pos> &path);
 
+	int internalCounter;
 public:
     GenerateSewerNetwork();
     void run();
+	void init();
 
     void MarkPathWithField(RasterData * ConnectivityField, int ConnectivityWidth);
     void addRadiusValue(int x, int y, RasterData * layer, int rmax, double value, double **, double nodeata);
     static int indexOfMinValue(const std::vector<double> & vec, double noValue);
-
 };
 
 #endif // GENERATESEWERNETWORK_H

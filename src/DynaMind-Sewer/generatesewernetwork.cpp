@@ -336,7 +336,7 @@ GenerateSewerNetwork::GenerateSewerNetwork() : mMutex()
     MultiplyerCenterCon = 1;
     MultiplyerCenterTop = 1;
     StablizierLastDir = 1;
-
+	internalCounter = 0;
 
 
     this->addParameter("MaxDeph", DM::DOUBLE, &this->Hmin);
@@ -398,6 +398,12 @@ GenerateSewerNetwork::GenerateSewerNetwork() : mMutex()
     this->addData("sewerGeneration_Out", sewerGeneration_out);
 
 }
+
+void GenerateSewerNetwork::init()
+{
+	internalCounter = 0;
+}
+
 void GenerateSewerNetwork::run() {
     this->city = this->getData("City");
 
@@ -479,7 +485,10 @@ void GenerateSewerNetwork::run() {
         StartPos[i_rand_2] = n_tmp;
     }
 
+	//int internalCounter = rConnectivityField_in->getAttribute("agent counter")->getDouble();
+
     //Create Agents
+	this->internalCounter++;
     int attrtopo = this->AttractionTopology - this->internalCounter;
     if (attrtopo < 0)
         attrtopo = 0;
