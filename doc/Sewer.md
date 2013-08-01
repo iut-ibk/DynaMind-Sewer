@@ -6,4 +6,4 @@
 |[OutfallStructure](OutfallStructure.md)|creates outfall structure for drainage networks |
 |[InclinedPlane](InclinedPlane.md)|creates an inclined plane |
 |[InfiltrationTrench](InfiltrationTrench.md)|autodesign and placement of infiltration systems |
-|[LinkElementWithNearestPoint](LinkElementWithNearestPoint.md)|Links nodes to their nearst neighbour |
+|[LinkElementWithNearestPoint](LinkElementWithNearestPoint.md)|links nodes to their nearst neighbour |
