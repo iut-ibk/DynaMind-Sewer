@@ -37,7 +37,7 @@ void InclinedPlane::init() {
 
 string InclinedPlane::getHelpUrl()
 {
-    return "https://github.com/iut-ibk/DynaMind-ToolBox/wiki/Inclinedplane";
+    return "https://github.com/iut-ibk/DynaMind-Sewer/blob/master/doc/InclinedPlane.md";
 }
 
 void InclinedPlane::run()

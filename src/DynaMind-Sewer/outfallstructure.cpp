@@ -68,5 +68,5 @@ void OutfallStructure::run()
 
 string OutfallStructure::getHelpUrl()
 {
-    return "https://github.com/iut-ibk/DynaMind-ToolBox/wiki/Outfallstructure";
+    return "https://github.com/iut-ibk/DynaMind-Sewer/blob/master/doc/OutfallStructure.md";
 }

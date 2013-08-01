@@ -51,7 +51,7 @@ void NetworkAnalysis::init()
 
 std::string NetworkAnalysis::getHelpUrl()
 {
-    return "https://github.com/iut-ibk/DynaMind-ToolBox/wiki/NetworkAnalysis";
+    return "https://github.com/iut-ibk/DynaMind-Sewer/blob/master/doc/Sewer.md";
 }
 
 void NetworkAnalysis::run() {

@@ -20,6 +20,7 @@ public:
     LinkElementWithNearestPoint();
     void run();
     void init();
+    std::string getHelpUrl();
 };
 
 #endif // LINKELEMENTWITHNEARESTPOINT_H
