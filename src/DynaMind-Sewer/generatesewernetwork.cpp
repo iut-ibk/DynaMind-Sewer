@@ -401,7 +401,7 @@ GenerateSewerNetwork::GenerateSewerNetwork() : mMutex()
 
 void GenerateSewerNetwork::init()
 {
-	internalCounter = 0;
+
 }
 
 void GenerateSewerNetwork::run() {
@@ -411,7 +411,7 @@ void GenerateSewerNetwork::run() {
     rConnectivityField_in = this->getRasterData("sewerGeneration_con", ConnectivityField_in);
     rForbiddenAreas  = this->getRasterData("sewerGeneration_In", ForbiddenAreas);
     rGoals = this->getRasterData("sewerGeneration_In", Goals);
-
+    Logger(Standard) << internalCounter;
 
 
     rConnectivityField = this->getRasterData("sewerGeneration_Out", ConnectivityField);
