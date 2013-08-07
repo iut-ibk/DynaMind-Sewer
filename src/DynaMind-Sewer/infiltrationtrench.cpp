@@ -88,5 +88,5 @@ void InfiltrationTrench::run() {
 
 string InfiltrationTrench::getHelpUrl()
 {
-    return "https://github.com/iut-ibk/DynaMind-ToolBox/wiki/Infiltrationtrench";
+    return "https://github.com/iut-ibk/DynaMind-Sewer/blob/master/doc/InfiltrationTrench.md";
 }

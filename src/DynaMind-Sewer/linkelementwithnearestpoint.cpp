@@ -37,6 +37,11 @@ void LinkElementWithNearestPoint::init()
 
 }
 
+string LinkElementWithNearestPoint::getHelpUrl()
+{
+ return "https://github.com/iut-ibk/DynaMind-Sewer/blob/master/doc/LinkElementWithNearestPoint.md";
+}
+
 void LinkElementWithNearestPoint::run()
 {
     DM::System * city = this->getData("city");

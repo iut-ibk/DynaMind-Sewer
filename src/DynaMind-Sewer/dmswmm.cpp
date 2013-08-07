@@ -159,7 +159,7 @@ void DMSWMM::init() {
 
 string DMSWMM::getHelpUrl()
 {
-    return "https://github.com/iut-ibk/DynaMind-ToolBox/wiki/DMSWMM";
+    return "https://github.com/iut-ibk/DynaMind-Sewer/blob/master/doc/DMSWMM.md";
 }
 
 
