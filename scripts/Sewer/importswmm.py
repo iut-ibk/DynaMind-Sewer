@@ -44,12 +44,13 @@ class ImportSWMM(Module):
         self.junctions = View("JUNCTION", NODE, WRITE)
         self.junctions.addAttribute("Z")
         self.junctions.addAttribute("D")
+        self.junctions.addAttribute("invert_elevation")
         self.junctions.addAttribute("built_year")
 
         self.outfalls = View("OUTFALL", NODE, WRITE)
         self.outfalls.addAttribute("Z")
-        
-        self.inlets = View("INLET", NODE, WRITE)
+        #Not imported
+        #self.inlets = View("INLET", NODE, WRITE)
 
         
         self.wwtps = View("WWTP", NODE, WRITE)
@@ -76,7 +77,7 @@ class ImportSWMM(Module):
         views.append(self.conduits)
         views.append(self.outfalls)
         views.append(self.junctions)
-        views.append(self.inlets)
+        #views.append(self.inlets)
         views.append(self.wwtps)
         views.append(self.storages)
         views.append(self.weirs)
@@ -189,8 +190,9 @@ class ImportSWMM(Module):
                 sewer.addComponentToView(juntion, self.junctions) 
                 
                 juntion.addAttribute("SWMM_ID", str(c))
-                juntion.addAttribute("Z", (float(attributes[0])))
+                juntion.addAttribute("invert_elevation", (float(attributes[0])))
                 juntion.addAttribute("D", (float(attributes[1])))
+                juntion.addAttribute("Z", (float(attributes[0])) + (float(attributes[1])))
                 juntion.addAttribute("built_year", self.defaultBuiltYear)
                 if (c == self.NameWWTP):  
                     print "wwtp found"
