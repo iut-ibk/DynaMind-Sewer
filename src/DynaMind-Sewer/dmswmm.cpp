@@ -252,17 +252,26 @@ void DMSWMM::run() {
         delete swmm;
         return;
     }
+    DM::Logger(DM::Standard) << "Start write output files";
+    int current_year = (int) c->getAttribute("year")->getDouble();
 
-    int current_year = c->getAttribute("year")->getDouble();
 
-    DM::Logger(DM::Debug) << "Start write output files";
     std::map<std::string, std::string> additionalParameter;
+    /*Logger(Standard) << c->getAttribute("pop_growth")->getDouble();
+    Logger(Standard) << c->getAttribute("renewal_rate")->getDouble();
+    Logger(Standard) << c->getAttribute("masterplan_id")->getDouble();
+    DM::Logger(DM::Standard) << "year";
     additionalParameter["year"] = QString::number(current_year).toStdString();
+    DM::Logger(DM::Standard) << "pop";
     additionalParameter["population_growth"] = QString::number(c->getAttribute("pop_growth")->getDouble()).toStdString();
-    additionalParameter["climate_change_factor\t"] = QString::number(cf).toStdString();
+    DM::Logger(DM::Standard) << "ccf";
+    additionalParameter["climate_change_factor"] = QString::number(cf).toStdString();
+    DM::Logger(DM::Standard) << "rp";
     additionalParameter["return_period"] =  QString::number(this->return_period).toStdString();
+    DM::Logger(DM::Standard) << "rr";
     additionalParameter["renewal_rate"] =  QString::number(c->getAttribute("renewal_rate")->getDouble()).toStdString();
-    additionalParameter["masterplan_id"] =  QString::number(c->getAttribute("masterplan_id")->getDouble()).toStdString();
+    DM::Logger(DM::Standard) << "m_id";
+    additionalParameter["masterplan_id"] =  QString::number(c->getAttribute("masterplan_id")->getDouble()).toStdString();*/
 
     std::stringstream fname;
     Logger(Standard) << "Start Write Report File " <<fname.str();

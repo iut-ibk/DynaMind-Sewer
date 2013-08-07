@@ -32,6 +32,7 @@ OutfallStructure::OutfallStructure()
 {
     view_outlets = DM::View("OUTLET", DM::NODE, DM::READ);
     view_outfalls = DM::View("OUTFALL", DM::NODE, DM::WRITE);
+    view_outfalls.addAttribute("Z");
     view_conduits = DM::View("CONDUIT", DM::EDGE, DM::WRITE);
     view_conduits.addAttribute("Diameter");
     view_conduits.addAttribute("Length");
