@@ -25,6 +25,7 @@
  */
 #include "generatesewernetwork.h"
 #include "csg_s_operations.h"
+#include <dmgroup.h>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -405,6 +406,17 @@ void GenerateSewerNetwork::init()
 }
 
 void GenerateSewerNetwork::run() {
+    Group* lg = dynamic_cast<Group*>(getOwner());
+    if(lg) {
+        this->internalCounter = lg->getGroupCounter();
+        DM::Logger(DM::Debug) << "counter " << lg->getGroupCounter();
+    }
+    else
+    {
+        DM::Logger(DM::Debug) << "counter not found";
+       this->internalCounter = 0;
+    }
+
     this->city = this->getData("City");
 
     rTopology = this->getRasterData("City", Topology);
