@@ -36,19 +36,19 @@
   * @author Christian Urich
   */
 class DM_HELPER_DLL_EXPORT NetworkAnalysis : public  DM::Module {
-    DM_DECLARE_NODE( NetworkAnalysis)
+	DM_DECLARE_NODE( NetworkAnalysis)
 
-    private:
-        DM::View network;
-        //DM::View globals;
-    std::string EdgeName;
+	private:
+		DM::View network;
+	//DM::View globals;
+	std::string EdgeName;
 
 
 public:
-    NetworkAnalysis();
-    void run();
-    void init();
-    std::string getHelpUrl();
+	NetworkAnalysis();
+	void run();
+	void init();
+	std::string getHelpUrl();
 
 
 };

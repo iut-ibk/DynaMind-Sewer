@@ -39,36 +39,36 @@
 */
 class DM_HELPER_DLL_EXPORT TimeAreaMethod : public  DM::Module {
 
-DM_DECLARE_NODE (TimeAreaMethod)
+	DM_DECLARE_NODE (TimeAreaMethod)
 
-public:
-    TimeAreaMethod();
-void run();
-void init();
+	public:
+		TimeAreaMethod();
+	void run();
+	void init();
 
 private:
-    DM::View conduit;
-    DM::View inlet;
-    DM::View shaft;
-    DM::View wwtps;
-    DM::View catchment;
-    DM::View outfalls;
-    DM::View weir;
-    DM::View storage;
-    DM::View globals;
+	DM::View conduit;
+	DM::View inlet;
+	DM::View shaft;
+	DM::View wwtps;
+	DM::View catchment;
+	DM::View outfalls;
+	DM::View weir;
+	DM::View storage;
+	DM::View globals;
 
-    std::vector<DM::Node*> EndPointList;
+	std::vector<DM::Node*> EndPointList;
 
-    double v;
-    double r15;
-    double chooseDiameter(double diameter);
-    bool combinedSystem;
-    double caluclateAPhi(DM::Component *  attr, double r15) const;
+	double v;
+	double r15;
+	double chooseDiameter(double diameter);
+	bool combinedSystem;
+	double caluclateAPhi(DM::Component *  attr, double r15) const;
 
 
-    std::map<DM::Node *, std::vector<DM::Edge*> > StartNodeSortedEdges;
-    std::map<DM::Node *, std::vector<DM::Edge*> > EndNodeSortedEdges;
-    std::map<DM::Node *, std::vector<DM::Edge*> > ConnectedEdges;
+	std::map<DM::Node *, std::vector<DM::Edge*> > StartNodeSortedEdges;
+	std::map<DM::Node *, std::vector<DM::Edge*> > EndNodeSortedEdges;
+	std::map<DM::Node *, std::vector<DM::Edge*> > ConnectedEdges;
 
 
 

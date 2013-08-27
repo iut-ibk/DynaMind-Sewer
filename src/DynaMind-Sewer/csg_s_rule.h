@@ -52,23 +52,23 @@ namespace csg_s
 class DM_HELPER_DLL_EXPORT rule
 {
 
-    friend class DM::dataLayer;
+	friend class DM::dataLayer;
 
 public:
-    //void setRuleLayer(dataLayer&);
-    rule(DM::dataLayer *layer_);
-    ~rule();
-    virtual double run(Position* pos) = 0;
-    void setRuleLayer(DM::dataLayer *l) {layer_=l;};
+	//void setRuleLayer(dataLayer&);
+	rule(DM::dataLayer *layer_);
+	~rule();
+	virtual double run(Position* pos) = 0;
+	void setRuleLayer(DM::dataLayer *l) {layer_=l;};
 
 
 
 protected:
-    void applySwitch_1();
-    void applySwitch_2();
-    DM::dataLayer *layer_;
-    neighbourhood neighbours;
-    double *nMoore3x3;
+	void applySwitch_1();
+	void applySwitch_2();
+	DM::dataLayer *layer_;
+	neighbourhood neighbours;
+	double *nMoore3x3;
 
 };
 }

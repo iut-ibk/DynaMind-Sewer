@@ -36,17 +36,17 @@
   * @author Christian Urich
   */
 class DM_HELPER_DLL_EXPORT ReconstructParameter : public DM::Module {
-    DM_DECLARE_NODE(ReconstructParameter)
+	DM_DECLARE_NODE(ReconstructParameter)
 
 
-    private:
-        DM::View network;
+	private:
+		DM::View network;
 
 public:
-    ReconstructParameter();
-    void run();
+	ReconstructParameter();
+	void run();
 
-    std::string getHelpUrl();
+	std::string getHelpUrl();
 };
 
 #endif // RECONSTRUCTPARAMETER_H

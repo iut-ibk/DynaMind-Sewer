@@ -54,29 +54,29 @@ class vSys;
 class DM_HELPER_DLL_EXPORT dataLayer
 {
 
- public:
+public:
 	dataLayer(int width_, int height_, int cellSize_);
 	dataLayer();
 	~dataLayer();
 
 	void setVal(int x, int y, double val);
-        double getVal(int x, int y) const;
+	double getVal(int x, int y) const;
 	void addVal(int x, int y, double addVal);
-        void clean();
+	void clean();
 	double randVal(double rangeLow, double rangeHigh, double median);
 
-        double neighbour(int x, int y) const;
+	double neighbour(int x, int y) const;
 
-        int getcellSize() const {return cellSize;};
-        int getheight() const {return height;};
-        int getwidth() const {return width;};
+	int getcellSize() const {return cellSize;};
+	int getheight() const {return height;};
+	int getwidth() const {return width;};
 	void setmHeight(int m) {mHeight=m;}
 	int getmHeight() {return mHeight;}
 	void setSwitch(int s) {layerswitch=s;};
 	int showSwitch() {return layerswitch;};
 
-    void saveDataToFile( QTextStream *in );
-    void loadDataFromFile( QTextStream *out );
+	void saveDataToFile( QTextStream *in );
+	void loadDataFromFile( QTextStream *out );
 
 
 	dataLayer* createArea();
@@ -85,7 +85,7 @@ class DM_HELPER_DLL_EXPORT dataLayer
 	dataLayer* Area_;
 	dataLayer* rotArea_;
 
-	 
+
 protected:
 	int width;
 	int height;

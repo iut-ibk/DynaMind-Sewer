@@ -60,108 +60,108 @@ using namespace DM;
    * 1... Goal
    */
 class DM_HELPER_DLL_EXPORT GenerateSewerNetwork : public  Module {
-    DM_DECLARE_NODE (GenerateSewerNetwork)
-    public:
-        class Pos {
-        public:
-        long x;
-        long y;
-        double z;
-        double h;
-        double val;
+	DM_DECLARE_NODE (GenerateSewerNetwork)
+	public:
+		class Pos {
+				  public:
+				  long x;
+	long y;
+	double z;
+	double h;
+	double val;
 
-        Pos(long x, long y) {this->x = x; this->y = y;}
-        Pos();
-    };
+	Pos(long x, long y) {this->x = x; this->y = y;}
+	Pos();
+};
 public:
-    class Agent {
+class Agent {
 
-    public:
-        Pos StartPos;
-        Node * startNode;
-        std::vector<Pos> path;
-        Pos currentPos;
-        virtual void run();
-        bool alive;
-        bool successful;
-        RasterData * Topology;
-        RasterData * MarkPath;
-        RasterData * ConnectivityField;
-        RasterData * Goals;
-        RasterData * ForbiddenAreas;
-        RasterData * Trace;
-        long steps;
-        double AttractionTopology;
-        double AttractionConnectivity;
-        double MultiplyerCenterCon;
-        double MultiplyerCenterTop;
-        double StablizierLastDir;
-        double HConnection;
-        double Hmin;
-        int lastdir;
-        Agent(Pos);
-    protected:
-        std::vector<double> neigh;
-        std::vector<double> decissionVector;
-        std::vector<double> ProbabilityVector;
+public:
+	Pos StartPos;
+	Node * startNode;
+	std::vector<Pos> path;
+	Pos currentPos;
+	virtual void run();
+	bool alive;
+	bool successful;
+	RasterData * Topology;
+	RasterData * MarkPath;
+	RasterData * ConnectivityField;
+	RasterData * Goals;
+	RasterData * ForbiddenAreas;
+	RasterData * Trace;
+	long steps;
+	double AttractionTopology;
+	double AttractionConnectivity;
+	double MultiplyerCenterCon;
+	double MultiplyerCenterTop;
+	double StablizierLastDir;
+	double HConnection;
+	double Hmin;
+	int lastdir;
+	Agent(Pos);
+protected:
+	std::vector<double> neigh;
+	std::vector<double> decissionVector;
+	std::vector<double> ProbabilityVector;
 
 
-    };
+};
 
 
 private:
-    DM::View  Topology;
-    DM::View  ConnectivityField;
-    DM::View  ConnectivityField_in;
+DM::View  Topology;
+DM::View  ConnectivityField;
+DM::View  ConnectivityField_in;
 
-    DM::View  Path;
-    DM::View  Goals;
-    DM::View  ForbiddenAreas;
-
-
-    DM::View  Inlets;
-    DM::View  catchment;
+DM::View  Path;
+DM::View  Goals;
+DM::View  ForbiddenAreas;
 
 
-    DM::RasterData *  rTopology;
-    DM::RasterData *  rConnectivityField;
-    DM::RasterData *  rConnectivityField_in;
+DM::View  Inlets;
+DM::View  catchment;
 
-    DM::RasterData *  rPath;
-    DM::RasterData *  rGoals;
-    DM::RasterData *  rForbiddenAreas;
-    DM::RasterData *  rTrace;
 
-    DM::System * city;
-    DM::System * sewerGeneration;
+DM::RasterData *  rTopology;
+DM::RasterData *  rConnectivityField;
+DM::RasterData *  rConnectivityField_in;
 
-    double rasterSize;
+DM::RasterData *  rPath;
+DM::RasterData *  rGoals;
+DM::RasterData *  rForbiddenAreas;
+DM::RasterData *  rTrace;
 
-    int ConnectivityWidth;
-    double AttractionTopology;
-    double AttractionConnectivity;
-    double MultiplyerCenterCon;
-    double MultiplyerCenterTop;
-    long steps;
-    double Hmin;
-    double HConnection;
-    int StablizierLastDir;
-    bool DebugMode;
-    std::string IdentifierStartPoins;
-    QMutex mMutex;
+DM::System * city;
+DM::System * sewerGeneration;
 
-    std::map<std::pair<int,int> , Pos> agentPathMap;
-    void reducePath(std::vector<Pos> &path);
+double rasterSize;
 
-	int internalCounter;
+int ConnectivityWidth;
+double AttractionTopology;
+double AttractionConnectivity;
+double MultiplyerCenterCon;
+double MultiplyerCenterTop;
+long steps;
+double Hmin;
+double HConnection;
+int StablizierLastDir;
+bool DebugMode;
+std::string IdentifierStartPoins;
+QMutex mMutex;
+
+std::map<std::pair<int,int> , Pos> agentPathMap;
+void reducePath(std::vector<Pos> &path);
+
+int internalCounter;
 public:
-    GenerateSewerNetwork();
-    void run();
-	void init();
+GenerateSewerNetwork();
+void run();
+void init();
 
-    void MarkPathWithField(RasterData * ConnectivityField, int ConnectivityWidth);
-    void addRadiusValue(int x, int y, RasterData * layer, int rmax, double value, double **, double nodeata);
-    static int indexOfMinValue(const std::vector<double> & vec, double noValue);
+void MarkPathWithField(RasterData * ConnectivityField, int ConnectivityWidth);
+void addRadiusValue(int x, int y, RasterData * layer, int rmax, double value, double **, double nodeata);
+static int indexOfMinValue(const std::vector<double> & vec, double noValue);
 };
 
 #endif // GENERATESEWERNETWORK_H

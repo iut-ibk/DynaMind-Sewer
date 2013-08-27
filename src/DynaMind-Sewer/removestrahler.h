@@ -32,16 +32,16 @@
 
 class DM_HELPER_DLL_EXPORT RemoveStrahler : public DM::Module
 {
-    DM_DECLARE_NODE(RemoveStrahler)
-    private:
-        DM::View conduits;
-        DM::View junctions;
-        DM::View inlets;
-        DM::View catchments;
-        int until;
+	DM_DECLARE_NODE(RemoveStrahler)
+	private:
+		DM::View conduits;
+	DM::View junctions;
+	DM::View inlets;
+	DM::View catchments;
+	int until;
 public:
-    void run();
-    RemoveStrahler();
+	void run();
+	RemoveStrahler();
 };
 
 #endif // REMOVESTRAHLER_H

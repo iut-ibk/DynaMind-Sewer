@@ -46,13 +46,13 @@ private:
 	long height;
 	double depth;
 public:
-        Position();
-    	Position(long width, long height);
+	Position();
+	Position(long width, long height);
 	Position(long width, long height, double depth){this->width = width; this->height=height; this->depth=depth;}
-    	~Position();
+	~Position();
 	long getWidth();
 	long getHeight();
-	double getDepth(){return this->depth;}	
+	double getDepth(){return this->depth;}
 
 	void setHeight(long height){this->height = height;}
 	void setWidth(long width){ this->width = width;}

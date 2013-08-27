@@ -37,15 +37,15 @@ namespace csg_s
 class DM_HELPER_DLL_EXPORT neighbourhood
 {
 private:
-    double* nMoore3x3;
+	double* nMoore3x3;
 
 public:
 
-    double* Moore3x3(int x, int y, DM::dataLayer *pL);
-    neighbourhood();
-    ~neighbourhood();
-    DM::dataLayer *layer__;
-    void setLayer(DM::dataLayer *layer_) {layer__=layer_;};
+	double* Moore3x3(int x, int y, DM::dataLayer *pL);
+	neighbourhood();
+	~neighbourhood();
+	DM::dataLayer *layer__;
+	void setLayer(DM::dataLayer *layer_) {layer__=layer_;};
 };
 }
 

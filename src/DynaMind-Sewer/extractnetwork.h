@@ -33,55 +33,55 @@
 using namespace DM;
 
 class DM_HELPER_DLL_EXPORT ExtractNetwork : public  Module {
-    DM_DECLARE_NODE ( ExtractNetwork )
-    public:
-        class AgentExtraxtor : public GenerateSewerNetwork::Agent
-    {
-        public:
-        AgentExtraxtor(GenerateSewerNetwork::Pos pos):GenerateSewerNetwork::Agent(pos){};
-        void run();
-    };
+	DM_DECLARE_NODE ( ExtractNetwork )
+	public:
+		class AgentExtraxtor : public GenerateSewerNetwork::Agent
+		{
+			public:
+				AgentExtraxtor(GenerateSewerNetwork::Pos pos):GenerateSewerNetwork::Agent(pos){};
+				void run();
+		};
 
 
-private:
-    //std::map<std::string, std::vector<DM::Node*> > nodeListToCompare;
-    RasterData * ConnectivityField;
-    RasterData * Goals;
-    RasterData * Path;
-    RasterData * Topology;
-    RasterData * ForbiddenAreas;
+	private:
+	//std::map<std::string, std::vector<DM::Node*> > nodeListToCompare;
+	RasterData * ConnectivityField;
+	RasterData * Goals;
+	RasterData * Path;
+	RasterData * Topology;
+	RasterData * ForbiddenAreas;
 
-    DM::View confield;
-    DM::View path;
-    DM::View forb;
-    DM::View goals;
+	DM::View confield;
+	DM::View path;
+	DM::View forb;
+	DM::View goals;
 
-    DM::View topo;
-    DM::View Inlets;
-    DM::View Conduits;
-    DM::View Junction;
-    DM::View EndPoint;
+	DM::View topo;
+	DM::View Inlets;
+	DM::View Conduits;
+	DM::View Junction;
+	DM::View EndPoint;
 
-    long offsetX;
-    long offsetY;
+	long offsetX;
+	long offsetY;
 
-    double ConduitLength;
-    long steps;
-    double Hmin;
-    double offset;
-    double cellsize;
-    bool smooth;
+	double ConduitLength;
+	long steps;
+	double Hmin;
+	double offset;
+	double cellsize;
+	bool smooth;
 
-    DM::System * city;
+	DM::System * city;
 
 
-    void smoothNetwork();
-    std::string EndNode;
+	void smoothNetwork();
+	std::string EndNode;
 
-   // DM::Node * addNode(System &sys ,  DM::Node tmp_n, DM::View v, double offset);
-public:
-    ExtractNetwork();
-    void run();
+	// DM::Node * addNode(System &sys ,  DM::Node tmp_n, DM::View v, double offset);
+	public:
+	ExtractNetwork();
+	void run();
 };
 
 #endif // EXTRACTNETWORK_H

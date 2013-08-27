@@ -37,25 +37,25 @@ namespace csg_s {
 
 
 class DM_HELPER_DLL_EXPORT csg_s_operations{
-    
+
 public:
 
-    static int returnPositionX(int Position);
+	static int returnPositionX(int Position);
 
-    static int returnPositionY(int Position);
-    /// sucht nach einem Sammler und überträgt das Ergebniss in eine andere Landschaft
-    static void findSewer(DM::dataLayer *Input, DM::dataLayer *Output);
+	static int returnPositionY(int Position);
+	/// sucht nach einem Sammler und überträgt das Ergebniss in eine andere Landschaft
+	static void findSewer(DM::dataLayer *Input, DM::dataLayer *Output);
 
-    static void addRadiusValue(int x, int y, DM::dataLayer *Layer, int rmax);
+	static void addRadiusValue(int x, int y, DM::dataLayer *Layer, int rmax);
 
-    static void addRadiusValue(int x, int y, DM::dataLayer *Layer, int rmax, double value);
+	static void addRadiusValue(int x, int y, DM::dataLayer *Layer, int rmax, double value);
 
-    static void addRadiusValueADD(int x, int y, DM::dataLayer *Layer, int rmax, double value);
+	static void addRadiusValueADD(int x, int y, DM::dataLayer *Layer, int rmax, double value);
 
-    static void intSewerNetwork(DM::dataLayer *InitSewer, DM::dataLayer *ResultField);
+	static void intSewerNetwork(DM::dataLayer *InitSewer, DM::dataLayer *ResultField);
 
-    static void exportRaster(QString name, DM::dataLayer * Layer_, double multiplikator);
-    static void writePath(string Text, QString name);
+	static void exportRaster(QString name, DM::dataLayer * Layer_, double multiplikator);
+	static void writePath(string Text, QString name);
 };
 
 }

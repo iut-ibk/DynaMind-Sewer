@@ -57,28 +57,28 @@
 using namespace std;
 
 extern "C" void DM_HELPER_DLL_EXPORT  registerModules(DM::ModuleRegistry *registry) {
-    registry->addNodeFactory(new DM::NodeFactory<TimeAreaMethod>());
-    registry->addNodeFactory(new DM::NodeFactory<DMSWMM>());
-    registry->addNodeFactory(new DM::NodeFactory<NetworkAnalysis>());
-    registry->addNodeFactory(new DM::NodeFactory<DirectNetwork>());
-    registry->addNodeFactory(new NodeFactory<GenerateSewerNetwork>());
-    registry->addNodeFactory(new NodeFactory<ExtractNetwork>());
-    registry->addNodeFactory(new NodeFactory<OutfallPlacement>());
-    registry->addNodeFactory(new NodeFactory<ReconstructParameter>());
-    registry->addNodeFactory(new NodeFactory<RemoveStrahler>());
-    registry->addNodeFactory(new NodeFactory<CreateInlets>());
-    registry->addNodeFactory(new NodeFactory<InclinedPlane>());
-    registry->addNodeFactory(new NodeFactory<OutfallStructure>());
-    registry->addNodeFactory(new NodeFactory<ReduceJunctions>());
-    registry->addNodeFactory(new NodeFactory<InfiltrationTrench>());
-    registry->addNodeFactory(new NodeFactory<LinkElementWithNearestPoint>());
-    registry->addNodeFactory(new NodeFactory<FloodingVisual>());
-    registry->addNodeFactory(new NodeFactory<PipeAge>());
-    registry->addNodeFactory(new NodeFactory<SWMMReturnPeriod>());
-     registry->addNodeFactory(new NodeFactory<EvalSewerFlooding>());
-    /*registry->addNodeFactory(new NodeFactory<PickStartPoints>());
+	registry->addNodeFactory(new DM::NodeFactory<TimeAreaMethod>());
+	registry->addNodeFactory(new DM::NodeFactory<DMSWMM>());
+	registry->addNodeFactory(new DM::NodeFactory<NetworkAnalysis>());
+	registry->addNodeFactory(new DM::NodeFactory<DirectNetwork>());
+	registry->addNodeFactory(new NodeFactory<GenerateSewerNetwork>());
+	registry->addNodeFactory(new NodeFactory<ExtractNetwork>());
+	registry->addNodeFactory(new NodeFactory<OutfallPlacement>());
+	registry->addNodeFactory(new NodeFactory<ReconstructParameter>());
+	registry->addNodeFactory(new NodeFactory<RemoveStrahler>());
+	registry->addNodeFactory(new NodeFactory<CreateInlets>());
+	registry->addNodeFactory(new NodeFactory<InclinedPlane>());
+	registry->addNodeFactory(new NodeFactory<OutfallStructure>());
+	registry->addNodeFactory(new NodeFactory<ReduceJunctions>());
+	registry->addNodeFactory(new NodeFactory<InfiltrationTrench>());
+	registry->addNodeFactory(new NodeFactory<LinkElementWithNearestPoint>());
+	registry->addNodeFactory(new NodeFactory<FloodingVisual>());
+	registry->addNodeFactory(new NodeFactory<PipeAge>());
+	registry->addNodeFactory(new NodeFactory<SWMMReturnPeriod>());
+	registry->addNodeFactory(new NodeFactory<EvalSewerFlooding>());
+	/*registry->addNodeFactory(new NodeFactory<PickStartPoints>());
 
 
-    registry->addNodeFactory(new NodeFactory<SelectInfiltration>());*/
+	registry->addNodeFactory(new NodeFactory<SelectInfiltration>());*/
 
 }

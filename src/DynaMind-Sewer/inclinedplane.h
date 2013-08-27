@@ -5,21 +5,21 @@
 
 class DM_HELPER_DLL_EXPORT InclinedPlane : public DM::Module
 {
-    DM_DECLARE_NODE(InclinedPlane)
-    private:
-        long height;
-    long width;
-    double cellsize;
-    double slope;
+	DM_DECLARE_NODE(InclinedPlane)
+	private:
+		long height;
+	long width;
+	double cellsize;
+	double slope;
 
-    DM::View v_plane;
-    bool appendToStream;
+	DM::View v_plane;
+	bool appendToStream;
 
 public:
-    InclinedPlane();
-    void run();
-    void init();
-    std::string getHelpUrl();
+	InclinedPlane();
+	void run();
+	void init();
+	std::string getHelpUrl();
 
 
 

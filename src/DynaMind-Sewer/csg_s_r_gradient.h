@@ -39,9 +39,9 @@ private:
 	QVector<int> possible_runoffField(Position* pos, double rel_height);
 	double depth;
 public:
-        R_Gradient(DM::dataLayer *layer_, double depth);
-        R_Gradient(DM::dataLayer *layer_);
-        //liefer tiefste Zelle zurück
+	R_Gradient(DM::dataLayer *layer_, double depth);
+	R_Gradient(DM::dataLayer *layer_);
+	//liefer tiefste Zelle zurück
 	double run(Position* pos);
 
 	QVector<int> run_field(Position* pos);

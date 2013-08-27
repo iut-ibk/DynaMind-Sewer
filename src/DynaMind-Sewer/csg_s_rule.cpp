@@ -30,56 +30,56 @@ namespace csg_s
 {
 rule::rule(DM::dataLayer *layer_)//:ruleLayer()
 {	
-    neighbours.setLayer(layer_);
-    setRuleLayer(layer_);
+	neighbours.setLayer(layer_);
+	setRuleLayer(layer_);
 
 
-    //init pointer for
-    //neighbourhood::Moore3x3(int x, int y,dataLayer *pLayer)
-    //in r_neighbourhood.cpp
-    nMoore3x3 = new double[9];
-    //-------------------------//
-    for (int h=0;h<9;h++)//8 neighbours + 1 element
-    {
-        nMoore3x3[h]=0;
-    }
-    //-------------------------//
+	//init pointer for
+	//neighbourhood::Moore3x3(int x, int y,dataLayer *pLayer)
+	//in r_neighbourhood.cpp
+	nMoore3x3 = new double[9];
+	//-------------------------//
+	for (int h=0;h<9;h++)//8 neighbours + 1 element
+	{
+		nMoore3x3[h]=0;
+	}
+	//-------------------------//
 
 }
 
 rule::~rule()
 {
 
-    delete []nMoore3x3;
-    nMoore3x3=0;
+	delete []nMoore3x3;
+	nMoore3x3=0;
 
 };
 
 void rule::applySwitch_1()
 {
-    if (layer_->showSwitch()==2)
-    {
-        layer_->setSwitch(1);
-    }
+	if (layer_->showSwitch()==2)
+	{
+		layer_->setSwitch(1);
+	}
 };
 
 
 void rule::applySwitch_2()
 {
-    //layer switch - only one rule applicable
-    if (layer_->showSwitch()==1)
-    {
-        layer_->setSwitch(0);
-    }
-    else if (layer_->showSwitch()==0)
-    {
-        layer_->setSwitch(1);
-    }
-    else
-    {
-        std::cout<<"error layerswitch rule04\n";
-    }
-    //-------------------------//
+	//layer switch - only one rule applicable
+	if (layer_->showSwitch()==1)
+	{
+		layer_->setSwitch(0);
+	}
+	else if (layer_->showSwitch()==0)
+	{
+		layer_->setSwitch(1);
+	}
+	else
+	{
+		std::cout<<"error layerswitch rule04\n";
+	}
+	//-------------------------//
 
 
 };

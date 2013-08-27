@@ -32,20 +32,20 @@
 
 class DM_HELPER_DLL_EXPORT CreateInlets : public DM::Module
 {
-    DM_DECLARE_NODE(CreateInlets)
-private:
-        DM::View Blocks;
-        DM::View Inlets;
-        double Size;
+	DM_DECLARE_NODE(CreateInlets)
+	private:
+		DM::View Blocks;
+	DM::View Inlets;
+	double Size;
 
-        double offsetX;
-        double offsetY;
-        double width;
-        double heigth;
-    public:
+	double offsetX;
+	double offsetY;
+	double width;
+	double heigth;
+public:
 
-    CreateInlets();
-    void run();
+	CreateInlets();
+	void run();
 };
 
 #endif // CREATEINLETS_H

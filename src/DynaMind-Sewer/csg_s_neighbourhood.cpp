@@ -32,21 +32,21 @@ namespace csg_s
 
 double* neighbourhood::Moore3x3(int x, int y,DM::dataLayer *pLayer)
 {
-		
-	int i=0;	
+
+	int i=0;
 	for(int j=0;j<3;j++)
 	{
 		for(int k=0;k<3;k++)
 		{
 			i=j*3+k;
-			{				
+			{
 				nMoore3x3[i]=pLayer->neighbour(((x-1)+k),(y-1)+j);
 				//Neighbour definition:
 				//6 7 8
 				//3(4)5
 				//0 1 2
 			}
-		}	
+		}
 	}
 	return nMoore3x3;
 };
@@ -58,8 +58,8 @@ neighbourhood::neighbourhood()
 };
 neighbourhood::~neighbourhood()
 {
-        delete [] nMoore3x3;
-        nMoore3x3 = 0;
+	delete [] nMoore3x3;
+	nMoore3x3 = 0;
 
 };
 

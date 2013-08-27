@@ -30,46 +30,46 @@ using namespace std;
 namespace csg_s {
 
 R_Gradient::R_Gradient(DM::dataLayer *layer_):rule(layer_) {
-    this->depth = 0.;
+	this->depth = 0.;
 };
 
 R_Gradient::R_Gradient(DM::dataLayer *layer_, double depth):rule(layer_)
 {
-    this->depth = depth;
+	this->depth = depth;
 
 };
 
 QVector<int> R_Gradient::possible_runoffField(Position *pos, double rel_height) {
-    double *heightField = neighbours.Moore3x3(pos->getWidth(), pos->getHeight(), layer_);
-    double height = heightField[4];
-    double gradient = 0.;
-    QVector<int> directions;
+	double *heightField = neighbours.Moore3x3(pos->getWidth(), pos->getHeight(), layer_);
+	double height = heightField[4];
+	double gradient = 0.;
+	QVector<int> directions;
 
-    for (int i = 0; i < 3; i++){
-        for(int j = 0; j < 3; j++){
-            if ((i*3+j) != 4) {
-                double cellheight = heightField[i*3+j];
+	for (int i = 0; i < 3; i++){
+		for(int j = 0; j < 3; j++){
+			if ((i*3+j) != 4) {
+				double cellheight = heightField[i*3+j];
 
-                if (( heightField[i*3+j]-depth-height) <= (rel_height*(-1.))) {
-                    directions.append(i*3+j);
-                }
-            }
-        }
-    }
+				if (( heightField[i*3+j]-depth-height) <= (rel_height*(-1.))) {
+					directions.append(i*3+j);
+				}
+			}
+		}
+	}
 
-    if (directions.size() == 0) {
-        directions.append(4);
-    }
+	if (directions.size() == 0) {
+		directions.append(4);
+	}
 
-    return directions;
+	return directions;
 }
 
 QVector<int> R_Gradient::run_field(Position *pos) {	
-    return possible_runoffField(pos, -0.0001);
+	return possible_runoffField(pos, -0.0001);
 };
 
 QVector<int> R_Gradient::run_field(Position *pos, double rel_height) {
-    return possible_runoffField(pos, rel_height);
+	return possible_runoffField(pos, rel_height);
 };
 
 /**
@@ -77,25 +77,25 @@ QVector<int> R_Gradient::run_field(Position *pos, double rel_height) {
 *@author Christian Urich
 */
 double R_Gradient::run(Position *pos) {
-    double *heightField = neighbours.Moore3x3(pos->getWidth(),pos->getHeight(), layer_);
+	double *heightField = neighbours.Moore3x3(pos->getWidth(),pos->getHeight(), layer_);
 
 
-    //Find Highest Gradient
-    double height = heightField[4]; //Height of the Center Cell
-    double gradient = 0.0000; //Presicion
-    double direction = 4;
-    for (int i = 0; i < 3; i++){
-        for(int j = 0; j < 3; j++){
-            if ((i*3+j) != 4) {
-                if (( heightField[i*3+j] - height) < gradient) {
-                    gradient = heightField[i*3+j] - height;
-                    direction = i*3+j;
-                }
-            }
-        }
-    }
+	//Find Highest Gradient
+	double height = heightField[4]; //Height of the Center Cell
+	double gradient = 0.0000; //Presicion
+	double direction = 4;
+	for (int i = 0; i < 3; i++){
+		for(int j = 0; j < 3; j++){
+			if ((i*3+j) != 4) {
+				if (( heightField[i*3+j] - height) < gradient) {
+					gradient = heightField[i*3+j] - height;
+					direction = i*3+j;
+				}
+			}
+		}
+	}
 
-    return direction;
+	return direction;
 }
 
 
@@ -103,17 +103,17 @@ double R_Gradient::run(Position *pos) {
 
 QVector< int > csg_s::R_Gradient::number_Field(Position * pos)
 {
-    double *heightField = neighbours.Moore3x3(pos->getWidth(), pos->getHeight(), layer_);
-    QVector<int> directions;
+	double *heightField = neighbours.Moore3x3(pos->getWidth(), pos->getHeight(), layer_);
+	QVector<int> directions;
 
-    for (int i = 0; i < 3; i++){
-        for(int j = 0; j < 3; j++){
-            if ( heightField[i*3+j] > 0.) {
-                directions.append(i*3+j);
-            }
-        }
-    }
+	for (int i = 0; i < 3; i++){
+		for(int j = 0; j < 3; j++){
+			if ( heightField[i*3+j] > 0.) {
+				directions.append(i*3+j);
+			}
+		}
+	}
 
-    return directions;
+	return directions;
 }
 

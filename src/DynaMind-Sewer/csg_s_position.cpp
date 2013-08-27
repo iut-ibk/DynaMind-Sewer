@@ -37,8 +37,8 @@
 #include "csg_s_position.h"
 namespace csg_s {
 Position::Position() {
-        this->height = 0;
-        this->width = 0;
+	this->height = 0;
+	this->width = 0;
 };
 
 Position::Position(long width, long height)

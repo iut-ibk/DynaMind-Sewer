@@ -33,56 +33,56 @@
 #include <sstream>
 
 class DM_HELPER_DLL_EXPORT DMSWMM : public  DM::Module {
-    DM_DECLARE_NODE (DMSWMM)
+	DM_DECLARE_NODE (DMSWMM)
 
-    private:
-        int GLOBAL_Counter;
-    DM::System * city;
-    DM::View conduit;
-    DM::View inlet;
-    DM::View junctions;
-    DM::View endnodes;
-    DM::View catchment;
-    DM::View outfalls;
-    DM::View weir;
-    DM::View wwtp;
-    DM::View storage;
-    DM::View pumps;
-    DM::View globals;
-
-
-    std::string RainFile;
-    std::string FileName;
-    std::vector<DM::Node*> PointList;
-    bool isCombined;
-    bool use_linear_cf;
-    bool writeResultFile;
-
-    bool use_euler;
-    double return_period;
-    double climateChangeFactor;
-    bool climateChangeFactorFromCity;
-    bool consider_built_time;
-    int calculationTimestep;
-    int internalTimestep;
+	private:
+		int GLOBAL_Counter;
+	DM::System * city;
+	DM::View conduit;
+	DM::View inlet;
+	DM::View junctions;
+	DM::View endnodes;
+	DM::View catchment;
+	DM::View outfalls;
+	DM::View weir;
+	DM::View wwtp;
+	DM::View storage;
+	DM::View pumps;
+	DM::View globals;
 
 
+	std::string RainFile;
+	std::string FileName;
+	std::vector<DM::Node*> PointList;
+	bool isCombined;
+	bool use_linear_cf;
+	bool writeResultFile;
 
-    void writeRainFile();
-    int years;
-    double counterRain;
+	bool use_euler;
+	double return_period;
+	double climateChangeFactor;
+	bool climateChangeFactorFromCity;
+	bool consider_built_time;
+	int calculationTimestep;
+	int internalTimestep;
 
-    std::map<std::string, int> UUIDtoINT;
 
-    std::stringstream curves;
 
-    std::string unique_name;
+	void writeRainFile();
+	int years;
+	double counterRain;
+
+	std::map<std::string, int> UUIDtoINT;
+
+	std::stringstream curves;
+
+	std::string unique_name;
 
 public:
-    DMSWMM();
-    void run();
-    void init();
-    std::string getHelpUrl();
+	DMSWMM();
+	void run();
+	void init();
+	std::string getHelpUrl();
 };
 
 #endif // VIBESWMM_H

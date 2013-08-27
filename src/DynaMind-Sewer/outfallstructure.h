@@ -31,15 +31,15 @@
 
 class DM_HELPER_DLL_EXPORT OutfallStructure : public DM::Module
 {
-    DM_DECLARE_NODE( OutfallStructure )
-private:
-    DM::View view_outlets;
-    DM::View view_outfalls;
-    DM::View view_conduits;
+	DM_DECLARE_NODE( OutfallStructure )
+	private:
+		DM::View view_outlets;
+	DM::View view_outfalls;
+	DM::View view_conduits;
 public:
-    OutfallStructure();
-    void run();
-    std::string getHelpUrl();
+	OutfallStructure();
+	void run();
+	std::string getHelpUrl();
 };
 
 #endif // OUTFALLSTRUCTURE_H

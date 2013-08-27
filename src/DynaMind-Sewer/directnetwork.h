@@ -30,20 +30,20 @@
 #include <dm.h>
 class DirectNetwork : public DM::Module
 {
-    DM_DECLARE_NODE (DirectNetwork)
-    public:
-        void run();
-    DirectNetwork();
+	DM_DECLARE_NODE (DirectNetwork)
+	public:
+		void run();
+	DirectNetwork();
 
 
 private:
-    DM::View conduits;
-    DM::View outfalls;
-    DM::View startpoints;
-    std::vector<std::string> visitedEdges;
-    std::map<std::string, std::vector<std::string> > ConnectionList;
-    void NextEdge(std::string startnode);
-     DM::System * sys;
+	DM::View conduits;
+	DM::View outfalls;
+	DM::View startpoints;
+	std::vector<std::string> visitedEdges;
+	std::map<std::string, std::vector<std::string> > ConnectionList;
+	void NextEdge(std::string startnode);
+	DM::System * sys;
 };
 
 #endif // DIRECTNETWORK_H
