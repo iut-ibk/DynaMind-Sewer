@@ -256,8 +256,8 @@ void DMSWMM::run() {
 	int current_year = (int) c->getAttribute("year")->getDouble();
 
 
-	std::map<std::string, std::string> additionalParameter;
-	/*Logger(Standard) << c->getAttribute("pop_growth")->getDouble();
+	QMap<std::string, std::string> additionalParameter;
+	Logger(Standard) << c->getAttribute("pop_growth")->getDouble();
 	Logger(Standard) << c->getAttribute("renewal_rate")->getDouble();
 	Logger(Standard) << c->getAttribute("masterplan_id")->getDouble();
 	DM::Logger(DM::Standard) << "year";
@@ -271,13 +271,13 @@ void DMSWMM::run() {
 	DM::Logger(DM::Standard) << "rr";
 	additionalParameter["renewal_rate"] =  QString::number(c->getAttribute("renewal_rate")->getDouble()).toStdString();
 	DM::Logger(DM::Standard) << "m_id";
-	additionalParameter["masterplan_id"] =  QString::number(c->getAttribute("masterplan_id")->getDouble()).toStdString();*/
+	additionalParameter["masterplan_id"] =  QString::number(c->getAttribute("masterplan_id")->getDouble()).toStdString();
 
 	std::stringstream fname;
 	Logger(Standard) << "Start Write Report File " <<fname.str();
 	fname << this->FileName << "/"  <<  current_year << "_" << unique_name << ".cvs";
 
-	DrainageHelper::WriteOutputFiles(fname.str(), city, *swmm, additionalParameter);
+	DrainageHelper::WriteOutputFiles(fname.str(), city, *swmm, additionalParameter.toStdMap());
 
 	delete swmm;
 }
