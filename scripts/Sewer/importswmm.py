@@ -99,7 +99,6 @@ class ImportSWMM(Module):
         
     def readCurves(self):
         try:
-            print "start reading curves"
             f = open(self.filename)
             startReading = False
 
@@ -130,7 +129,6 @@ class ImportSWMM(Module):
                         
                 if line == "[CURVES]":
                     startReading = True
-            print "end"
             f.close()
 
         except Exception, e:
@@ -210,29 +208,30 @@ class ImportSWMM(Module):
                     sewer.addComponentToView(outfall, self.wwtps)    
                     outfall.addAttribute("WWTP", 1.0)
             #Write Storage Units
-            storages = results["[STORAGE]"]
-            for s in storages:
-                vals = storages[s]
-                storage = sewer.getNode(UUIDTranslator[s])
-                sewer.addComponentToView(storage, self.storages) 
-                storage.addAttribute("Z", float(vals[0]))
-                storage.addAttribute("max_depth", float(vals[1]))
-                storage.addAttribute("type", vals[3])
-                if  vals[3] == "TABULAR":
-                    curve = self.curves[vals[4]]
-                    storage_x = doublevector()
-                    storage_y = doublevector()
-                    for c in curve:
-                        storage_x.append(c[0])
-                        storage_y.append(c[1])
-                    storage.getAttribute("storage_x").setDoubleVector(storage_x)
-                    storage.getAttribute("storage_y").setDoubleVector(storage_y)
+            if 'STORAGE' in results:
+                storages = results["[STORAGE]"]
+                for s in storages:
+                    vals = storages[s]
+                    storage = sewer.getNode(UUIDTranslator[s])
+                    sewer.addComponentToView(storage, self.storages) 
+                    storage.addAttribute("Z", float(vals[0]))
+                    storage.addAttribute("max_depth", float(vals[1]))
+                    storage.addAttribute("type", vals[3])
+                    if  vals[3] == "TABULAR":
+                        curve = self.curves[vals[4]]
+                        storage_x = doublevector()
+                        storage_y = doublevector()
+                        for c in curve:
+                            storage_x.append(c[0])
+                            storage_y.append(c[1])
+                        storage.getAttribute("storage_x").setDoubleVector(storage_x)
+                        storage.getAttribute("storage_y").setDoubleVector(storage_y)
                     
                 
                 
             
             xsections = results["[XSECTIONS]"]     
-            
+
             ress = results["[CONDUITS]"]            
             for c in ress:
                 vals = ress[c]
@@ -247,43 +246,44 @@ class ImportSWMM(Module):
                 e.addAttribute("built_year", self.defaultBuiltYear)
                 xsection = self.createXSection(sewer, xsections[c])
                 e.getAttribute("XSECTION").setLink("XSECTION", xsection.getUUID())
-
-            c_weirs = results["[WEIRS]"]     
-            for c in c_weirs:
-                vals = c_weirs[c]
-                start = sewer.getNode(UUIDTranslator[vals[0]])
-                end = sewer.getNode(UUIDTranslator[vals[1]])
-                e = sewer.addEdge(start, end, self.weirs)
                 
-                e.addAttribute("type",vals[2] )
-                e.addAttribute("crest_height",float(vals[3]))
-                e.addAttribute("discharge_coefficient",float(vals[4]))
-                e.addAttribute("end_coefficient",float(vals[7]))
-                #Create XSection
-                e.addAttribute("Diameter", float(xsections[c][1]))
+            if 'WEIRS' in results:
+                c_weirs = results["[WEIRS]"]     
+                for c in c_weirs:
+                    vals = c_weirs[c]
+                    start = sewer.getNode(UUIDTranslator[vals[0]])
+                    end = sewer.getNode(UUIDTranslator[vals[1]])
+                    e = sewer.addEdge(start, end, self.weirs)
+                    
+                    e.addAttribute("type",vals[2] )
+                    e.addAttribute("crest_height",float(vals[3]))
+                    e.addAttribute("discharge_coefficient",float(vals[4]))
+                    e.addAttribute("end_coefficient",float(vals[7]))
+                    #Create XSection
+                    e.addAttribute("Diameter", float(xsections[c][1]))
+                    
+                    xsection = self.createXSection(sewer, xsections[c])
+                    e.getAttribute("XSECTION").setLink("XSECTION", xsection.getUUID())                
                 
-                xsection = self.createXSection(sewer, xsections[c])
-                e.getAttribute("XSECTION").setLink("XSECTION", xsection.getUUID())                
-                
-
-            c_pumps = results["[PUMPS]"]     
-            for c in c_pumps:
-                vals = c_pumps[c]
-                start = sewer.getNode(UUIDTranslator[vals[0]])
-                end = sewer.getNode(UUIDTranslator[vals[1]])
-                e = sewer.addEdge(start, end, self.pumps)
-                
-                e.addAttribute("type", self.curves_types[vals[2]] )                
-                
-                curve = self.curves[vals[2]]
-                pump_x = doublevector()
-                pump_y = doublevector()
-                for c in curve:
-                    pump_x.append(c[0])
-                    pump_y.append(c[1])  
-                
-                e.getAttribute("pump_x").setDoubleVector(pump_x)
-                e.getAttribute("pump_y").setDoubleVector(pump_y)
+            if 'PUMPS' in results:
+                c_pumps = results["[PUMPS]"]     
+                for c in c_pumps:
+                    vals = c_pumps[c]
+                    start = sewer.getNode(UUIDTranslator[vals[0]])
+                    end = sewer.getNode(UUIDTranslator[vals[1]])
+                    e = sewer.addEdge(start, end, self.pumps)
+                    
+                    e.addAttribute("type", self.curves_types[vals[2]] )                
+                    
+                    curve = self.curves[vals[2]]
+                    pump_x = doublevector()
+                    pump_y = doublevector()
+                    for c in curve:
+                        pump_x.append(c[0])
+                        pump_y.append(c[1])  
+                    
+                    e.getAttribute("pump_x").setDoubleVector(pump_x)
+                    e.getAttribute("pump_y").setDoubleVector(pump_y)
                 
         except Exception, e:
             print e
