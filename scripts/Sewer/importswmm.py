@@ -229,8 +229,8 @@ class ImportSWMM(Module):
                     
                 
                 
-            
-            xsections = results["[XSECTIONS]"]     
+            if "[XSECTIONS]" in results:
+                xsections = results["[XSECTIONS]"]     
 
             ress = results["[CONDUITS]"]            
             for c in ress:
@@ -240,14 +240,16 @@ class ImportSWMM(Module):
                 e = sewer.addEdge(start, end, self.conduits)
                 e.addAttribute("SWMM_ID", str(c))
                 #Create XSection
-                e.addAttribute("Diameter", float(xsections[c][1]))
+
                 e.addAttribute("inlet_offset", float(vals[4]))
                 e.addAttribute("outlet_offset", float(vals[5]))
                 e.addAttribute("built_year", self.defaultBuiltYear)
-                xsection = self.createXSection(sewer, xsections[c])
-                e.getAttribute("XSECTION").setLink("XSECTION", xsection.getUUID())
+                if c in xsections:
+                    e.addAttribute("Diameter", float(xsections[c][1]))
+                    xsection = self.createXSection(sewer, xsections[c])
+                    e.getAttribute("XSECTION").setLink("XSECTION", xsection.getUUID())
                 
-            if 'WEIRS' in results:
+            if "[WEIRS]" in results:
                 c_weirs = results["[WEIRS]"]     
                 for c in c_weirs:
                     vals = c_weirs[c]
@@ -265,7 +267,7 @@ class ImportSWMM(Module):
                     xsection = self.createXSection(sewer, xsections[c])
                     e.getAttribute("XSECTION").setLink("XSECTION", xsection.getUUID())                
                 
-            if 'PUMPS' in results:
+            if "[PUMPS]" in results:
                 c_pumps = results["[PUMPS]"]     
                 for c in c_pumps:
                     vals = c_pumps[c]
