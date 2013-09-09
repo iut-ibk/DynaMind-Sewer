@@ -2,7 +2,7 @@
 
 #InfiltrationTrench
 
-The module auto designs and connects the infiltration system with the catchment. The infirlation systems are designed following the german guideline DWA-A 13. The used equations can be found [here (in german)](http://www.abwdat.de/abw/versickerung/pdf/Regenwasserversickerung_Planung-Dimensionierung.pdf)
+The module auto designs and connects the infiltration system with the catchment. The infiltration systems are designed following the german guideline DWA-A 13. The used equations can be found [here (in german)](http://www.abwdat.de/abw/versickerung/pdf/Regenwasserversickerung_Planung-Dimensionierung.pdf)
 
 ##Parameter
 |        Name       |          Type          |       Description         | 
