@@ -9,6 +9,7 @@ The module auto designs and connects the infiltration system with the catchment.
 |-------------------|------------------------|---------------------------|
 | R     | double | design rain in l/s.ha |
 | D     | double | duration in min |
+| useClimateCFInfiltration     | bool | use climate change factor for design of infiltration system|
 
 ##Datastream
 |     Identifier    |     Attribute    |      Type             |Access |    Description    |
@@ -23,4 +24,7 @@ The module auto designs and connects the infiltration system with the catchment.
 |                   | area  | double | write | area of the infiltration system in m2|
 |                   | h  | double | write | height|
 |                   | kf  | double | write | conductivity in m/s |
+| CITY |                  | COMPONENT   | read  | only if  useClimateCFInfiltration = true|
+|                   | CFInfiltration  | double | read | climate change factor for design rain. R*useClimateCFInfiltration|
+
 
