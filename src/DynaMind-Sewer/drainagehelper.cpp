@@ -84,9 +84,9 @@ void DrainageHelper::WriteOutputFiles(std::string filename, DM::System * sys, SW
 	inp << "below_10\t" << swmmreeadfile.getWaterLeveleBelow10()<< "\n";
 	inp << "below_20\t" << swmmreeadfile.getWaterLeveleBelow20()<< "\n";
 	inp << "error\t" << swmmreeadfile.getContinuityError()<< "\n";
-	inp << "swmm_path"<< swmmreeadfile.getSWMMUUIDPath() << "\n";
+	inp << "swmm_path\t"<< swmmreeadfile.getSWMMUUIDPath() << "\n";
 	inp << "floodednodes\t" << flooded.size() << "\n";
-	inp << "Vstorage" << swmmreeadfile.getVSurfaceStorage()<< "\n";
+	inp << "Vstorage\t" << swmmreeadfile.getVSurfaceStorage()<< "\n";
 	inp << "END\t"  << "\n";
 	inp << fixed;
 	inp << "FLOODSECTION\t" << "\n";
