@@ -73,8 +73,12 @@ public:
 
 	~SWMMWriteAndRead();
 
+	bool getDeleteSWMMWhenDone() const;
+	void setDeleteSWMMWhenDone(bool value);
+
 private:
 	bool built_year_considered;
+	bool deleteSWMMWhenDone;
 	int setting_timestep;
 
 	int GLOBAL_Counter;
@@ -127,8 +131,8 @@ private:
 	double VSurfaceStorage;
 	double Vwwtp;
 	double Vout;
-	double TotalImpervious;
-	double Impervious_Infiltration;
+	double TotalImpervious; //ha
+	double Impervious_Infiltration; //m2
 	double ContinuityError;
 	double climateChangeFactor;
 

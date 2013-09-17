@@ -57,6 +57,7 @@ class DM_HELPER_DLL_EXPORT DMSWMM : public  DM::Module {
 	bool isCombined;
 	bool use_linear_cf;
 	bool writeResultFile;
+	bool deleteSWMM;
 
 	bool use_euler;
 	double return_period;
@@ -65,7 +66,6 @@ class DM_HELPER_DLL_EXPORT DMSWMM : public  DM::Module {
 	bool consider_built_time;
 	int calculationTimestep;
 	int internalTimestep;
-
 
 
 	void writeRainFile();

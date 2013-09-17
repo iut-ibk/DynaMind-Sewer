@@ -18,6 +18,7 @@ The model exports a combined sewer or drainage network into a SWMM 5.0 input fil
 | climateChangeFactorFromCity| bool | use the climate change factor defined in the CITY component |
 |  calculationTimestep| int | if the module is used in a loop, the parameter defines how often a swmm simulation is executed. e.g. a calculationTimestep of 5 means that every 5 steps swmm is executed |
 |  consider_build_time| bool | if true only pipes the exist in the current simulation year defined by the attribute year of the CITY component are used in the assessment |
+|  deleteSWMM| bool | delete SWMM folder after simulation SWMM run|
 
 ##Datastream
 |     Identifier    |     Attribute    |      Type             |Access |    Description    |

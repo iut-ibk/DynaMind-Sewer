@@ -112,6 +112,7 @@ DMSWMM::DMSWMM()
 	this->climateChangeFactorFromCity = false;
 	this->calculationTimestep = 1;
 	this->consider_built_time = false;
+	this->deleteSWMM = true;
 	years = 0;
 
 	this->isCombined = false;
@@ -126,6 +127,7 @@ DMSWMM::DMSWMM()
 	this->addParameter("climateChangeFactorFromCity", DM::BOOL, &this->climateChangeFactorFromCity);
 	this->addParameter("calculationTimestep", DM::INT, & this->calculationTimestep);
 	this->addParameter("consider_build_time", DM::BOOL, & this->consider_built_time);
+	this->addParameter("deleteSWMM", DM::BOOL, & this->deleteSWMM);
 
 	counterRain = 0;
 	this->addData("City", views);
@@ -166,8 +168,9 @@ string DMSWMM::getHelpUrl()
 void DMSWMM::run() {
 
 	if (!QDir(QString::fromStdString(this->FileName)).exists()){
-		DM::Logger(DM::Error) <<  this->FileName << "  does not exist!";
-		return;
+		DM::Logger(DM::Standard) <<  this->FileName << "  does not exist but created";
+		QDir::current().mkpath(QString::fromStdString(this->FileName));
+		//return;
 	}
 	city = this->getData("City");
 
@@ -205,7 +208,7 @@ void DMSWMM::run() {
 		DrainageHelper::CreateEulerRainFile(60, 5, this->return_period, cf, rfile.str());
 		swmm = new SWMMWriteAndRead(city, rfile.str(), this->FileName);
 	}
-
+	swmm->setDeleteSWMMWhenDone(this->deleteSWMM);
 	swmm->setBuildYearConsidered(this->consider_built_time);
 	swmm->setClimateChangeFactor(cf);
 	swmm->setupSWMM();
@@ -272,7 +275,8 @@ void DMSWMM::run() {
 	additionalParameter["renewal_rate"] =  QString::number(c->getAttribute("renewal_rate")->getDouble()).toStdString();
 	DM::Logger(DM::Standard) << "m_id";
 	additionalParameter["masterplan_id"] =  QString::number(c->getAttribute("masterplan_id")->getDouble()).toStdString();
-
+	DM::Logger(DM::Standard) << "CFInfiltration";
+	additionalParameter["CFInfiltration"] =  QString::number(c->getAttribute("CFInfiltration")->getDouble()).toStdString();
 	std::stringstream fname;
 	Logger(Standard) << "Start Write Report File " <<fname.str();
 	fname << this->FileName << "/"  <<  current_year << "_" << unique_name << ".cvs";

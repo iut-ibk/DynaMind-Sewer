@@ -41,7 +41,8 @@ SWMMWriteAndRead::SWMMWriteAndRead(DM::System * city, std::string rainfile, std:
 	climateChangeFactor(1),
 	rainfile(rainfile),
 	setting_timestep(7),
-	built_year_considered(false)
+	built_year_considered(false),
+	deleteSWMMWhenDone(true)
 {
 	GLOBAL_Counter = 1;
 	this->createViewDefinition();
@@ -815,10 +816,11 @@ void SWMMWriteAndRead::writeLID_Usage(std::fstream &inp) {
 
 		foreach (LinkAttribute la, infitration_systems) {
 			DM::Component * infilt = city->getComponent(la.uuid);
+			if (written_infils[UUIDtoINT[la.uuid]] != 0 ) // If true the infiltration alredy exists
+				continue;
+
 			double treated = infilt->getAttribute("treated_area")->getDouble();
 			Impervious_Infiltration+=treated;
-
-			if (written_infils[UUIDtoINT[la.uuid]] != 0 ) continue;
 
 			double treated_area = treated  / (area*imp) * 100.;
 
@@ -1264,8 +1266,9 @@ void SWMMWriteAndRead::setBuildYearConsidered(bool buildyear)
 SWMMWriteAndRead::~SWMMWriteAndRead()
 {
 
-
-	/*QString dirName = this->SWMMPath.absolutePath();
+	if (!this->deleteSWMMWhenDone)
+		return;
+	QString dirName = this->SWMMPath.absolutePath();
 	QDir dir(dirName);
 	bool result;
 
@@ -1277,9 +1280,19 @@ SWMMWriteAndRead::~SWMMWriteAndRead()
 			}
 		}
 		result = dir.rmdir(dirName);
-	}*/
+	}
 
 }
+bool SWMMWriteAndRead::getDeleteSWMMWhenDone() const
+{
+	return deleteSWMMWhenDone;
+}
+
+void SWMMWriteAndRead::setDeleteSWMMWhenDone(bool value)
+{
+	deleteSWMMWhenDone = value;
+}
+
 
 void SWMMWriteAndRead::runSWMM()
 {
