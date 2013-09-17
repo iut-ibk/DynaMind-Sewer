@@ -5,9 +5,11 @@ InfiltrationTrench::InfiltrationTrench()
 {
 	R = 200; //l/s.ha (DWA-A 138)
 	D = 10;
+	useClimateChangeFactorInfiltration = false;
 
 	this->addParameter("R", DM::DOUBLE, &this->R);
 	this->addParameter("D", DM::DOUBLE, &this->D);
+	this->addParameter("useClimateCFInfiltration", DM::BOOL, &this->useClimateChangeFactorInfiltration);
 
 	view_infitration_system = DM::View("INFILTRATION_SYSTEM", DM::COMPONENT, DM::WRITE);
 	view_infitration_system.addAttribute("treated_area");
@@ -21,10 +23,29 @@ InfiltrationTrench::InfiltrationTrench()
 	view_catchment.getAttribute("area");
 	view_catchment.addLinks("INFILTRATION_SYSTEM", view_infitration_system);
 
+	view_city = DM::View("CITY", DM::COMPONENT, DM::READ); //Not added in init
+	view_city.getAttribute("CFInfiltration");
+
+
 	std::vector<DM::View> datastream;
 
 	datastream.push_back(view_infitration_system);
 	datastream.push_back(view_catchment);
+
+	this->addData("city", datastream);
+}
+
+void InfiltrationTrench::init() {
+
+
+	std::vector<DM::View> datastream;
+
+	datastream.push_back(view_infitration_system);
+	datastream.push_back(view_catchment);
+
+	if (useClimateChangeFactorInfiltration) {
+		datastream.push_back(view_city);
+	}
 
 	this->addData("city", datastream);
 }
@@ -34,6 +55,14 @@ void InfiltrationTrench::run() {
 
 	std::vector<std::string> catchment_uuids = city->getUUIDs(view_catchment);
 	int numberOfPlacedSystem = 0;
+	double cf = 1;
+
+	if (useClimateChangeFactorInfiltration) {
+		mforeach ( DM::Component * cmp, city->getAllComponentsInView(view_city) ){
+			cf = cmp->getAttribute("CFInfiltration")->getDouble();
+		}
+	}
+
 
 	foreach (std::string uuid, catchment_uuids) {
 		DM::Face * catchment = city->getFace(uuid);
@@ -47,16 +76,15 @@ void InfiltrationTrench::run() {
 		double roof_area_tot = catchment->getAttribute("roof_area_treated")->getDouble();
 
 		double toTreat = roof_area_tot - already_treated;
-		//DM::Logger(DM::Standard) << roof_area_tot;
-		//DM::Logger(DM::Standard) << already_treated;
 
-		if (toTreat < 5) continue;
+		if (toTreat < 5)
+			continue;
 
 		double imp = catchment->getAttribute("Impervious")->getDouble();
 		double avalible_space = (1.-imp) * catchment->getAttribute("area")->getDouble();
 
 		//Design Infitration System
-		double Qzu = toTreat * R *(1.e-7);//m3/s
+		double Qzu = toTreat * R * cf *(1.e-7);//m3/s
 		double kf = 1.e-4;
 		double h = 1;
 		double D = this->D*60;
@@ -65,6 +93,7 @@ void InfiltrationTrench::run() {
 
 		if(avalible_space < As){
 			DM::Logger(DM::Warning) << "Not enough space can't place infil system";
+			continue;
 		}
 
 		//catchment->getAttribute("INFILTRATION_SYSTEM")->setLinks(std::vector<DM::LinkAttribute>());
