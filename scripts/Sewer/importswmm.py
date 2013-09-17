@@ -208,7 +208,7 @@ class ImportSWMM(Module):
                     sewer.addComponentToView(outfall, self.wwtps)    
                     outfall.addAttribute("WWTP", 1.0)
             #Write Storage Units
-            if 'STORAGE' in results:
+            if "[STORAGE]" in results:
                 storages = results["[STORAGE]"]
                 for s in storages:
                     vals = storages[s]
