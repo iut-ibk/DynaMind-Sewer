@@ -445,8 +445,8 @@ void GenerateSewerNetwork::run() {
 	rasterSize = cellSizeX;
 
 	this->rConnectivityField->setSize(width, height, cellSizeX,cellSizeY,OffsetX,OffsetY);
-	Logger(Debug) << "Conn Max " << this->rConnectivityField_in->getMaxValue();
-	Logger(Debug) << "Conn Min " << this->rConnectivityField_in->getMinValue();
+	Logger(Standard) << "Conn Max " << this->rConnectivityField_in->getMaxValue();
+	Logger(Standard) << "Conn Min " << this->rConnectivityField_in->getMinValue();
 	for (int i = 0; i < width; i++) {
 		for (int j = 0; j < height; j++ ) {
 			double val = this->rConnectivityField_in->getCell(i,j);
