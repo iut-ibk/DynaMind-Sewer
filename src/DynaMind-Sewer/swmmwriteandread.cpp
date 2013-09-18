@@ -1321,12 +1321,16 @@ void SWMMWriteAndRead::runSWMM()
 
 
 	if (!(swmm.contains(".exe") )) {
+		DM::Logger(DM::Standard) << "Start SWMM";
 		//process.start(swmm,argument);
 		std::stringstream start_command;
 		start_command << swmm.toStdString();
 		start_command << " ";
 		start_command << argument.join(" ").toStdString();
-		std::system(start_command.str().c_str());
+		DM::Logger(DM::Standard) << std::system(start_command.str().c_str());
+		DM::Logger(DM::Standard) << "End SWMM";
+
+
 	}
 
 	else {
