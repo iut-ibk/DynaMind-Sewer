@@ -1321,10 +1321,16 @@ void SWMMWriteAndRead::runSWMM()
 
 
 	if (!(swmm.contains(".exe") )) {
+
+		//Copy SWMM to tmp Path
+		QString newFileName = this->SWMMPath.absolutePath() + "/"+ "swmm";
+		QFile (swmm).copy(newFileName);
+
 		DM::Logger(DM::Standard) << "Start SWMM";
 		//process.start(swmm,argument);
 		std::stringstream start_command;
-		start_command << swmm.toStdString();
+		QString swmm_new =  this->SWMMPath.absolutePath() + "/" + "swmm";
+		start_command << swmm_new.toStdString();
 		start_command << " ";
 		start_command << argument.join(" ").toStdString();
 		DM::Logger(DM::Standard) << std::system(start_command.str().c_str());
