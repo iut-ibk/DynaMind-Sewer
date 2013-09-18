@@ -1310,7 +1310,7 @@ void SWMMWriteAndRead::runSWMM()
 
 	QProcess process;
 	QStringList argument;
-	argument << this->SWMMPath.absolutePath() + "/"+ "swmm.inp" << this->SWMMPath.absolutePath() + "/" + "swmm.rep";
+	argument << this->SWMMPath.absolutePath() + "/"+ "swmm.inp" << this->SWMMPath.absolutePath() + "/" + "swmm.rep" << this->SWMMPath.absolutePath() + "/" + "swmm.frd";
 	QString swmm = swmmPath;
 
 #ifdef _WIN32
