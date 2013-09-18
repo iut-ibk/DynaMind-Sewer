@@ -34,6 +34,7 @@
 #include <math.h>
 #include <algorithm>
 #include <fstream>
+#include <cstdlib>
 
 using namespace DM;
 SWMMWriteAndRead::SWMMWriteAndRead(DM::System * city, std::string rainfile, std::string filename) :
@@ -1314,21 +1315,29 @@ void SWMMWriteAndRead::runSWMM()
 
 #ifdef _WIN32
 	process.start(swmm,argument);
+	process.waitForFinished(3000000);
 #else
 	Logger(Debug) << argument.join(" ").toStdString();
 
 
-	if (!(swmm.contains(".exe") )) process.start(swmm,argument);
+	if (!(swmm.contains(".exe") )) {
+		//process.start(swmm,argument);
+		std::stringstream start_command;
+		start_command << swmm.toStdString();
+		start_command << " ";
+		start_command << argument.join(" ").toStdString();
+		std::system(start_command.str().c_str());
+	}
 
 	else {
 		argument.insert(0, swmm);
 		DM::Logger(DM::Standard) << argument.join(" ").toStdString();
-
 		process.start("/usr/local/bin/wine",argument);
+		process.waitForFinished(3000000);
 	}
 #endif
 
-	process.waitForFinished(3000000);
+
 }
 
 void SWMMWriteAndRead::writeRainFile() {
