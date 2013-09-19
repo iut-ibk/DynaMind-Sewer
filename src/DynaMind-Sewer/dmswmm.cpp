@@ -191,7 +191,8 @@ void DMSWMM::run() {
 
 	this->years++;
 
-	if (this->internalTimestep == this->calculationTimestep) this->internalTimestep = 0;
+	if (this->internalTimestep == this->calculationTimestep)
+		this->internalTimestep = 0;
 	this->internalTimestep++;
 
 	if (this->internalTimestep != 1) {

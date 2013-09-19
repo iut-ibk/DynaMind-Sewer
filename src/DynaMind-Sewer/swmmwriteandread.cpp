@@ -35,6 +35,7 @@
 #include <algorithm>
 #include <fstream>
 #include <cstdlib>
+#include <swmm5.h>
 
 using namespace DM;
 SWMMWriteAndRead::SWMMWriteAndRead(DM::System * city, std::string rainfile, std::string filename) :
@@ -1300,54 +1301,20 @@ void SWMMWriteAndRead::runSWMM()
 	this->Vp = 0;
 	this->Vwwtp = 0;
 	this->VsurfaceRunoff = 0;
-	//Find Temp Directory
-	QDir tmpPath = QDir::tempPath();
-	tmpPath.mkdir("vibeswmm");
 
-	//Path to SWMM
-	QSettings settings;
-	QString swmmPath = settings.value("SWMM").toString().replace("\\","/");
-
-	QProcess process;
 	QStringList argument;
 	argument << this->SWMMPath.absolutePath() + "/"+ "swmm.inp" << this->SWMMPath.absolutePath() + "/" + "swmm.rep" << this->SWMMPath.absolutePath() + "/" + "swmm.frd";
-	QString swmm = swmmPath;
+	std::string s1 = argument[0].toStdString();
+	std::string s2 = argument[1].toStdString();
+	std::string s3 = argument[2].toStdString();
+	char * f1 = const_cast<char *>(s1.c_str());
+	char * f2 = const_cast<char *>(s2.c_str());
+	char * f3 = const_cast<char *>(s3.c_str());
 
-#ifdef _WIN32
-	process.start(swmm,argument);
-	process.waitForFinished(3000000);
-#else
-	Logger(Debug) << argument.join(" ").toStdString();
-
-
-	if (!(swmm.contains(".exe") )) {
-
-		//Copy SWMM to tmp Path
-		QString newFileName = this->SWMMPath.absolutePath() + "/"+ "swmm";
-		QFile (swmm).copy(newFileName);
-
-		DM::Logger(DM::Standard) << "Start SWMM";
-		//process.start(swmm,argument);
-		std::stringstream start_command;
-		QString swmm_new =  this->SWMMPath.absolutePath() + "/" + "swmm";
-		start_command << swmm_new.toStdString();
-		start_command << " ";
-		start_command << argument.join(" ").toStdString();
-		DM::Logger(DM::Standard) << std::system(start_command.str().c_str());
-		DM::Logger(DM::Standard) << "End SWMM";
-
-
+	int error_swmm = swmm_run(f1, f2, f3);
+	if (error_swmm != 0) {
+		Logger(DM::Error) << "SWMM Error " << error_swmm;
 	}
-
-	else {
-		argument.insert(0, swmm);
-		DM::Logger(DM::Standard) << argument.join(" ").toStdString();
-		process.start("/usr/local/bin/wine",argument);
-		process.waitForFinished(3000000);
-	}
-#endif
-
-
 }
 
 void SWMMWriteAndRead::writeRainFile() {
