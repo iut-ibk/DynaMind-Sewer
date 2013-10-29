@@ -1096,7 +1096,7 @@ void SWMMWriteAndRead::writeSWMMFile() {
 
 	QString fileName = this->SWMMPath.absolutePath()+ "/"+ "swmm.inp";
 	std::fstream inp;
-	inp.open(fileName.toAscii(),ios::out);
+	inp.open(fileName.toLatin1(),ios::out);
 	writeSWMMheader(inp);
 	writeSubcatchments(inp);
 	writeLID_Controlls(inp);
@@ -1326,7 +1326,7 @@ void SWMMWriteAndRead::writeRainFile() {
 	QString line;
 	QString fileName = this->SWMMPath.absolutePath()+ "/"+ "rain.dat";
 	std::fstream out;
-	out.open(fileName.toAscii(),ios::out);
+	out.open(fileName.toLatin1(),ios::out);
 
 	do {
 		line = in.readLine();
