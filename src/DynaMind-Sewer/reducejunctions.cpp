@@ -25,6 +25,7 @@
  */
 
 #include "reducejunctions.h"
+#include "tbvectordata.h"
 
 DM_DECLARE_NODE_NAME(ReduceJunctions, Sewer)
 
@@ -138,7 +139,7 @@ void ReduceJunctions::run()
 		std::vector<DM::Node*> removed_junctions;
 		new_conduits.push_back(current_j);
 		int currrentStrahler = -1;
-
+		double segment_length = 0;
 		while (current_j) {
 			DM::Edge * c = startNodeMap[current_j];
 			if (!c || current_j->getAttribute("visited")->getDouble() > 0.01) {
@@ -164,8 +165,9 @@ void ReduceJunctions::run()
 			current_j = city->getNode(c->getEndpointName());
 			int connectingNodes = endPointCounter[current_j];
 
-			if ( connectingNodes == 1) {
+			if ( connectingNodes == 1 && segment_length < this->distance ) {
 				removed_junctions.push_back(current_j);
+				segment_length+= TBVectorData::calculateDistance(c->getStartNode(), c->getEndNode());
 				continue;
 			}
 
@@ -175,6 +177,7 @@ void ReduceJunctions::run()
 			//current node is start for next conduit
 			new_conduits.push_back(current_j);
 			currrentStrahler =  (int) c->getAttribute("strahler")->getDouble();
+			segment_length = 0;
 
 
 
