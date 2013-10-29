@@ -25,6 +25,7 @@
  */
 #include "generatesewernetwork.h"
 #include "csg_s_operations.h"
+#include <sstream>
 #include <dmgroup.h>
 #ifdef _OPENMP
 #include <omp.h>
@@ -45,9 +46,26 @@ GenerateSewerNetwork::Agent::Agent(Pos StartPos) {
 	this->neigh = std::vector<double>(9);
 	this->decissionVector = std::vector<double>(9);
 	this->ProbabilityVector = std::vector<double>(9);
+	this->blocker = 0;
 }
 
+GenerateSewerNetwork::Pos GenerateSewerNetwork::Agent::hillClimbing()
+{
+	//Find next Cell that is lower because agents tends to get caught in local minimum
+	for (int i = -10; i < 10; i++) {
+		for (int j = -10; j < 10; i++) {
+			if (this->currentPos.z > this->Topology->getCell(this->currentPos.x + i, this->currentPos.y + j) ) {
+				return Pos(this->currentPos.x + i, this->currentPos.y + j);
+			}
+		}
+	}
+	return this->currentPos;
+}
+
+
+
 void GenerateSewerNetwork::Agent::run() {
+	std::set<std::pair<long, long> > path_check;
 	this->path.clear();
 	this->successful = false;
 	double noData =  Topology->getNoValue();
@@ -56,7 +74,7 @@ void GenerateSewerNetwork::Agent::run() {
 		double Hcurrent = this->currentPos.z;
 		double hcurrent = this->currentPos.h;
 		this->path.push_back(currentPos);
-
+		path_check.insert(std::pair<long, long>(currentPos.x, currentPos.y));
 
 		//Influence Connectifity flield
 		ConnectivityField->getMoorNeighbourhood(neigh, currentPos.x,currentPos.y);
@@ -75,7 +93,17 @@ void GenerateSewerNetwork::Agent::run() {
 
 		//Influence Topology add psossible dem connection, set probability to 0 if no suitable neighbour can be found
 		Topology->getMoorNeighbourhood(neigh, currentPos.x,currentPos.y);
+
+		//Check Path
 		currentHeight = neigh[4];
+		for (int i = 0; i < 9; i++) {
+			std::pair<int, int>check(this->currentPos.x + csg_s::csg_s_operations::returnPositionX(i), this->currentPos.y + csg_s::csg_s_operations::returnPositionY(i));
+			if (path_check.find(check) != path_check.end()) {
+				neigh[i] = 99999;
+			}
+		}
+
+
 		index = GenerateSewerNetwork::indexOfMinValue(neigh,noData);
 		for (int i = 0; i < 9; i++) {
 			if (currentHeight + (this->Hmin - this->currentPos.h) >= neigh[i] && neigh[i] != noData) {
@@ -85,11 +113,9 @@ void GenerateSewerNetwork::Agent::run() {
 					decissionVector[i] += 1*this->AttractionTopology;
 
 			} else { //set zerro if a connection is not possbile
-				decissionVector[i] = 0;
+				decissionVector[i] = 0;//*= this->blocker;
 			}
-
 		}
-
 
 		//Forbidden Areas
 		ForbiddenAreas->getMoorNeighbourhood(neigh, currentPos.x,currentPos.y);
@@ -110,18 +136,26 @@ void GenerateSewerNetwork::Agent::run() {
 		}
 
 
-		int ra = rand()%100+1; // +1 otherwise if ra == 0 possbile that agent picks a pos with 0% probability
+		float ra = (float)rand()/(float)RAND_MAX*100.; // +1 otherwise if ra == 0 possbile that agent picks a pos with 0% probability
 
 		double prob = 0;
 		int direction = -1;
 		for (int i = 0; i < 9; i++) {
 			prob += ProbabilityVector[i];
 
-			if (ra <= (int) prob) {
+			if (ra <=  prob) {
 				direction = i;
 				break;
 			}
 		}
+
+		//		std::stringstream ss;
+
+		//		for (int i = 0; i < 9; i++) {
+		//			ss << ProbabilityVector[i] << ",";
+		//		}
+
+		//		Logger(Debug) << ss.str() << "," << ra << "," << direction;
 
 		lastdir = direction;
 
@@ -130,21 +164,24 @@ void GenerateSewerNetwork::Agent::run() {
 			break;
 		}
 
+
+
 		this->currentPos.x+=csg_s::csg_s_operations::returnPositionX(direction);
 		this->currentPos.y+=csg_s::csg_s_operations::returnPositionY(direction);
 		double deltaH = Hcurrent - this->Topology->getCell(currentPos.x, currentPos.y);
-		if (deltaH > 0) {
-			currentPos.h = hcurrent - deltaH;
-			if (currentPos.h < 3) {
-				currentPos.h = 3;
-			}
-		} else {
-			currentPos.h=hcurrent-deltaH;
-		}
+
+		currentPos.h = hcurrent - deltaH;
+		if (currentPos.h < 3)
+			currentPos.h = 3;
+
 
 		if (MarkPath) {
 			MarkPath->setCell(currentPos.x, currentPos.y, 1);
-			Trace->setCell(currentPos.x, currentPos.y,Trace->getCell(currentPos.x, currentPos.y)+1);
+			double val = Trace->getCell(currentPos.x, currentPos.y);
+			if (val == noData)
+				Trace->setCell(currentPos.x, currentPos.y,0);
+			else
+				Trace->setCell(currentPos.x, currentPos.y,val+1);
 		}
 		if (currentPos.x < 0 || currentPos.y < 0 || currentPos.x > Topology->getWidth()-2 || currentPos.y >  Topology->getHeight()-2) {
 			this->alive = false;
@@ -156,6 +193,7 @@ void GenerateSewerNetwork::Agent::run() {
 			this->alive = false;
 			this->successful = true;
 			this->path.push_back(currentPos);
+			path_check.insert(std::pair<long, long>(currentPos.x, currentPos.y));
 			break;
 		}
 
@@ -338,6 +376,7 @@ GenerateSewerNetwork::GenerateSewerNetwork() : mMutex()
 	MultiplyerCenterTop = 1;
 	StablizierLastDir = 1;
 	internalCounter = 0;
+	blocker = 0;
 
 
 	this->addParameter("MaxDeph", DM::DOUBLE, &this->Hmin);
@@ -345,6 +384,7 @@ GenerateSewerNetwork::GenerateSewerNetwork() : mMutex()
 	this->addParameter("Steps", DM::LONG, & this->steps);
 	this->addParameter("ConnectivityWidth", DM::INT, & this->ConnectivityWidth);
 	this->addParameter("AttractionTopology", DM::DOUBLE, & this->AttractionTopology);
+	this->addParameter("Blocker", DM::DOUBLE, & this->blocker);
 	this->addParameter("AttractionConnectivity", DM::DOUBLE, & this->AttractionConnectivity);
 	this->addParameter("MultiplyerCenterCon", DM::DOUBLE, & this->MultiplyerCenterCon);
 	this->addParameter("MultiplyerCenterTop", DM::DOUBLE, & this->MultiplyerCenterTop);
@@ -433,6 +473,10 @@ void GenerateSewerNetwork::run() {
 	DM::RasterData * rSuccess;
 	rSuccess = 0;
 
+	if (rTopology == 0) {
+		Logger(Error) << "Topology not found";
+		return;
+	}
 
 	long width = this->rTopology->getWidth();
 	long height = this->rTopology->getHeight();
@@ -525,6 +569,7 @@ void GenerateSewerNetwork::run() {
 		a->StablizierLastDir = this->StablizierLastDir;
 		a->HConnection = this->HConnection;
 		a->Trace = rTrace;
+		a->blocker = this->blocker;
 		agents.push_back(a);
 
 	}
