@@ -97,6 +97,7 @@ public:
 	double MultiplyerCenterTop;
 	double StablizierLastDir;
 	double HConnection;
+	double blocker;
 	double Hmin;
 	int lastdir;
 	Agent(Pos);
@@ -104,6 +105,7 @@ protected:
 	std::vector<double> neigh;
 	std::vector<double> decissionVector;
 	std::vector<double> ProbabilityVector;
+	Pos hillClimbing();
 
 
 };
@@ -145,6 +147,7 @@ double MultiplyerCenterTop;
 long steps;
 double Hmin;
 double HConnection;
+double blocker;
 int StablizierLastDir;
 bool DebugMode;
 std::string IdentifierStartPoins;
