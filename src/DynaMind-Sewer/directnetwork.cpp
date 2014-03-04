@@ -45,78 +45,64 @@ void DirectNetwork::run() {
 
 	sys = this->getData("Vec");
 
-	std::vector<std::string> s_outfalls = sys->getUUIDsOfComponentsInView(this->outfalls);
 	std::vector<DM::Node*> outfalls;
-	foreach (std::string s, s_outfalls) {
-		outfalls.push_back(sys->getNode(s));
-	}
+	foreach(DM::Component* c, sys->getAllComponentsInView(this->outfalls))
+		outfalls.push_back((DM::Node*)c);
 
-
-	//Create EdgeList
-	std::vector<std::string> s_edges = sys->getUUIDsOfComponentsInView(this->conduits);
-
-
-
-	foreach (std::string s, s_edges) {
-		DM::Edge * e = sys->getEdge(s);
+	foreach(DM::Component* c, sys->getAllComponentsInView(this->conduits))
+	{
+		DM::Edge* e = (DM::Edge*)c;
 		e->addAttribute("VISITED", 0);
-		std::vector<std::string> v1 = ConnectionList[e->getStartpointName()];
-		v1.push_back(s);
-		ConnectionList[e->getStartpointName()]  = v1;
-		std::vector<std::string> v2 = ConnectionList[e->getEndpointName()];
-		v2.push_back(s);
-		ConnectionList[e->getEndpointName()]= v2;
-
+		std::vector<DM::Edge*>& v1 = ConnectionList[e->getStartNode()];
+		v1.push_back(e);
+		std::vector<DM::Edge*>& v2 = ConnectionList[e->getEndNode()];
+		v2.push_back(e);
 	}
 
-	foreach (std::string s,s_outfalls ) {
-		NextEdge(s);
-	}
-
+	foreach(DM::Component* c, sys->getAllComponentsInView(this->outfalls))
+		NextEdge((DM::Node*)c);
 }
 
-void DirectNetwork::NextEdge(std::string startnode) {
-	std::vector<std::string> connected;
-	if (ConnectionList[startnode].size() == 1) {
-		sys->addComponentToView(sys->getNode(startnode), this->startpoints);
-	}
-	foreach (std::string s, ConnectionList[startnode]) {
-		if (std::find(visitedEdges.begin(), visitedEdges.end(), s) ==   visitedEdges.end()) {
-			connected.push_back(s);
+void DirectNetwork::NextEdge(DM::Node* startnode) {
+	std::vector<DM::Edge*> connected;
+	if (ConnectionList[startnode].size() == 1)
+		sys->addComponentToView(startnode, this->startpoints);
+
+	foreach (DM::Edge* e, ConnectionList[startnode]) {
+		if (std::find(visitedEdges.begin(), visitedEdges.end(), e) ==   visitedEdges.end()) {
+			connected.push_back(e);
 		}
 	}
 	//Diameter Sorted max first
-	std::vector<std::string> connected_new;
-	while (connected.size() > 0) {
-		std::string maxID = "";
+	std::vector<DM::Edge*> connected_new;
+	while (connected.size() > 0) 
+	{
+		DM::Edge* maxID = connected.size() > 0 ? connected[0] : NULL;
 		double maxDiameter = 0;
-		for (int i = 0; i < connected.size(); i++) {
-			if (i == 0) {
+		for (int i = 0; i < connected.size(); i++) 
+		{
+			double d = connected[i]->getAttribute("DIAMETER")->getDouble();
+			if (d > maxDiameter) {
+				maxDiameter = d;
 				maxID = connected[i];
 			}
-			if (sys->getEdge(connected[i])->getAttribute("DIAMETER")->getDouble() > maxDiameter) {
-				maxDiameter = sys->getEdge(connected[i])->getAttribute("DIAMETER")->getDouble();
-				maxID = connected[i];
-
-			}
-
 		}
 		connected.erase(std::find(connected.begin(), connected.end(), maxID));
 		connected_new.push_back(maxID);
 	}
 
-
-
 	connected = connected_new;
-	foreach (std::string s, connected) {
-		DM::Edge * e = sys->getEdge(s);
+
+	foreach (DM::Edge* e, connected) 
+	{
 		e->getAttribute("VISITED")->setDouble(1);
-		if (e->getStartpointName().compare(startnode)==0) {
-			e->setStartpointName(e->getEndpointName());
-			e->setEndpointName(startnode);
+		if (e->getStartNode() == startnode) 
+		{
+			e->setStartpoint(e->getEndNode());
+			e->setEndpoint(startnode);
 		}
-		this->visitedEdges.push_back(s);
-		NextEdge(e->getStartpointName());
+		this->visitedEdges.push_back(e);
+		NextEdge(e->getStartNode());
 	}
 }
 

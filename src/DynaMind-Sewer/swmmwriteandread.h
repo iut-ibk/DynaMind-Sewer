@@ -44,11 +44,11 @@ public:
 	void readInReportFile();
 	void runSWMM();
 
-	std::vector<std::pair<string, double> > getFloodedNodes();
-	std::vector<std::pair<string, double> > getNodeDepthSummery();
+	std::vector<std::pair<DM::Node*, double> > getFloodedNodes();
+	std::vector<std::pair<DM::Node*, double> > getNodeDepthSummery();
 
-	std::vector<std::pair<string, double> > getLinkFlowSummeryCapacity();
-	std::vector<std::pair<string, double> > getLinkFlowSummeryVelocity();
+	std::vector<std::pair<DM::Edge*, double> > getLinkFlowSummeryCapacity();
+	std::vector<std::pair<DM::Edge*, double> > getLinkFlowSummeryVelocity();
 
 	double getVp();
 	double getVSurfaceRunoff();
@@ -98,7 +98,7 @@ private:
 	QDir SWMMPath;
 
 
-	std::map<std::string, int> UUIDtoINT;
+	std::map<DM::Component*, int> UUIDtoINT;
 
 	void writeSWMMheader(std::fstream &inp);
 	void writeSubcatchments(std::fstream &inp);
@@ -138,13 +138,13 @@ private:
 
 	void evalWaterLevelInJunctions();
 
-	std::vector<std::pair <std::string, double> > floodedNodesVolume;
+	std::vector<std::pair <DM::Node*, double> > floodedNodesVolume;
 
-	std::vector<std::pair <std::string, double> > nodeDepthSummery;
+	std::vector<std::pair <DM::Node*, double> > nodeDepthSummery;
 
-	std::vector<std::pair <std::string, double> > linkFlowSummery_capacity;
+	std::vector<std::pair <DM::Edge*, double> > linkFlowSummery_capacity;
 
-	std::vector<std::pair <std::string, double> > linkFlowSummery_velocity;
+	std::vector<std::pair <DM::Edge*, double> > linkFlowSummery_velocity;
 
 	//Water level in percent
 	double water_level_below_0;

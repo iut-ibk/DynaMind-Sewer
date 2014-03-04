@@ -40,9 +40,9 @@ private:
 	DM::View conduits;
 	DM::View outfalls;
 	DM::View startpoints;
-	std::vector<std::string> visitedEdges;
-	std::map<std::string, std::vector<std::string> > ConnectionList;
-	void NextEdge(std::string startnode);
+	std::vector<DM::Edge*> visitedEdges;
+	std::map<DM::Node*, std::vector<DM::Edge*> > ConnectionList;
+	void NextEdge(DM::Node* startnode);
 	DM::System * sys;
 };
 

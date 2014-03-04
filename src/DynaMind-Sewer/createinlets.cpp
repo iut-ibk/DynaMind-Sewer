@@ -34,7 +34,7 @@ CreateInlets::CreateInlets()
 	Blocks = DM::View("CITYBLOCK", DM::FACE, DM::READ);
 	Inlets = DM::View("INLET", DM::NODE, DM::WRITE);
 
-	Inlets.addAttribute("CATCHMENT");
+	Inlets.addAttribute("CATCHMENT", "CITYBLOCKS", DM::WRITE);
 
 	std::vector<DM::View> data;
 	data.push_back(Blocks);
@@ -60,33 +60,37 @@ void CreateInlets::run() {
 
 	DM::System * city = this->getData("City");
 
-	std::vector<std::string> blocks = city->getUUIDsOfComponentsInView(Blocks);
-	foreach (std::string nBlock, blocks) {
-		DM::Face * f = city->getFace(nBlock);
+	foreach(DM::Component* cmp, city->getAllComponentsInView(Blocks))
+	{
+		DM::Face* f = (DM::Face*)cmp;
 
 		double minx;
 		double maxx;
 		double miny;
 		double maxy;
 
-		std::vector<std::string> points = f->getNodes();
-		for (int i = 0; i < points.size(); i++) {
-			DM::Node * n = city->getNode(points[i]);
-			if (i == 0) {
+		bool first = true;
+		foreach(DM::Node* n, f->getNodePointers())
+		{
+			if (first) 
+			{
 				minx = n->getX();
 				maxx = n->getX();
 				miny = n->getY();
 				maxy = n->getY();
-				continue;
+				first = false;
 			}
-			if (minx > n->getX())
-				minx = n->getX();
-			if (miny > n->getY())
-				miny = n->getY();
-			if (maxx < n->getX())
-				maxx = n->getX();
-			if (maxy < n->getY())
-				maxy = n->getY();
+			else
+			{
+				if (minx > n->getX())
+					minx = n->getX();
+				if (miny > n->getY())
+					miny = n->getY();
+				if (maxx < n->getX())
+					maxx = n->getX();
+				if (maxy < n->getY())
+					maxy = n->getY();
+			}
 
 		}
 
@@ -97,7 +101,7 @@ void CreateInlets::run() {
 		double startY = miny + Size/2;
 
 
-		double buildyear =f->getAttribute("BuildYear")->getDouble();
+		double buildyear = f->getAttribute("BuildYear")->getDouble();
 		if (buildyear < 1900)
 			continue;
 		while (startY < maxy) {
@@ -105,8 +109,7 @@ void CreateInlets::run() {
 				if (startX < offsetX+width && startX > offsetX && startY < offsetY+heigth && startY > offsetY)  {
 					DM::Node * n = city->addNode(DM::Node(startX, startY, 0), Inlets);
 					n->addAttribute("BuildYear", buildyear);
-					n->getAttribute("CATCHMENT")->setString(f->getUUID());
-
+					n->getAttribute("CATCHMENT")->addLink(f, "CITYBLOCKS");
 				}
 				startX+=Size;
 			}

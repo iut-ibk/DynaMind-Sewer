@@ -77,11 +77,11 @@ void SWMMWriteAndRead::setClimateChangeFactor(int cf)
 void SWMMWriteAndRead::readInReportFile() {
 	Logger(Debug) << "Read inputfile " << this->SWMMPath.absolutePath() + "/" + "swmm.rep";
 
-	QMap<int, std::string> revUUIDtoINT;
+	QMap<int, DM::Component*> revUUIDtoINT;
 
 
 
-	for (std::map<std::string, int>::const_iterator it = UUIDtoINT.begin(); it !=UUIDtoINT.end(); ++it) {
+	for (std::map<DM::Component*, int>::const_iterator it = UUIDtoINT.begin(); it !=UUIDtoINT.end(); ++it) {
 		revUUIDtoINT[it->second] =  it->first;
 	}
 
@@ -201,7 +201,7 @@ void SWMMWriteAndRead::readInReportFile() {
 					QString id_asstring = data[0];
 					id_asstring.remove("NODE");
 					int id = id_asstring.toInt();
-					DM::Node * p = this->city->getNode(revUUIDtoINT[id]);
+					DM::Node * p = (DM::Node*)revUUIDtoINT[id];
 					if (p->getAttribute("WWTP")->getDouble() > 0.01) {
 						p->changeAttribute("OutfallVolume",  QString(data[4]).toDouble());
 						Vwwtp +=QString(data[4]).toDouble();
@@ -231,10 +231,10 @@ void SWMMWriteAndRead::readInReportFile() {
 					QString id_asstring = data[0];
 					id_asstring.remove("NODE");
 					int id = id_asstring.toInt();
-					DM::Node * p = this->city->getNode(revUUIDtoINT[id]);
+					DM::Node * p = (DM::Node*)revUUIDtoINT[id];
 					p->changeAttribute("flooding_V",  QString(data[5]).toDouble());
 					Vp += QString(data[5]).toDouble();
-					floodedNodesVolume.push_back(std::pair<std::string, double> (p->getUUID(),QString(data[5]).toDouble() ));
+					floodedNodesVolume.push_back(std::pair<DM::Node*, double> (p,QString(data[5]).toDouble() ));
 				}
 			}
 		}
@@ -256,12 +256,12 @@ void SWMMWriteAndRead::readInReportFile() {
 					QString id_asstring = data[0];
 					id_asstring.remove("NODE");
 					int id = id_asstring.toInt();
-					DM::Node * p = this->city->getNode(revUUIDtoINT[id]);
+					DM::Node * p = (DM::Node*)revUUIDtoINT[id];
 					if (!p) {
 						Logger(Warning) << id_asstring.toStdString()  << " doesn't exist : line: " << line.toStdString();
 						continue;
 					}
-					nodeDepthSummery.push_back(std::pair<std::string, double> (p->getUUID(),QString(data[3]).toDouble() ));
+					nodeDepthSummery.push_back(std::pair<DM::Node*, double> (p,QString(data[3]).toDouble() ));
 				}
 			}
 		}
@@ -283,13 +283,13 @@ void SWMMWriteAndRead::readInReportFile() {
 					QString id_asstring = data[0];
 					id_asstring.remove("LINK");
 					int id = id_asstring.toInt();
-					DM::Edge * p = this->city->getEdge(revUUIDtoINT[id]);
+					DM::Edge * p = (DM::Edge*)revUUIDtoINT[id];
 					if (!p) {
 						Logger(Warning) << id_asstring.toStdString()  << " doesn't exist : line: " << line.toStdString();
 						continue;
 					}
-					linkFlowSummery_capacity.push_back(std::pair<std::string, double> (p->getUUID(),QString(data[7]).toDouble() ));
-					linkFlowSummery_velocity.push_back(std::pair<std::string, double> (p->getUUID(),QString(data[6]).toDouble() ));
+					linkFlowSummery_capacity.push_back(std::pair<DM::Edge*, double>(p, QString(data[7]).toDouble()));
+					linkFlowSummery_velocity.push_back(std::pair<DM::Edge*, double>(p, QString(data[6]).toDouble()));
 				}
 			}
 		}
@@ -317,8 +317,8 @@ void SWMMWriteAndRead::readInReportFile() {
 	this->VsurfaceRunoff = SurfaceRunOff;
 	this->Vout = Voutfall;
 
-	foreach (std::string s, this->city->getUUIDsOfComponentsInView(globals)) {
-		DM::Component * c = this->city->getComponent(s);
+	foreach(DM::Component* c, city->getAllComponentsInView(globals))
+	{
 		c->addAttribute("Vr", SurfaceRunOff);
 		c->addAttribute("Vwwtp", Vwwtp);
 		c->addAttribute("Vp", Vp);
@@ -331,35 +331,41 @@ void SWMMWriteAndRead::readInReportFile() {
 
 void SWMMWriteAndRead::writeJunctions(std::fstream &inp)
 {
+	std::vector<DM::Component*> js = city->getAllComponentsInView(junctions);
+	std::vector<DM::Component*> outfallComps = city->getAllComponentsInView(outfalls);
+	std::vector<DM::Component*> storageComps = city->getAllComponentsInView(storage);
 
-	QStringList l;
-	std::vector<std::string> names = city->getUUIDsOfComponentsInView(junctions);
 
-	foreach (std::string name, names) {
-		QString s = QString::fromStdString(name);
-		if (l.indexOf(s) >= 0) {
+
+	std::vector<DM::Component*> countedElements;
+	countedElements.reserve(js.size());
+	foreach(DM::Component* j, js)
+	{
+		if (vector_contains(&countedElements, j))
 			Logger(Error) << "Duplicated Entry";
-		}
-		l.append(s);
+		
+		countedElements.push_back(j);
 	}
+
 	std::vector<int> checkForduplicatedNodes;
 	inp<<"[JUNCTIONS]\n";
 	inp<<";;Name\t\tElev\tYMAX\tY0\tYsur\tApond\n";
 	inp<<";;============================================================================\n";
-	foreach(std::string name, names) {
-		DM::Node * p = city->getNode(name);
+	foreach(DM::Component* c, js) 
+	{
+		DM::Node * p = (DM::Node*)c;
 		/*if (p->isInView( wwtp ))
 			continue;*/
-		if (p->isInView( outfalls ))
+		if(vector_contains(&outfallComps, c))
 			continue;
-		if (p->isInView( storage ))
+		if (vector_contains(&storageComps, c))
 			continue;
 		if (p->getAttribute("Storage")->getDouble() == 1)
 			continue;
-		if (UUIDtoINT.find(p->getUUID()) == UUIDtoINT.end())
+		if (UUIDtoINT.find(p) == UUIDtoINT.end())
 			continue;
 
-		int id = UUIDtoINT[p->getUUID()];
+		int id = UUIDtoINT[p];
 
 		if (std::find(checkForduplicatedNodes.begin(), checkForduplicatedNodes.end(), id) != checkForduplicatedNodes.end())
 			continue;
@@ -381,10 +387,7 @@ void SWMMWriteAndRead::writeJunctions(std::fstream &inp)
 		inp << "\t";
 		inp << "100000";
 		inp << "\n";
-
 	}
-
-
 }
 
 
@@ -402,19 +405,20 @@ void SWMMWriteAndRead::writeSubcatchments(std::fstream &inp)
 	//	inp<<"  sub"<<i<<"\tRG01"<<"\t\tnode"<<i<<"\t20\t80.0\t100.0\t1.0\t1\n";
 	//}
 
-	std::vector<std::string> InletNames = city->getUUIDsOfComponentsInView(inlet);
+	std::vector<DM::Component*> inlets = city->getAllComponentsInView(inlet);
 
-	foreach(std::string name, InletNames) {
-		DM::Node * inlet_attr = city->getNode(name);
+	foreach(Component* c, inlets)
+	{
+		DM::Node * inlet_attr = (DM::Node*)c;
 
-		std::string CATCHMENT_ID = inlet_attr->getAttribute("CATCHMENT")->getLink().uuid;
+		Component * catchment_attr = inlet_attr->getAttribute("CATCHMENT")->getLinkedComponents()[0];
 
-		Logger(Debug) << "CATCHMENT_ID  " << CATCHMENT_ID;
-		Component * catchment_attr = city->getComponent(CATCHMENT_ID);
-		if (inlet_attr->getAttribute("JUNCTION")->getLinks().size() < 1) {
+		std::vector<DM::Component*> linkedToJunk = inlet_attr->getAttribute("JUNCTION")->getLinkedComponents();
+
+		if (linkedToJunk.size() < 1) {
 			continue;
 		}
-		int id = this->UUIDtoINT[inlet_attr->getAttribute("JUNCTION")->getLink().uuid];
+		int id = this->UUIDtoINT[linkedToJunk[0]];
 		if (id == 0) {
 			continue;
 		}
@@ -432,8 +436,8 @@ void SWMMWriteAndRead::writeSubcatchments(std::fstream &inp)
 		}
 
 
-		if (UUIDtoINT[CATCHMENT_ID] == 0) {
-			UUIDtoINT[CATCHMENT_ID] = GLOBAL_Counter++;
+		if (UUIDtoINT[catchment_attr] == 0) {
+			UUIDtoINT[catchment_attr] = GLOBAL_Counter++;
 		} else {
 			continue;
 		}
@@ -448,30 +452,26 @@ void SWMMWriteAndRead::writeSubcatchments(std::fstream &inp)
 			gradient = 0.001;
 		this->TotalImpervious += area*imp;
 
-		inp<<"sub"<<UUIDtoINT[CATCHMENT_ID]<<"\tRG01"<<"\t\tnode"<<id<<"\t" << area << "\t" <<imp*100 << "\t"<< with << "\t"<<gradient*100<<"\t1\n";
+		inp << "sub" << UUIDtoINT[catchment_attr] << "\tRG01" << "\t\tnode" << id << "\t" << area << "\t" << imp * 100 << "\t" << with << "\t" << gradient * 100 << "\t1\n";
 
 	}
 	inp<<"[POLYGONS]\n";
 	inp<<";;Subcatchment\tX-Coord\tY-Coord\n";
 	int counter = 0;
-	foreach(std::string name, InletNames) {
-		DM::Node * inlet_attr = city->getNode(name);
+	foreach(DM::Component* c, inlets)
+	{
+		DM::Node * inlet_attr = (DM::Node*)c;
 
-		std::string CATCHMENT_ID = inlet_attr->getAttribute("CATCHMENT")->getLink().uuid;
-
-		if (UUIDtoINT[CATCHMENT_ID] == 0) {
+		Component * catchment_attr_comp = inlet_attr->getAttribute("CATCHMENT")->getLinkedComponents()[0];
+		if (!map_contains(&UUIDtoINT, catchment_attr_comp))
 			continue;
-		}
 
-		DM::Face * catchment_attr = city->getFace(CATCHMENT_ID);
+		DM::Face * catchment_attr = (DM::Face*)catchment_attr_comp;
 
+		foreach(DM::Node* n, catchment_attr->getNodePointers())
+			inp << "sub" << UUIDtoINT[catchment_attr] << "\t" << n->getX() << "\t" << n->getY() << "\n";
 
-		foreach(std::string s,  catchment_attr->getNodes()){
-			DM::Node * n = city->getNode(s);
-			inp << "sub" << UUIDtoINT[CATCHMENT_ID] <<"\t" << n->getX() << "\t" << n->getY()<< "\n";
-		}
 		counter++;
-
 	}
 
 	inp<<"\n";
@@ -482,17 +482,17 @@ void SWMMWriteAndRead::writeSubcatchments(std::fstream &inp)
 	inp<<"[SUBAREAS]\n";
 	inp<<";;Subcatch\tN_IMP\tN_PERV\tS_IMP\tS_PERV\t%ZER\tRouteTo\n";
 	inp<<";;============================================================================\n";
-	foreach(std::string name, InletNames) {
-		DM::Node * inlet_attr = city->getNode(name);
-		std::string CATCHMENT_ID = inlet_attr->getAttribute("CATCHMENT")->getLink().uuid;
-		int id = this->UUIDtoINT[inlet_attr->getAttribute("JUNCTION")->getLink().uuid];
-		if (id == 0) {
+	foreach(DM::Component* c, inlets)
+	{
+		DM::Node * inlet_attr = (DM::Node*)c;
+
+		Component * catchment = inlet_attr->getAttribute("CATCHMENT")->getLinkedComponents()[0];
+		Component * junction = inlet_attr->getAttribute("JUNCTION")->getLinkedComponents()[0];
+
+		if (!map_contains(&UUIDtoINT, catchment) || !map_contains(&UUIDtoINT, junction))
 			continue;
-		}
-		if (UUIDtoINT[CATCHMENT_ID] == 0) {
-			continue;
-		}
-		inp<<"  sub"<<UUIDtoINT[CATCHMENT_ID]<<"\t\t0.015\t0.2\t1.8\t5\t0\tOUTLET\n";
+
+		inp << "  sub" << UUIDtoINT[catchment] << "\t\t0.015\t0.2\t1.8\t5\t0\tOUTLET\n";
 	}
 	inp<<"\n";
 	//-------------------------//
@@ -503,26 +503,24 @@ void SWMMWriteAndRead::writeSubcatchments(std::fstream &inp)
 	inp<<"[INFILTRATION]\n";
 	inp<<";;Subcatch\tMaxRate\tMinRate\tDecay\tDryTime\tMaxInf\n";
 	inp<<";;============================================================================\n";
-	foreach(std::string name, InletNames) {
-		DM::Node * inlet_attr = city->getNode(name);
+	foreach(DM::Component* c, inlets)
+	{
+		DM::Node * inlet_attr = (DM::Node*)c;
 
-		std::string CATCHMENT_ID = inlet_attr->getAttribute("CATCHMENT")->getLink().uuid;
-		DM::Face * catchment_attr = city->getFace(CATCHMENT_ID);
-		if (!catchment_attr)
-			continue;
+		DM::Face * catchment_attr = (DM::Face*)inlet_attr->getAttribute("CATCHMENT")->getLinkedComponents()[0];
 
-		int id = this->UUIDtoINT[CATCHMENT_ID];
-		if (id == 0) {
+		if (!catchment_attr || !map_contains(&UUIDtoINT, (DM::Component*)catchment_attr))
 			continue;
-		}
-		inp<<"  sub"<<UUIDtoINT[CATCHMENT_ID]<<"\t60\t6.12\t3\t6\t0\n";
+		
+		inp << "  sub" << UUIDtoINT[catchment_attr] << "\t60\t6.12\t3\t6\t0\n";
 	}
 	inp<<"\n";
 
 }
 
-void SWMMWriteAndRead::writeDWF(std::fstream &inp) {
-	std::vector<std::string> InletNames = city->getUUIDsOfComponentsInView(inlet);
+void SWMMWriteAndRead::writeDWF(std::fstream &inp) 
+{
+	std::vector<DM::Component*> inlets = city->getAllComponentsInView(inlet);
 	//DWF Dry Weather Flow
 	//-------------------------//
 
@@ -530,18 +528,19 @@ void SWMMWriteAndRead::writeDWF(std::fstream &inp) {
 	inp<<";;Node\tItem\tValue\n";
 	inp<<";;============================================================================\n";
 
-	foreach(std::string name, InletNames) {
-		DM::Node * inlet_attr = city->getNode(name);
+	foreach(DM::Component* c, inlets)
+	{
+		DM::Node * inlet_attr = (DM::Node*)c;
 
-		std::string CATCHMENT_ID = inlet_attr->getAttribute("CATCHMENT")->getString();
+		DM::Face * catchment_attr = (DM::Face*)inlet_attr->getAttribute("CATCHMENT")->getLinkedComponents()[0];
 
-		if (UUIDtoINT[CATCHMENT_ID] == 0) {
-			UUIDtoINT[CATCHMENT_ID] = GLOBAL_Counter++;
+		if (UUIDtoINT[catchment_attr] == 0) {
+			UUIDtoINT[catchment_attr] = GLOBAL_Counter++;
 		}
 
 		double Q = inlet_attr->getAttribute("WasteWater")->getDouble();
 		if (Q > 0.000001) {
-			inp<<"NODE"<<UUIDtoINT[CATCHMENT_ID]<<"\tFLOW\t"<<Q<<"\n";
+			inp << "NODE" << UUIDtoINT[catchment_attr] << "\tFLOW\t" << Q << "\n";
 		}
 	}
 	inp<<"\n";
@@ -570,13 +569,14 @@ void SWMMWriteAndRead::writeStorage(std::fstream &inp) {
 	inp<<";;Name           Elev.    Depth    Depth    Curve      Params                     Area     Frac. \n"  ;
 	inp<<";;-------------- -------- -------- -------- ---------- -------- -------- -------- -------- --------\n";
 	//\nODE85           93.7286  6.35708  0        FUNCTIONAL 1000     0        22222    1000     0
-	std::vector<std::string> storages = this->city->getUUIDsOfComponentsInView(storage);
-	foreach(std::string name, storages) {
+
+	foreach(DM::Component* c, city->getAllComponentsInView(storage))
+	{
 		std::stringstream storage_id;
 
-		Node * p = this->city->getNode(name);
+		Node* p = (Node*)c;
 
-		int id = this->UUIDtoINT[p->getUUID()];
+		int id = this->UUIDtoINT[p];
 		storage_id << "NODE" << id;
 		inp << "NODE";
 		inp << id;
@@ -645,22 +645,22 @@ void SWMMWriteAndRead:: writeOutfalls(std::fstream &inp) {
 	inp<<"[OUTFALLS]\n";
 	inp<<";;Name	Elev	Stage	Gate\n";
 	inp<<";;============================================================================\n";
+	foreach(Component* c, city->getAllComponentsInView(outfalls))
+	{
+		DM::Node * p = (Node*)c;
 
-	std::vector<std::string> OutfallNames = city->getUUIDsOfComponentsInView(outfalls);
-	for (unsigned int i = 0; i < OutfallNames.size(); i++ ) {
-		DM::Node * p = city->getNode(OutfallNames[i]);
 		/*if (UUIDtoINT.find(p->getUUID()) == UUIDtoINT.end())
 			continue;*/
-		if (UUIDtoINT[p->getUUID()] == 0) {
-			UUIDtoINT[p->getUUID()] = GLOBAL_Counter++;
+		if (UUIDtoINT[p] == 0) {
+			UUIDtoINT[p] = GLOBAL_Counter++;
 			this->PointList.push_back(p);
 		}
 
 		double z = p->getAttribute("Z")->getDouble();
-		inp<<"NODE"<<this->UUIDtoINT[p->getUUID()]<<"\t"<< z <<"\tFREE\tNO\n";
+		inp<<"NODE"<<this->UUIDtoINT[p]<<"\t"<< z <<"\tFREE\tNO\n";
 	}
-
 }
+
 void SWMMWriteAndRead::writeConduits(std::fstream &inp) {
 	inp<<"\n";
 	inp<<"[CONDUITS]\n";
@@ -670,80 +670,68 @@ void SWMMWriteAndRead::writeConduits(std::fstream &inp) {
 	std::vector<DM::View> conduits;
 	conduits.push_back(conduit);
 
-	foreach(DM::View con, conduits)  {
-		std::vector<std::string> ConduitNames = city->getUUIDsOfComponentsInView(con);
+	foreach(DM::View con, conduits)  
+	{
+		foreach(Component* conduit, city->getAllComponentsInView(con))
+		{
+			DM::Edge* link = (Edge*)conduit;
 
-		foreach(std::string name, ConduitNames) {
-			DM::Edge * link = city->getEdge(name);
-
-			if (UUIDtoINT.find(link->getUUID()) == UUIDtoINT.end())
+			if (!map_contains(&UUIDtoINT, conduit))
 				continue;
 
-
-			DM::Node * nStartNode = city->getNode(link->getStartpointName());
-			DM::Node * nEndNode = city->getNode(link->getEndpointName());
-
+			DM::Node * nStartNode = link->getStartNode();
+			DM::Node * nEndNode = link->getEndNode();
 
 			double x = nStartNode->getX()  - nEndNode->getX();
 			double y = nStartNode->getY() - nEndNode->getY();
 
 			double length = sqrt(x*x +y*y);
 
-			if (UUIDtoINT[nStartNode->getUUID()] == 0) {
-				UUIDtoINT[nStartNode->getUUID()] = GLOBAL_Counter++;
-			}
-			if (UUIDtoINT[nEndNode->getUUID()] == 0) {
-				UUIDtoINT[nEndNode->getUUID()] = GLOBAL_Counter++;
-			}
+			if (!map_contains(&UUIDtoINT, (DM::Component*)nStartNode))
+				UUIDtoINT[nStartNode] = GLOBAL_Counter++;
+			if (!map_contains(&UUIDtoINT, (DM::Component*)nEndNode))
+				UUIDtoINT[nEndNode] = GLOBAL_Counter++;
 
-			int EndNode = UUIDtoINT[nEndNode->getUUID()];
-			int StartNode =  UUIDtoINT[nStartNode->getUUID()];
+			int EndNode = UUIDtoINT[nEndNode];
+			int StartNode =  UUIDtoINT[nStartNode];
 
 			if ( EndNode == StartNode) {
 				Logger(Warning) << "Start Node is End Node";
 				continue;
 			}
 
+			if (UUIDtoINT[link] == 0)
+				UUIDtoINT[link] = GLOBAL_Counter++;
 
-			if (UUIDtoINT[link->getUUID()] == 0) {
-				UUIDtoINT[link->getUUID()] = GLOBAL_Counter++;
-			}
-
-
-			inp<<"LINK"<< UUIDtoINT[link->getUUID()]<<"\tNODE"<<EndNode<<"\tNODE"<<StartNode<<"\t"<<length<<"\t"<<"0.01	" << link->getAttribute("inlet_offset")->getDouble()  <<"\t"	<< link->getAttribute("outlet_offset")->getDouble()  << "\n";
-
+			inp	<<"LINK"<< UUIDtoINT[link]<<"\tNODE"<<EndNode<<"\tNODE"<<StartNode<<"\t"
+				<<length<<"\t"<<"0.01	" << link->getAttribute("inlet_offset")->getDouble()  <<"\t"
+				<< link->getAttribute("outlet_offset")->getDouble()  << "\n";
 		}
 	}
-
 }
-void SWMMWriteAndRead::writeLID_Controlls(std::fstream &inp) {
 
-	std::vector<std::string> InletNames = city->getUUIDsOfComponentsInView(inlet);
-
+void SWMMWriteAndRead::writeLID_Controlls(std::fstream &inp) 
+{
 	inp << "\n";
 	inp << "[LID_CONTROLS]" << "\n";
 	inp << ";;               Type/Layer Parameters" << "\n";
 	inp << ";;-------------- ---------- ----------" << "\n";
 
-	foreach(std::string name, InletNames) {
-		DM::Component * inlet_attr;
-		inlet_attr = city->getComponent(name);
-
-		std::string CATCHMENT_ID = inlet_attr->getAttribute("CATCHMENT")->getLink().uuid;
-
-		Component * catchment_attr = city->getComponent(CATCHMENT_ID);
+	foreach(Component* inlet_attr, city->getAllComponentsInView(inlet))
+	{
+		Component * catchment_attr = inlet_attr->getAttribute("CATCHMENT")->getLinkedComponents()[0];
 
 		if (!catchment_attr)
 			continue;
 
-		int id = this->UUIDtoINT[CATCHMENT_ID];
+		int id = this->UUIDtoINT[catchment_attr];
 		if (id == 0) {
 			continue;
 		}
 
 		double area = catchment_attr->getAttribute("area")->getDouble();// node->area/10000.;
 
-		int numberOfInfiltrationSystems = catchment_attr->getAttribute("INFILTRATION_SYSTEM")->getLinks().size();
+		int numberOfInfiltrationSystems = catchment_attr->getAttribute("INFILTRATION_SYSTEM")->getLinkedComponents().size();
 
 		if (numberOfInfiltrationSystems == 0 || area == 0)
 			continue;
@@ -757,48 +745,47 @@ void SWMMWriteAndRead::writeLID_Controlls(std::fstream &inp) {
 	Infitration      STORAGE    height        void ratio       conductivity         clogging factor
 	Infitration      DRAIN      Drain Coefficient          Crain Exponent        Drain Offset Height          6  */
 
-		std::vector<DM::LinkAttribute> infitration_systems = catchment_attr->getAttribute("INFILTRATION_SYSTEM")->getLinks();
-		foreach (LinkAttribute la, infitration_systems) {
-			if (UUIDtoINT[la.uuid] == 0) {
-				UUIDtoINT[la.uuid] = GLOBAL_Counter++;
-			} else
-				continue;
-			DM::Component * infilt = city->getComponent(la.uuid);
+		//std::vector<DM::LinkAttribute> infitration_systems = catchment_attr->getAttribute("INFILTRATION_SYSTEM")->getLinks();
+		//foreach (LinkAttribute la, infitration_systems) {
+		//	if (UUIDtoINT[la.uuid] == 0) {
+		//		UUIDtoINT[la.uuid] = GLOBAL_Counter++;
+		//	} else
+		//		continue;
+		//	DM::Component * infilt = city->getComponent(la.uuid);
 
-			inp << "Infiltration" << UUIDtoINT[la.uuid] << "\t"  << "IT" <<  "\n";
-			inp << "Infiltration" << UUIDtoINT[la.uuid] << "\t"  << "SURFACE" <<    "\t" <<  infilt->getAttribute("h")->getDouble()*1000<<    "\t"     <<   "0.0"  <<    "\t"  <<   "0.1"<<    "\t" <<      0.1 <<    "\t" <<      "5" << "\n";
-			inp << "Infiltration" << UUIDtoINT[la.uuid] << "\t"  << "STORAGE" <<    "\t" <<  "200"<<    "\t"     <<   "0.75"  <<    "\t"  <<   infilt->getAttribute("kf")->getDouble() * 1000<<    "\t" <<       "0" << "\n";
-			inp << "Infiltration" << UUIDtoINT[la.uuid] << "\t"  << "DRAIN" <<    "\t" <<  "0" <<    "\t"     <<   "0.5"  <<     "\t"<< "0"<< "\t"<< "6" << "\n";
+		foreach(DM::Component* infilt, catchment_attr->getAttribute("INFILTRATION_SYSTEM")->getLinkedComponents())
+		{
+			if (UUIDtoINT[infilt] == 0)
+				UUIDtoINT[infilt] = GLOBAL_Counter++;
+			else
+				continue;
+
+			inp << "Infiltration" << UUIDtoINT[infilt] << "\t" << "IT" << "\n";
+			inp << "Infiltration" << UUIDtoINT[infilt] << "\t" << "SURFACE" << "\t" << infilt->getAttribute("h")->getDouble() * 1000 << "\t" << "0.0" << "\t" << "0.1" << "\t" << 0.1 << "\t" << "5" << "\n";
+			inp << "Infiltration" << UUIDtoINT[infilt] << "\t" << "STORAGE" << "\t" << "200" << "\t" << "0.75" << "\t" << infilt->getAttribute("kf")->getDouble() * 1000 << "\t" << "0" << "\n";
+			inp << "Infiltration" << UUIDtoINT[infilt] << "\t" << "DRAIN" << "\t" << "0" << "\t" << "0.5" << "\t" << "0" << "\t" << "6" << "\n";
 			inp<<"\n";
 		}
 	}
 }
-void SWMMWriteAndRead::writeLID_Usage(std::fstream &inp) {
 
-
-
-
-	std::vector<std::string> InletNames = city->getUUIDsOfComponentsInView(inlet);
-
+void SWMMWriteAndRead::writeLID_Usage(std::fstream &inp) 
+{
 	inp << "\n";
 
 	inp <<  "[LID_USAGE]"  << "\n";
 	inp << ";;Subcatchment   LID Process      Number  Area       Width      InitSatur  FromImprv  ToPerv     Report File"  << "\n";
 	inp << ";;-------------- ---------------- ------- ---------- ---------- ---------- ---------- ---------- -----------"  << "\n";
+	
 	std::map<int, int> written_infils;
-	foreach(std::string name, InletNames) {
-		DM::Component * inlet_attr;
-		inlet_attr = city->getComponent(name);
-
-
-		std::string CATCHMENT_ID = inlet_attr->getAttribute("CATCHMENT")->getLink().uuid;
-
-		Component * catchment_attr = city->getComponent(CATCHMENT_ID);
+	foreach(Component* inlet_attr, city->getAllComponentsInView(inlet))
+	{
+		Component * catchment_attr = inlet_attr->getAttribute("CATCHMENT")->getLinkedComponents()[0];
 
 		if (!catchment_attr)
 			continue;
 
-		int id = this->UUIDtoINT[CATCHMENT_ID];
+		int id = this->UUIDtoINT[catchment_attr];
 		if (id == 0) {
 			continue;
 		}
@@ -806,19 +793,14 @@ void SWMMWriteAndRead::writeLID_Usage(std::fstream &inp) {
 		double area = catchment_attr->getAttribute("Area")->getDouble();// node->area/10000.;
 		double imp = catchment_attr->getAttribute("Impervious")->getDouble();// node->area/10000.;
 
-		int numberOfInfiltrationSystems = catchment_attr->getAttribute("INFILTRATION_SYSTEM")->getLinks().size();
+		int numberOfInfiltrationSystems = catchment_attr->getAttribute("INFILTRATION_SYSTEM")->getLinkedComponents().size();
 
 		if (numberOfInfiltrationSystems == 0 || area == 0)
 			continue;
 
-
-		std::vector<DM::LinkAttribute> infitration_systems = catchment_attr->getAttribute("INFILTRATION_SYSTEM")->getLinks();
-
-
-
-		foreach (LinkAttribute la, infitration_systems) {
-			DM::Component * infilt = city->getComponent(la.uuid);
-			if (written_infils[UUIDtoINT[la.uuid]] != 0 ) // If true the infiltration alredy exists
+		foreach(Component* infilt, catchment_attr->getAttribute("INFILTRATION_SYSTEM")->getLinkedComponents())
+		{
+			if (written_infils[UUIDtoINT[infilt]] != 0) // If true the infiltration already exists
 				continue;
 
 			double treated = infilt->getAttribute("treated_area")->getDouble();
@@ -829,11 +811,10 @@ void SWMMWriteAndRead::writeLID_Usage(std::fstream &inp) {
 			treated_area = (treated_area < 100.) ? treated_area : 100.;
 
 
-			inp << "sub" <<UUIDtoINT[CATCHMENT_ID] << "\t"  << "Infiltration"<< UUIDtoINT[la.uuid]  <<    "\t" <<  1 <<    "\t"     <<   infilt->getAttribute("area")->getDouble()   <<    "\t"  <<   "1"<<    "\t" <<       "0" <<    "\t" <<        treated_area <<    "\t" <<    "0" <<    "\n"; // << "\"report" << UUIDtoINT[CATCHMENT_ID] << ".txt\"" << "\n";
+			inp << "sub" << UUIDtoINT[infilt] << "\t" << "Infiltration" << UUIDtoINT[infilt] << "\t" << 1 << "\t" << infilt->getAttribute("area")->getDouble() << "\t" << "1" << "\t" << "0" << "\t" << treated_area << "\t" << "0" << "\n"; // << "\"report" << UUIDtoINT[CATCHMENT_ID] << ".txt\"" << "\n";
 			Logger(Debug) << "Catchment Area " << area;
 			Logger(Debug) << "Treated Area " << treated;
-			written_infils[UUIDtoINT[la.uuid]] = 1;
-
+			written_infils[UUIDtoINT[infilt]] = 1;
 		}
 	}
 }
@@ -850,9 +831,9 @@ void SWMMWriteAndRead::writeCurves(fstream &inp)
 }
 
 void SWMMWriteAndRead::writeXSection(std::fstream &inp) {
-	std::vector<std::string> OutfallNames = city->getUUIDsOfComponentsInView(weir);
+	//std::vector<std::string> OutfallNames = city->getUUIDsOfComponentsInView(weir);
 
-	std::vector<std::string> WWTPNames = city->getUUIDsOfComponentsInView(wwtp);
+	//std::vector<std::string> WWTPNames = city->getUUIDsOfComponentsInView(wwtp);
 	//XSection
 	inp<<"\n";
 	inp<<"[XSECTIONS]\n";
@@ -863,41 +844,42 @@ void SWMMWriteAndRead::writeXSection(std::fstream &inp) {
 	condies.push_back(weir);
 	condies.push_back(conduit);
 
-	foreach (DM::View condie, condies) {
-		std::vector<std::string> ConduitNames = city->getUUIDsOfComponentsInView(condie);
-		foreach(std::string name, ConduitNames) {
+	foreach (DM::View condie, condies) 
+	{
+		foreach(Component* c, city->getAllComponentsInView(condie))
+		{
 			std::string linkname = "";
 			if (condie.getName() == "CONDUIT")
 				linkname = "LINK";
 			if (condie.getName() == "WEIR")
 				linkname = "WEIR";
-			DM::Edge * link = city->getEdge(name);
 
+			DM::Edge * link = (Edge*)c;
 
-			DM::Node * nStartNode = city->getNode(link->getStartpointName());
-			DM::Node * nEndNode = city->getNode(link->getEndpointName());
+			DM::Node * nStartNode = link->getStartNode();
+			DM::Node * nEndNode = link->getEndNode();
 
-			if (UUIDtoINT[nStartNode->getUUID()] == 0) {
-				UUIDtoINT[nStartNode->getUUID()] = GLOBAL_Counter++;
+			if (UUIDtoINT[nStartNode] == 0) {
+				UUIDtoINT[nStartNode] = GLOBAL_Counter++;
 			}
-			if (UUIDtoINT[nEndNode->getUUID()] == 0) {
-				UUIDtoINT[nEndNode->getUUID()] = GLOBAL_Counter++;
+			if (UUIDtoINT[nEndNode] == 0) {
+				UUIDtoINT[nEndNode] = GLOBAL_Counter++;
 			}
 
 			double d = link->getAttribute("Diameter")->getDouble();
 
-			if (UUIDtoINT[link->getUUID()] == 0)
+			if (UUIDtoINT[link] == 0)
 				continue;
-			if (link->getAttribute("XSECTION")->getLinks().size() == 0) {
+			if (link->getAttribute("XSECTION")->getLinkedComponents().size() == 0) {
 				if (condie.getName().compare(conduit.getName()) == 0)
-					inp << linkname << UUIDtoINT[link->getUUID()] << "\tCIRCULAR\t"<< d <<" \t0\t0\t0\n";
+					inp << linkname << UUIDtoINT[link] << "\tCIRCULAR\t"<< d <<" \t0\t0\t0\n";
 				continue;
 			}
 
-			DM::Component * xscetion = city->getComponent(link->getAttribute("XSECTION")->getLink().uuid);
+			DM::Component * xscetion = link->getAttribute("XSECTION")->getLinkedComponents()[0];
 
 			if (xscetion->getAttribute("type")->getString() != "CUSTOM") {
-				inp << linkname << UUIDtoINT[link->getUUID()] << "\t";
+				inp << linkname << UUIDtoINT[link] << "\t";
 				inp << xscetion->getAttribute("type")->getString() << "\t";
 				std::vector<double> diameters = xscetion->getAttribute("diameters")->getDoubleVector();
 				foreach (double d, diameters)
@@ -905,9 +887,10 @@ void SWMMWriteAndRead::writeXSection(std::fstream &inp) {
 				inp << "\n";
 				continue;
 			}
+
 			std::stringstream section_id;
-			section_id << "XSECTION" <<  UUIDtoINT[link->getUUID()];
-			inp << linkname << UUIDtoINT[link->getUUID()] << "\t";
+			section_id << "XSECTION" <<  UUIDtoINT[link];
+			inp << linkname << UUIDtoINT[link] << "\t";
 			inp << xscetion->getAttribute("type")->getString() << "\t";
 			inp << d << "\t";
 			inp <<  section_id.str() << "\t";
@@ -919,7 +902,8 @@ void SWMMWriteAndRead::writeXSection(std::fstream &inp) {
 			std::vector<double> shape_x = xscetion->getAttribute("shape_x")->getDoubleVector();
 			std::vector<double> shape_y = xscetion->getAttribute("shape_y")->getDoubleVector();
 
-			for (unsigned int i = 0; i < shape_x.size(); i++) {
+			for (unsigned int i = 0; i < shape_x.size(); i++) 
+			{
 				curves << section_id.str() << "\t";
 				if (i == 0)
 					curves << xscetion->getAttribute("shape_type")->getString() << "\t";
@@ -938,34 +922,33 @@ void SWMMWriteAndRead::writeXSection(std::fstream &inp) {
 
 void SWMMWriteAndRead::writeWeir(std::fstream &inp)
 {
-
 	inp<<"\n";
 	inp<<"[WEIRS]\n";
 	inp<<";;               Inlet            Outlet           Weir         Crest      Disch.     Flap End      End \n";
 	inp<<";;Name           Node             Node             Type         Height     Coeff.     Gate Con.     Coeff.\n";
 	inp<<";;-------------- ---------------- ---------------- ------------ ---------- ---------- ---- -------- ----------\n";
 	//LINK984          NODE109          NODE985          TRANSVERSE   0          1.80       NO   0        0
-	std::vector<std::string> namesWeir = this->city->getUUIDsOfComponentsInView(weir);
-	for (unsigned int i = 0; i < namesWeir.size(); i++ ) {
 
-		DM::Edge * weir = this->city->getEdge(namesWeir[i]);
-		DM::Node * startn = this->city->getNode(weir->getStartpointName());
-		DM::Node * outfall = this->city->getNode(weir->getEndpointName());
+	foreach(Component* c, city->getAllComponentsInView(weir))
+	{
+		DM::Edge* weir = (Edge*)c;
+		DM::Node * startn = weir->getStartNode();
+		DM::Node * outfall = weir->getEndNode();
 
-		if (UUIDtoINT[startn->getUUID()] == 0) {
-			UUIDtoINT[startn->getUUID()] = GLOBAL_Counter++;
+		if (UUIDtoINT[startn] == 0) {
+			UUIDtoINT[startn] = GLOBAL_Counter++;
 			//this->PointList.push_back(startn);
 		}
-		if (UUIDtoINT[outfall->getUUID()] == 0) {
-			UUIDtoINT[outfall->getUUID()] = GLOBAL_Counter++;
+		if (UUIDtoINT[outfall] == 0) {
+			UUIDtoINT[outfall] = GLOBAL_Counter++;
 			//this->PointList.push_back(outfall);
 		}
 
-		if (UUIDtoINT[weir->getUUID()] == 0) {
-			UUIDtoINT[weir->getUUID()] = GLOBAL_Counter++;
+		if (UUIDtoINT[weir] == 0) {
+			UUIDtoINT[weir] = GLOBAL_Counter++;
 		}
 
-		inp<<"WEIR"<<UUIDtoINT[weir->getUUID()]<<"\tNODE"<<UUIDtoINT[startn->getUUID()]<<"\tNODE"<<UUIDtoINT[outfall->getUUID()]<<"\t";
+		inp << "WEIR" << UUIDtoINT[weir] << "\tNODE" << UUIDtoINT[startn] << "\tNODE" << UUIDtoINT[outfall] << "\t";
 		inp<<"TRANSVERSE" << "\t";
 		inp<< weir->getAttribute("crest_height")->getDouble() << "\t";
 
@@ -974,43 +957,47 @@ void SWMMWriteAndRead::writeWeir(std::fstream &inp)
 		inp<<"0" << "\t";
 		inp<< weir->getAttribute("end_coefficient")->getDouble() << "\t";
 		inp << "\n";
-
-
 	}
 }
 
 void SWMMWriteAndRead::writePumps(fstream &inp)
 {
-
 	inp<<"\n";
 	inp<<"[PUMPS]\n";
 	inp<<";;               Inlet            Outlet           Pump             Init.  Startup  Shutoff \n";
 	inp<<";;Name           Node             Node             Curve            Status Depth    Depth\n";
 	inp<<";;-------------- ---------------- ---------------- ---------------- ------ -------- --------\n";
 
-	std::vector<std::string> namePumps = this->city->getUUIDsOfComponentsInView(pumps);
-	for (unsigned int i = 0; i < namePumps.size(); i++ ) {
-		DM::Edge * pump = this->city->getEdge(namePumps[i]);
-		DM::Node * startn = this->city->getNode(pump->getStartpointName());
-		DM::Node * endn = this->city->getNode(pump->getEndpointName());
+	//std::vector<std::string> namePumps = this->city->getUUIDsOfComponentsInView(pumps);
+	//for (unsigned int i = 0; i < namePumps.size(); i++ ) {
+	//	DM::Edge * pump = this->city->getEdge(namePumps[i]);
+	//	DM::Node * startn = this->city->getNode(pump->getStartpointName());
+	//	DM::Node * endn = this->city->getNode(pump->getEndpointName());
 
-		if (UUIDtoINT[startn->getUUID()] == 0) {
-			UUIDtoINT[startn->getUUID()] = GLOBAL_Counter++;
+
+	foreach(Component* c, city->getAllComponentsInView(pumps))
+	{
+		DM::Edge* pump = (Edge*)c;
+		DM::Node * startn = pump->getStartNode();
+		DM::Node * endn = pump->getEndNode();
+
+		if (UUIDtoINT[startn] == 0) {
+			UUIDtoINT[startn] = GLOBAL_Counter++;
 		}
-		if (UUIDtoINT[endn->getUUID()] == 0) {
-			UUIDtoINT[endn->getUUID()] = GLOBAL_Counter++;
+		if (UUIDtoINT[endn] == 0) {
+			UUIDtoINT[endn] = GLOBAL_Counter++;
 		}
 
-		if (UUIDtoINT[pump->getUUID()] == 0) {
-			UUIDtoINT[pump->getUUID()] = GLOBAL_Counter++;
+		if (UUIDtoINT[pump] == 0) {
+			UUIDtoINT[pump] = GLOBAL_Counter++;
 		}
 
 		std::stringstream pump_id;
-		pump_id << "PUMP" << UUIDtoINT[pump->getUUID()];
+		pump_id << "PUMP" << UUIDtoINT[pump];
 
 		inp << pump_id.str()  << "\t";
-		inp <<"NODE"<<UUIDtoINT[startn->getUUID()] << "\t";
-		inp <<"NODE"<<UUIDtoINT[endn->getUUID()] << "\t";
+		inp <<"NODE"<<UUIDtoINT[startn] << "\t";
+		inp <<"NODE"<<UUIDtoINT[endn] << "\t";
 		inp << pump_id.str() << "\t";
 		inp<<"ON" << "\t";
 		inp<<"0" << "\t";
@@ -1037,8 +1024,8 @@ void SWMMWriteAndRead::writePumps(fstream &inp)
 
 void SWMMWriteAndRead::writeCoordinates(std::fstream &inp)
 {
-	std::vector<std::string> WWTPs = city->getUUIDsOfComponentsInView(wwtp);
-	std::vector<std::string> OutfallNames = city->getUUIDsOfComponentsInView(outfalls);
+	//std::vector<std::string> WWTPs = city->getUUIDsOfComponentsInView(wwtp);
+	//std::vector<std::string> OutfallNames = city->getUUIDsOfComponentsInView(outfalls);
 	//COORDINATES
 	//-------------------------//
 	inp << "\n";
@@ -1052,7 +1039,7 @@ void SWMMWriteAndRead::writeCoordinates(std::fstream &inp)
 		double x = node->getX();
 		double y = node->getY();
 
-		inp << "NODE" << UUIDtoINT[node->getUUID()] ;
+		inp << "NODE" << UUIDtoINT[node] ;
 		inp << "\t";
 		inp << x;
 		inp << "\t";
@@ -1061,12 +1048,13 @@ void SWMMWriteAndRead::writeCoordinates(std::fstream &inp)
 
 	}
 
-	for (unsigned int i = 0; i < OutfallNames.size(); i++ ) {
-		DM::Node * node = city->getNode(OutfallNames[i]);
+	foreach(Component* c, city->getAllComponentsInView(outfalls))
+	{
+		DM::Node* node = (Node*)c;
 		double x = node->getX();
 		double y = node->getY();
 
-		inp << "NODE" << UUIDtoINT[node->getUUID()] ;
+		inp << "NODE" << UUIDtoINT[node] ;
 		inp << "\t";
 		inp << x;
 		inp << "\t";
@@ -1119,41 +1107,38 @@ void SWMMWriteAndRead::writeSWMMFile() {
 void SWMMWriteAndRead::setupSWMM()
 {
 	//Get current year from simulation
-	std::vector<std::string> c_uuid = city->getUUIDs(DM::View("CITY", DM::COMPONENT, DM::READ));
+	std::vector<Component*> comps = city->getAllComponentsInView(DM::View("CITY", DM::COMPONENT, DM::READ));
 
-	if (c_uuid.size() < 1) {
+	if (comps.size() < 1) {
 		DM::Logger(DM::Error) << "City not found";
 		return;
 	}
-	this->currentYear = city->getComponent(c_uuid[0])->getAttribute("year")->getDouble();
+	this->currentYear = comps[0]->getAttribute("year")->getDouble();
 
 	floodedNodesVolume.clear();
 	nodeDepthSummery.clear();
 
-	foreach(std::string name , city->getUUIDsOfComponentsInView(conduit))
+	foreach(Component* c, city->getAllComponentsInView(conduit))
 	{
-		DM::Edge * e = city->getEdge(name);
+		Edge* e = (Edge*)c;
 		//If conduit is not added no id is created
-		if (this->built_year_considered) {
-			if (e->getAttribute("built_year")->getDouble() == 0.0  || e->getAttribute("built_year")->getDouble() > this->currentYear ) {
+		if (this->built_year_considered)
+			if (e->getAttribute("built_year")->getDouble() == 0.0  || e->getAttribute("built_year")->getDouble() > this->currentYear )
 				continue;
-			}
-		}
 
-		DM::Node * p1 = city->getNode(e->getStartpointName());
-		DM::Node * p2 = city->getNode(e->getEndpointName());
+		DM::Node * p1 = e->getStartNode();
+		DM::Node * p2 = e->getEndNode();
 
-		if (UUIDtoINT[e->getUUID()] == 0) {
-			UUIDtoINT[e->getUUID()] = GLOBAL_Counter++;
-		}
+		if (UUIDtoINT[e] == 0)
+			UUIDtoINT[e] = GLOBAL_Counter++;
 
-		if (UUIDtoINT[p1->getUUID()] == 0) {
-			UUIDtoINT[p1->getUUID()] = GLOBAL_Counter++;
+		if (UUIDtoINT[p1] == 0) {
+			UUIDtoINT[p1] = GLOBAL_Counter++;
 			this->PointList.push_back(p1);
 		}
 
-		if (UUIDtoINT[p2->getUUID()] == 0) {
-			UUIDtoINT[p2->getUUID()] = GLOBAL_Counter++;
+		if (UUIDtoINT[p2] == 0) {
+			UUIDtoINT[p2] = GLOBAL_Counter++;
 			this->PointList.push_back(p2);
 		}
 	}
@@ -1167,23 +1152,23 @@ string SWMMWriteAndRead::getSWMMUUIDPath()
 	return this->SWMMPath.absolutePath().toStdString();
 }
 
-std::vector<std::pair<string, double > > SWMMWriteAndRead::getFloodedNodes()
+std::vector<std::pair<DM::Node*, double > > SWMMWriteAndRead::getFloodedNodes()
 {
 	return this->floodedNodesVolume;
 }
 
-std::vector<std::pair<string, double> > SWMMWriteAndRead::getNodeDepthSummery()
+std::vector<std::pair<DM::Node*, double> > SWMMWriteAndRead::getNodeDepthSummery()
 {
 	return this->nodeDepthSummery;
 }
 
-std::vector<std::pair<string, double> > SWMMWriteAndRead::getLinkFlowSummeryCapacity()
+std::vector<std::pair<DM::Edge*, double> > SWMMWriteAndRead::getLinkFlowSummeryCapacity()
 {
 
 	return this->linkFlowSummery_capacity;
 }
 
-std::vector<std::pair<string, double> > SWMMWriteAndRead::getLinkFlowSummeryVelocity()
+std::vector<std::pair<DM::Edge*, double> > SWMMWriteAndRead::getLinkFlowSummeryVelocity()
 {
 	return this->linkFlowSummery_velocity;
 }
@@ -1230,13 +1215,14 @@ double SWMMWriteAndRead::getImperiousInfiltration()
 
 double SWMMWriteAndRead::getAverageCapacity()
 {
-	typedef std::pair<std::string, double > rainnode;
-	std::vector< std::pair<std::string, double > > valume_capacity = this->getLinkFlowSummeryCapacity();
+	typedef std::pair<DM::Edge*, double > rainnode;
+	//std::vector< std::pair<std::string, double > > valume_capacity = this->getLinkFlowSummeryCapacity();
+	std::vector<rainnode> valume_capacity = getLinkFlowSummeryCapacity();
 	double volume_cap = 0;
 
-	foreach (rainnode  fn, valume_capacity) {
-		volume_cap+=fn.second;
-	}
+	foreach (rainnode  fn, valume_capacity)
+		volume_cap += fn.second;
+
 	return volume_cap/=valume_capacity.size();
 }
 
@@ -1348,33 +1334,33 @@ void SWMMWriteAndRead::writeRainFile() {
 void SWMMWriteAndRead::createViewDefinition()
 {
 	conduit = DM::View("CONDUIT", DM::EDGE, DM::READ);
-	conduit.getAttribute("Diameter");
+	conduit.addAttribute("Diameter", DM::Attribute::DOUBLE, DM::READ);
 
 	inlet = DM::View("INLET", DM::NODE, DM::READ);
-	inlet.getAttribute("CATCHMENT");
+	inlet.addAttribute("CATCHMENT", "CONDUIT", DM::READ);
 
 
 	junctions = DM::View("JUNCTION", DM::NODE, DM::READ);
-	junctions.getAttribute("D");
-	junctions.addAttribute("flooding_V");
+	junctions.addAttribute("D", DM::Attribute::DOUBLE, DM::READ);
+	junctions.addAttribute("flooding_V", DM::Attribute::DOUBLE, DM::WRITE);
 
 	endnodes = DM::View("OUTFALL", DM::NODE, DM::READ);
 
 	catchment = DM::View("CATCHMENT", DM::FACE, DM::READ);
-	catchment.getAttribute("WasteWater");
-	catchment.getAttribute("area");
-	catchment.getAttribute("Impervious");
+	catchment.addAttribute("WasteWater", DM::Attribute::DOUBLE, DM::READ);
+	catchment.addAttribute("area", DM::Attribute::DOUBLE, DM::READ);
+	catchment.addAttribute("Impervious", DM::Attribute::DOUBLE, DM::READ);
 
 	outfalls= DM::View("OUTFALL", DM::NODE, DM::READ);
 
 	weir = DM::View("WEIR", DM::EDGE, DM::READ);
-	weir.getAttribute("crest_height");
+	weir.addAttribute("crest_height", DM::Attribute::DOUBLE, DM::READ);
 	wwtp = DM::View("WWTP", DM::NODE, DM::READ);
 
 	pumps = DM::View("PUMPS", DM::EDGE, DM::READ);
 
 	storage = DM::View("STORAGE", DM::NODE, DM::READ);
-	storage.getAttribute("Z");
+	storage.addAttribute("Z", DM::Attribute::DOUBLE, DM::READ);
 }
 
 void SWMMWriteAndRead::evalWaterLevelInJunctions()
@@ -1382,28 +1368,27 @@ void SWMMWriteAndRead::evalWaterLevelInJunctions()
 	water_level_below_0 = 0;
 	water_level_below_10 = 0;
 	water_level_below_20 = 0;
-	//Filter Nodes that area acutally flooded
-	typedef std::pair<std::string, double > rainnode;
-	std::vector< std::pair<std::string, double > > flooded = this->getFloodedNodes();
 
-	foreach (rainnode f, flooded) {
-		if (f.second > 0.0) water_level_below_0++;
+	// Filter Nodes that area acutally flooded
+	typedef std::pair<Node*, double > rainnode;
+	foreach (const rainnode& f, getFloodedNodes())
+		if (f.second > 0.0) 
+			water_level_below_0++;
 
-	}
-
-	std::vector< std::pair<std::string, double > > surcharge = this->getNodeDepthSummery();
-	foreach (rainnode  fn, surcharge) {
-		DM::Component * n =  this->city->getComponent(fn.first);
-		if (fn.second < 0.009) continue;
-		if (!n) continue;
+	std::vector<rainnode> surcharge = this->getNodeDepthSummery();
+	foreach (const rainnode& fn, surcharge) 
+	{
+		DM::Component * n =  fn.first;
+		if (fn.second < 0.009 || !n) 
+			continue;
 		double D = n->getAttribute("D")->getDouble();
 		if (D - fn.second < 0.10) water_level_below_10++;
 		if (D - fn.second < 0.20) water_level_below_20++;
 	}
 
-	water_level_below_0/=surcharge.size();
-	water_level_below_10/=surcharge.size();
-	water_level_below_20/=surcharge.size();
+	water_level_below_0 /= surcharge.size();
+	water_level_below_10 /= surcharge.size();
+	water_level_below_20 /= surcharge.size();
 }
 
 void SWMMWriteAndRead::writeSWMMheader(std::fstream &inp)
