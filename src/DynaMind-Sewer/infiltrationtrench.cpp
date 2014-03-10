@@ -12,19 +12,19 @@ InfiltrationTrench::InfiltrationTrench()
 	this->addParameter("useClimateCFInfiltration", DM::BOOL, &this->useClimateChangeFactorInfiltration);
 
 	view_infitration_system = DM::View("INFILTRATION_SYSTEM", DM::COMPONENT, DM::WRITE);
-	view_infitration_system.addAttribute("treated_area");
-	view_infitration_system.addAttribute("area");
-	view_infitration_system.addAttribute("h");
-	view_infitration_system.addAttribute("kf");
+	view_infitration_system.addAttribute("treated_area", DM::Attribute::DOUBLE, DM::WRITE);
+	view_infitration_system.addAttribute("area", DM::Attribute::DOUBLE, DM::WRITE);
+	view_infitration_system.addAttribute("h", DM::Attribute::DOUBLE, DM::WRITE);
+	view_infitration_system.addAttribute("kf", DM::Attribute::DOUBLE, DM::WRITE);
 
 	view_catchment = DM::View("CATCHMENT", DM::COMPONENT, DM::READ);
-	view_catchment.getAttribute("roof_area_treated");
-	view_catchment.getAttribute("Impervious");
-	view_catchment.getAttribute("area");
-	view_catchment.addLinks("INFILTRATION_SYSTEM", view_infitration_system);
+	view_catchment.addAttribute("roof_area_treated", DM::Attribute::DOUBLE, DM::READ);
+	view_catchment.addAttribute("Impervious", DM::Attribute::DOUBLE, DM::READ);
+	view_catchment.addAttribute("area", DM::Attribute::DOUBLE, DM::READ);
+	view_catchment.addAttribute("INFILTRATION_SYSTEM", "INFILTRATION_SYSTEM", DM::WRITE);
 
 	view_city = DM::View("CITY", DM::COMPONENT, DM::READ); //Not added in init
-	view_city.getAttribute("CFInfiltration");
+	view_city.addAttribute("CFInfiltration", DM::Attribute::DOUBLE, DM::READ);
 
 
 	std::vector<DM::View> datastream;
@@ -53,26 +53,21 @@ void InfiltrationTrench::init() {
 void InfiltrationTrench::run() {
 	DM::System * city = this->getData("city");
 
-	std::vector<std::string> catchment_uuids = city->getUUIDs(view_catchment);
 	int numberOfPlacedSystem = 0;
 	double cf = 1;
 
-	if (useClimateChangeFactorInfiltration) {
-		mforeach ( DM::Component * cmp, city->getAllComponentsInView(view_city) ){
+	if (useClimateChangeFactorInfiltration)
+		foreach ( DM::Component * cmp, city->getAllComponentsInView(view_city) )
 			cf = cmp->getAttribute("CFInfiltration")->getDouble();
-		}
-	}
 
+	foreach(DM::Component* cmp, city->getAllComponentsInView(view_catchment)) 
+	{
+		DM::Face * catchment = (DM::Face*)cmp;
 
-	foreach (std::string uuid, catchment_uuids) {
-		DM::Face * catchment = city->getFace(uuid);
-
-		std::vector<DM::LinkAttribute> exinsting_infils = catchment->getAttribute("INFILTRATION_SYSTEM")->getLinks();
 		double already_treated = 0;
-		foreach (DM::LinkAttribute la,exinsting_infils) {
-			DM::Component * inf = city->getComponent(la.uuid);
-			already_treated+=inf->getAttribute("treated_area")->getDouble();
-		}
+		foreach(DM::Component* inf, catchment->getAttribute("INFILTRATION_SYSTEM")->getLinkedComponents())
+			already_treated += inf->getAttribute("treated_area")->getDouble();
+
 		double roof_area_tot = catchment->getAttribute("roof_area_treated")->getDouble();
 
 		double toTreat = roof_area_tot - already_treated;
@@ -105,9 +100,14 @@ void InfiltrationTrench::run() {
 		infiltration_system->addAttribute("area", As);
 		infiltration_system->addAttribute("h", h);
 		infiltration_system->addAttribute("kf", kf);
-		infiltration_system->getAttribute("Footprint")->setLink("Footprint", uuid);
 
-		catchment->getAttribute("INFILTRATION_SYSTEM")->setLink("INFILTRATION_SYSTEM", infiltration_system->getUUID());
+		DM::Attribute* link = infiltration_system->getAttribute("Footprint");
+		link->clearLinks();
+		link->addLink(catchment, "Footprint");
+
+		link = infiltration_system->getAttribute("INFILTRATION_SYSTEM");
+		link->clearLinks();
+		link->addLink(infiltration_system, "INFILTRATION_SYSTEM");
 
 		numberOfPlacedSystem++;
 

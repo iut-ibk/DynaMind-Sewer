@@ -26,15 +26,14 @@ void LinkElementWithNearestPoint::init()
 
 	view_nearestPoints = DM::View(this->name_nearestPoints, DM::NODE, DM::READ);
 
-	view_linkElements.addLinks(this->name_nearestPoints, view_nearestPoints);
-	view_nearestPoints.addLinks(this->name_linkElements, view_linkElements);
+	view_linkElements.addAttribute(this->name_nearestPoints, this->name_nearestPoints, DM::WRITE);
+	view_linkElements.addAttribute(this->name_linkElements, this->name_linkElements, DM::WRITE);
 
 	std::vector<DM::View> datastream;
 	datastream.push_back(view_linkElements);
 	datastream.push_back(view_nearestPoints);
 
 	this->addData("city", datastream);
-
 }
 
 string LinkElementWithNearestPoint::getHelpUrl()
@@ -46,20 +45,16 @@ void LinkElementWithNearestPoint::run()
 {
 	DM::System * city = this->getData("city");
 
-	std::vector<std::string> search_uuids = city->getUUIDs(view_nearestPoints);
-
 	std::vector<DM::Node*> nodes;
-	foreach (std::string uuid, search_uuids)
-		nodes.push_back(city->getNode(uuid));
+	foreach (DM::Component* cmp, city->getAllComponentsInView(view_nearestPoints))
+		nodes.push_back((DM::Node*)cmp);
 
 	int numberOfLinks = 0;
 	SpatialSearchNearestNodes ssnn(city, nodes);
 
-	std::vector<std::string> link_uuids = city->getUUIDs(view_linkElements);
-	int l_n = link_uuids.size();
-
-	for (int i = 0; i < l_n; i++) {
-		DM::Node * query = city->getNode(link_uuids[i]);
+	foreach(DM::Component* cmp, city->getAllComponentsInView(view_linkElements))
+	{
+		DM::Node * query = (DM::Node*)cmp;
 		double signal = query->getAttribute("new")->getDouble();
 		if (onSignal && signal < 0.01)
 			continue;
@@ -69,8 +64,8 @@ void LinkElementWithNearestPoint::run()
 			continue;
 		numberOfLinks++;
 
-		query->getAttribute(name_nearestPoints)->setLink(name_nearestPoints, n->getUUID());
-		n->getAttribute(name_linkElements)->setLink(name_linkElements, query->getUUID());
+		query->getAttribute(name_nearestPoints)->addLink(n, name_nearestPoints);
+		n->getAttribute(name_linkElements)->addLink(query, name_linkElements);
 	}
 
 	DM::Logger(DM::Standard) << "Linked Elements " << numberOfLinks;

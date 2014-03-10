@@ -32,14 +32,14 @@ DM_DECLARE_NODE_NAME(ReduceJunctions, Sewer)
 ReduceJunctions::ReduceJunctions()
 {
 	junctions = DM::View("JUNCTION", DM::NODE, DM::MODIFY);
-	junctions.addAttribute("end_counter");
+	junctions.addAttribute("end_counter", DM::Attribute::DOUBLE, DM::WRITE);
 	conduits = DM::View("CONDUIT", DM::EDGE, DM::MODIFY);
-	conduits.getAttribute("strahler");
+	conduits.addAttribute("strahler", DM::Attribute::DOUBLE, DM::READ);
 	inlets = DM::View("INLET", DM::NODE, DM::READ);
-	inlets.getAttribute("JUNCTION");
+	inlets.addAttribute("JUNCTION", "JUNCTION", DM::READ);
 	conduit_new = DM::View("CONDUIT", DM::EDGE, DM::WRITE);
 	catchment = DM::View("CATCHMENT", DM::READ, DM::READ);
-	catchment.addAttribute("junction_id");
+	catchment.addAttribute("junction_id", DM::Attribute::DOUBLE, DM::WRITE);
 	std::vector<DM::View> datastream;
 	datastream.push_back(junctions);
 	datastream.push_back(conduit_new);
@@ -57,37 +57,38 @@ ReduceJunctions::ReduceJunctions()
 void ReduceJunctions::createJunctions(DM::System * city, std::vector<DM::Node *> &nodes,  std::vector<DM::Node *> &r_nodes, int strahlerNumber)
 {
 	int numberOfEdges = nodes.size() - 1;
-	for (int i = 0; i < numberOfEdges; i++) {
+	for (int i = 0; i < numberOfEdges; i++) 
+	{
 		if (nodes[i] == nodes[i+1])
 			continue;
 		junction_map_Counter[nodes[i]] = 1;
 		junction_map_Counter[nodes[i+1]] = 1;
 		DM::Edge * e = city->addEdge(nodes[i], nodes[i+1], conduit_new);
 		e->addAttribute("strahler", strahlerNumber);
-
 	}
+
 	DM::Node * lastNode = nodes[numberOfEdges];
 	//move all inlet connections to the end and remove junctions
-	foreach (DM::Node * n, r_nodes) {
-
-		std::vector<DM::LinkAttribute> links = n->getAttribute("INLET")->getLinks();
+	foreach (DM::Node * n, r_nodes) 
+	{
 		DM::Attribute junction_link_attribute("INLET");
-		foreach (DM::LinkAttribute l, links) {
-			std::string uuid_inlet = l.uuid;
-			DM::Component * inlet = city->getComponent(uuid_inlet);
+		foreach(DM::Component* inlet, n->getAttribute("INLET")->getLinkedComponents())
+		{
 			DM::Attribute attr("JUNCTION");
-			attr.setLink("JUNCTION", lastNode->getUUID());
+			attr.addLink(lastNode, "JUNCTION");
 			inlet->changeAttribute(attr);
-			junction_link_attribute.setLink("INLET", inlet->getUUID());
+			junction_link_attribute.addLink(inlet, "INLET");
 		}
 
-		foreach(DM::LinkAttribute l_attr, junction_link_attribute.getLinks()) {
-			lastNode->getAttribute("INLET")->setLink(l_attr.viewname,l_attr.uuid);
-		}
+		foreach(DM::Component* linkedCmp, junction_link_attribute.getLinkedComponents())
+			lastNode->getAttribute("INLET")->addLink(linkedCmp, "INLET");
+		
 		if (n->getAttribute("existing")->getDouble() > 0.01)
 			continue;
+
 		if ( junction_map_Counter[n] > 0)
 			continue;
+
 		city->removeComponentFromView(n, junctions);
 	}
 
@@ -99,26 +100,30 @@ void ReduceJunctions::createJunctions(DM::System * city, std::vector<DM::Node *>
 void ReduceJunctions::run()
 {
 	DM::System * city = this->getData("city");
-	std::vector<std::string> junction_uuids = city->getUUIDs(junctions);
-	std::vector<std::string> conduit_uuids = city->getUUIDs(conduits);
+	std::vector<DM::Component*> junctionCmps = city->getAllComponentsInView(junctions);
+	std::vector<DM::Component*> conduitCmps = city->getAllComponentsInView(conduits);
 	//std::vector<std::string> inlet_uuids = city->getUUIDs(inlets);
-	std::vector<std::string> start_uuids;
+	std::vector<DM::Node*> startNodes;
 	std::map<DM::Node*, DM::Edge*> startNodeMap;
 	std::map<DM::Node*, int> endPointCounter;
 
-	foreach (std::string c_uuid, conduit_uuids) {
-		DM::Edge * c = city->getEdge(c_uuid);
+	foreach(DM::Component* cmp, conduitCmps)
+	{
+		DM::Edge * c = (DM::Edge*)cmp;
 
-		startNodeMap[city->getNode(c->getStartpointName())] = c;
-		endPointCounter[city->getNode(c->getEndpointName())] =  endPointCounter[city->getNode(c->getEndpointName())] + 1;
+		startNodeMap[c->getStartNode()] = c;
+		endPointCounter[c->getEndNode()]++;
 
 		//Remove old
 		if (c->getAttribute("existing")->getDouble() > 0.01)
 			continue;
+
 		city->removeComponentFromView(c, conduits);
 	}
-	foreach (std::string j_uuid, junction_uuids) {
-		DM::Node * jun = city->getNode(j_uuid);
+
+	foreach(DM::Component* cmp, junctionCmps)
+	{
+		DM::Node * jun = (DM::Node*)cmp;
 		int counter = endPointCounter[jun];
 		jun->addAttribute("end_counter",(double) counter);
 		jun->addAttribute("visited",0); // reset when used in loop
@@ -126,21 +131,23 @@ void ReduceJunctions::run()
 			continue;
 		if (counter!=0)
 			continue;
-		start_uuids.push_back(jun->getUUID());
+		startNodes.push_back(jun);
 
 	}
 
 	//Only fix point is change in strahler Number
-	foreach (std::string s_uuid, start_uuids) {
-		DM::Node * current_j = city->getNode(s_uuid);
+	foreach(DM::Node* current_j, startNodes)
+	{
 		if (!current_j)
 			continue;
+
 		std::vector<DM::Node*> new_conduits;
 		std::vector<DM::Node*> removed_junctions;
 		new_conduits.push_back(current_j);
 		int currrentStrahler = -1;
 		double segment_length = 0;
-		while (current_j) {
+		while (current_j) 
+		{
 			DM::Edge * c = startNodeMap[current_j];
 			if (!c || current_j->getAttribute("visited")->getDouble() > 0.01) {
 				//last node
@@ -162,7 +169,7 @@ void ReduceJunctions::run()
 			}
 
 			current_j->addAttribute("visited",1);
-			current_j = city->getNode(c->getEndpointName());
+			current_j = c->getEndNode();
 			int connectingNodes = endPointCounter[current_j];
 
 			if ( connectingNodes == 1 && segment_length < this->distance ) {
@@ -178,30 +185,30 @@ void ReduceJunctions::run()
 			new_conduits.push_back(current_j);
 			currrentStrahler =  (int) c->getAttribute("strahler")->getDouble();
 			segment_length = 0;
-
-
-
 		}
 	}
 	//Update Catchment UUID
-	std::vector<std::string> catchment_uuids = city->getUUIDs(catchment);
-	foreach (std::string uuid, catchment_uuids) {
-		DM::Component * c = city->getComponent(uuid);
-		if (c->getAttribute("INLET")->getLinks().size() < 1)
+	foreach(DM::Component * c, city->getAllComponentsInView(catchment))
+	{
+		std::vector<DM::Component*> links = c->getAttribute("INLET")->getLinkedComponents();
+
+		if (links.size() < 1)
 			continue;
-		DM::Component * inlet = city->getComponent(c->getAttribute("INLET")->getLink().uuid);
+
+		DM::Component * inlet = links[0];
+
 		if (!inlet)
 			continue;
-		if (c->getAttribute("JUNCTION")->getLinks().size() < 1)
+
+		links = c->getAttribute("JUNCTION")->getLinkedComponents();
+
+		if (links.size() < 1)
 			continue;
-		DM::Component * jun = city->getComponent(inlet->getAttribute("JUNCTION")->getLink().uuid);
+
+		DM::Component * jun = links[0];
 		if (!jun)
 			continue;
+
 		c->addAttribute("junction_id", jun->getAttribute("id")->getDouble());
-
 	}
-
-
-
-
 }

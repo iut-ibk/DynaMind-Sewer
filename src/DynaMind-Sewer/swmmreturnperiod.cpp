@@ -20,49 +20,49 @@ SWMMReturnPeriod::SWMMReturnPeriod()
 	internalTimestep = 0;
 
 	conduit = DM::View("CONDUIT", DM::EDGE, DM::READ);
-	conduit.getAttribute("Diameter");
+	conduit.addAttribute("Diameter", DM::Attribute::DOUBLE, DM::READ);
 
 	inlet = DM::View("INLET", DM::NODE, DM::READ);
-	inlet.getAttribute("CATCHMENT");
+	inlet.addAttribute("CATCHMENT", "CITYBLOCKS", DM::READ);
 
 
 	junctions = DM::View("JUNCTION", DM::NODE, DM::READ);
-	junctions.getAttribute("D");
-	junctions.addAttribute("flooding_V");
-	junctions.addAttribute("FLOODING_AREA");
+	junctions.addAttribute("D", DM::Attribute::DOUBLE, DM::READ);
+	junctions.addAttribute("flooding_V", DM::Attribute::DOUBLE, DM::WRITE);
+	junctions.addAttribute("FLOODING_AREA", "FLOODING_AREA", DM::WRITE);
 
 	endnodes = DM::View("OUTFALL", DM::NODE, DM::READ);
-	endnodes.addAttribute("OutfallVolume");
+	endnodes.addAttribute("OutfallVolume", DM::Attribute::DOUBLE, DM::WRITE);
 
 	catchment = DM::View("CATCHMENT", DM::FACE, DM::READ);
-	catchment.getAttribute("WasteWater");
-	catchment.getAttribute("area");
-	catchment.getAttribute("Impervious");
+	catchment.addAttribute("WasteWater", DM::Attribute::DOUBLE, DM::READ);
+	catchment.addAttribute("area", DM::Attribute::DOUBLE, DM::READ);
+	catchment.addAttribute("Impervious", DM::Attribute::DOUBLE, DM::READ);
 
 	flooding_area = DM::View("FLOODING_AREA", DM::FACE, DM::READ);
-	flooding_area.getAttribute("JUNCTION");
-	flooding_area.addAttribute("return_period");
+	flooding_area.addAttribute("JUNCTION", "JUNCTION", DM::READ);
+	flooding_area.addAttribute("return_period", DM::Attribute::DOUBLE, DM::READ);
 
 	vcity = DM::View("CITY", DM::FACE, DM::READ);
-	vcity.getAttribute("year");
+	vcity.addAttribute("year", DM::Attribute::DOUBLE, DM::READ);
 
 	outfalls= DM::View("OUTFALL", DM::NODE, DM::READ);
 
 	weir = DM::View("WEIR", DM::EDGE, DM::READ);
-	weir.getAttribute("crest_height");
+	weir.addAttribute("crest_height", DM::Attribute::DOUBLE, DM::READ);
 	wwtp = DM::View("WWTP", DM::NODE, DM::READ);
 
 	pumps = DM::View("PUMPS", DM::EDGE, DM::READ);
 
 	storage = DM::View("STORAGE", DM::NODE, DM::READ);
-	storage.getAttribute("Z");
+	storage.addAttribute("Z", DM::Attribute::DOUBLE, DM::READ);
 
 	globals = DM::View("CITY", DM::COMPONENT, DM::READ);
-	globals.addAttribute("SWMM_ID");
-	globals.addAttribute("Vr");
-	globals.addAttribute("Vp");
-	globals.addAttribute("Vwwtp");
-	globals.addAttribute("pop_growth");
+	globals.addAttribute("SWMM_ID", DM::Attribute::STRING, DM::WRITE);
+	globals.addAttribute("Vr", DM::Attribute::DOUBLE, DM::WRITE);
+	globals.addAttribute("Vp", DM::Attribute::DOUBLE, DM::WRITE);
+	globals.addAttribute("Vwwtp", DM::Attribute::DOUBLE, DM::WRITE);
+	globals.addAttribute("pop_growth", DM::Attribute::DOUBLE, DM::WRITE);
 
 	std::vector<DM::View> views;
 
@@ -217,8 +217,8 @@ void SWMMReturnPeriod::run() {
 		swmmruns[nof]->runSWMM();
 
 	}
-	std::vector<std::string>v_cities = city->getUUIDs(vcity);
-	DM::Component * c = city->getComponent(v_cities[0]);
+
+	DM::Component * c = city->getAllComponentsInView(vcity)[0];
 	if (!c) {
 		DM::Logger(DM::Warning) << "City not found ";
 		return;

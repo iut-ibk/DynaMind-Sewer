@@ -33,11 +33,11 @@ OutfallPlacement::OutfallPlacement()
 {
 	Junction = DM::View("JUNCTION", DM::NODE, DM::READ);
 	Conduit = DM::View("CONDUIT", DM::EDGE, DM::MODIFY);
-	Conduit.getAttribute("strahler");
+	Conduit.addAttribute("strahler", DM::Attribute::DOUBLE, DM::READ);
 	Storage = DM::View("STORAGE", DM::NODE, DM::WRITE);
-	Storage.addAttribute("Storage");
+	Storage.addAttribute("Storage", DM::Attribute::DOUBLE, DM::WRITE);
 	Inlet = DM::View("INLET", DM::NODE, DM::READ);
-	Inlet.addAttribute("Outfall");
+	Inlet.addAttribute("Outfall", DM::Attribute::DOUBLE, DM::WRITE);
 	WWTP = DM::View("WWTP", DM::NODE, DM::READ);
 	Outfall = DM::View("OUTFALL", DM::NODE, DM::WRITE);
 	ConduitOutfall = DM::View("WEIR", DM::NODE, DM::WRITE);
@@ -102,57 +102,49 @@ void OutfallPlacement::run() {
 
 	this->city = this->getData("city");
 
-	std::vector<std::string> ConduitNames;
-	ConduitNames = city->getUUIDsOfComponentsInView(Conduit);
+	std::vector<DM::Component*> conduits = city->getAllComponentsInView(Conduit);
 
 	//Create Connection List
-	foreach(std::string name , ConduitNames)  {
-		DM::Edge * e = city->getEdge(name);
-		DM::Node * startnode = city->getNode(e->getStartpointName());
-		std::vector<DM::Edge*> v = ConnectedEdges[startnode];
-		v.push_back(e);
-		ConnectedEdges[startnode] = v;
-
-		DM::Node * Endnode = city->getNode(e->getEndpointName());
-		v = ConnectedEdges[Endnode];
-		v.push_back(e);
-		ConnectedEdges[Endnode] = v;
+	foreach(DM::Component* cmp, conduits) 
+	{
+		DM::Edge * e = (DM::Edge*)cmp;
+		ConnectedEdges[e->getStartNode()].push_back(e);
+		ConnectedEdges[e->getEndNode()].push_back(e);
 	}
 
-	foreach(std::string name , ConduitNames)  {
-		DM::Edge * e = city->getEdge(name);
-		DM::Node * startnode = city->getNode(e->getStartpointName());
-		std::vector<DM::Edge*> v = StartNodeSortedEdges[startnode];
-		v.push_back(e);
-		StartNodeSortedEdges[startnode] = v;
+	foreach(DM::Component* cmp, conduits)
+	{
+		DM::Edge * e = (DM::Edge*)cmp;
+		DM::Node * startnode = e->getStartNode();
+		DM::Node * endnode = e->getEndNode();
 
-		DM::Node * Endnode = city->getNode(e->getEndpointName());
-		v = EndNodeSortedEdges[Endnode];
-		v.push_back(e);
-		EndNodeSortedEdges[Endnode] = v;
+		StartNodeSortedEdges[startnode].push_back(e);
+		EndNodeSortedEdges[endnode].push_back(e);
 	}
 
 
 	int Strahler_Max = 0;
 
 	//Get Highest Strahler Number
-	DM::ComponentMap cmp = city->getAllComponentsInView(Conduit);
-	for (DM::ComponentMap::const_iterator it = cmp.begin(); it != cmp.end(); ++it){
-		DM::Component * c = it->second;
-		if (Strahler_Max < c->getAttribute("strahler")->getDouble())
-			Strahler_Max = c->getAttribute("strahler")->getDouble();
+	foreach(DM::Component* c, conduits)
+	{
+		DM::Attribute* a = c->getAttribute("strahler");
+		if (Strahler_Max < a->getDouble())
+			Strahler_Max = a->getDouble();
 	}
 
 
 	//names = VectorDataHelper::findElementsWithIdentifier(this->Identifier_Inlet, this->Network->getPointsNames());
 
-	std::vector<DM::Node * > New_Outfalls;
-	foreach (std::string s, this->city->getUUIDsOfComponentsInView(WWTP)) {
-		New_Outfalls.push_back(this->city->getNode(s));
-	}
+	std::vector<DM::Component*> wwtps = city->getAllComponentsInView(WWTP);
 
-	foreach ( std::string name, this->city->getUUIDsOfComponentsInView(Inlet)) {
-		DM::Node * p = this->city->getNode(name);
+	std::vector<DM::Node * > New_Outfalls;
+	foreach(DM::Component* c, wwtps)
+		New_Outfalls.push_back((DM::Node*)c);
+
+	foreach (DM::Component* cmp, city->getAllComponentsInView(Inlet)) 
+	{
+		DM::Node * p = (DM::Node*)cmp;
 		//Get Downstream Node
 		std::vector<DM::Edge*> connectedConduits = this->StartNodeSortedEdges[p];
 		int prevStrahler = 1;
@@ -260,13 +252,7 @@ void OutfallPlacement::run() {
 				city->addComponentToView(p, Storage);
 			}
 
-
-
-
-
-
-
-			p = this->city->getNode(e->getEndpointName());
+			p = e->getEndNode();
 			prevStrahler = currentStrahler;
 			connectedConduits = this->StartNodeSortedEdges[p];
 		}
@@ -282,9 +268,9 @@ void OutfallPlacement::run() {
 	}
 
 	//Conduit to WWTP
-	std::vector<std::string> wwtps = this->city->getUUIDsOfComponentsInView(WWTP);
-	foreach(std::string wwtp, wwtps) {
-		DM::Node * p = this->city->getNode(wwtp);
+	foreach(DM::Component* cmp, wwtps) 
+	{
+		DM::Node * p = (DM::Node*)cmp;
 		DM::Node OffestPoint(-30,-30,0);
 		OffestPoint = OffestPoint + *(p);
 		DM::Node * of = this->city->addNode(OffestPoint, Outfall);

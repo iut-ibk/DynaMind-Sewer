@@ -10,12 +10,12 @@ PipeAge::PipeAge()
 	view_catchment = DM::View("CATCHMENT", DM::COMPONENT, DM::READ);
 	view_conduit = DM::View("CONDUIT", DM::EDGE, DM::READ);
 	view_junction = DM::View("JUNCTION", DM::NODE, DM::READ);
-	view_inlet.getAttribute("CATCHMENT");
-	view_inlet.getAttribute("JUNCTION");
-	view_junction.modifyAttribute("built_year");
-	view_catchment.getAttribute("built_year");
-	view_catchment.getAttribute("INLET");
-	view_conduit.modifyAttribute("built_year");
+	view_inlet.addAttribute("CATCHMENT", "CITYBLOCKS", DM::READ);
+	view_inlet.addAttribute("JUNCTION", "Junction", DM::READ);
+	view_junction.addAttribute("built_year", DM::Attribute::DOUBLE, DM::MODIFY);
+	view_catchment.addAttribute("built_year", DM::Attribute::DOUBLE, DM::READ);
+	view_catchment.addAttribute("INLET", "INLET", DM::READ);
+	view_conduit.addAttribute("built_year", DM::Attribute::DOUBLE, DM::MODIFY);
 
 	std::vector<DM::View> datastream;
 	datastream.push_back(view_inlet);
@@ -30,26 +30,32 @@ PipeAge::PipeAge()
 void PipeAge::run()
 {
 	DM::System * city = this->getData("city");
-	std::vector<std::string> edge_uuids = city->getUUIDs(view_conduit);
 	std::map<DM::Node *, DM::Edge* > StartNodeSortedEdges;
-	foreach(std::string name , edge_uuids)  {
-		DM::Edge * e = city->getEdge(name);
-		DM::Node * startnode = city->getNode(e->getStartpointName());
-		StartNodeSortedEdges[startnode] = e;
+	foreach(DM::Component* cmp, city->getAllComponentsInView(view_conduit))  
+	{
+		DM::Edge * e = (DM::Edge*)cmp;
+		StartNodeSortedEdges[e->getStartNode()] = e;
 	}
-	std::vector<std::string> catchment_uuids  = city->getUUIDs(view_catchment);
-	foreach(std::string name , catchment_uuids)  {
-		DM::Component * c = city->getComponent(name);
+
+	foreach(DM::Component* c, city->getAllComponentsInView(view_catchment))
+	{
 		double startYear = c->getAttribute("built_year")->getDouble();
+
 		if (startYear < 0.01)
 			continue;
-		std::string inlet_uuid = c->getAttribute("INLET")->getLink().uuid;
-		DM::Component * inlet = city->getComponent(inlet_uuid);
-		if (!inlet) continue;
 
-		std::string junction_uuid = inlet->getAttribute("JUNCTION")->getLink().uuid;
-		DM::Node * id = city->getNode(junction_uuid);
-		if (!id) continue;
+		std::vector<DM::Component*> linkedCmps = c->getAttribute("INLET")->getLinkedComponents();
+		DM::Component * inlet = linkedCmps.size() > 0 ? linkedCmps[0] : NULL;
+
+		if (!inlet) 
+			continue;
+
+		linkedCmps = c->getAttribute("JUNCTION")->getLinkedComponents();
+		DM::Node * id = linkedCmps.size() > 0 ? (DM::Node*)linkedCmps[0] : NULL;
+
+		if (!id) 
+			continue;
+
 		if (id->getAttribute("built_year")->getDouble() < 0.001)
 			id->changeAttribute("built_year", startYear);
 		while (id!=0) {
@@ -66,8 +72,7 @@ void PipeAge::run()
 			if (id->getAttribute("built_year")->getDouble() < 0.001)
 				id->changeAttribute("built_year", startYear);
 
-			id = city->getNode(e->getEndpointName());
-
+			id = e->getEndNode();
 		}
 	}
 

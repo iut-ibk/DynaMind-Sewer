@@ -51,10 +51,10 @@ void DrainageHelper::CreateEulerRainFile(double duration, double deltaT, double 
 void DrainageHelper::WriteOutputFiles(std::string filename, DM::System * sys, SWMMWriteAndRead &swmmreeadfile,  std::map<std::string, std::string> additional)
 {
 
-	typedef std::pair<std::string, double > rainnode;
+	typedef std::pair<DM::Node*, double > rainnode;
 
-	std::vector< std::pair<std::string, double > > flooded = swmmreeadfile.getFloodedNodes();
-	std::vector< std::pair<std::string, double > > surcharge = swmmreeadfile.getNodeDepthSummery();
+	std::vector< rainnode > flooded = swmmreeadfile.getFloodedNodes();
+	std::vector< rainnode > surcharge = swmmreeadfile.getNodeDepthSummery();
 
 	std::fstream inp;
 	double effective_runoff = swmmreeadfile.getVSurfaceRunoff() + swmmreeadfile.getVSurfaceStorage();
@@ -100,7 +100,7 @@ void DrainageHelper::WriteOutputFiles(std::string filename, DM::System * sys, SW
 
 	inp << "SURCHARGE" << "\n";
 	foreach (rainnode  fn, surcharge) {
-		DM::Component * n =  sys->getComponent(fn.first);
+		DM::Component * n = fn.first;
 		if (!n) continue;
 		inp << fn.first;
 		inp << "\t";

@@ -31,14 +31,14 @@ DM_DECLARE_NODE_NAME(RemoveStrahler, Sewer)
 RemoveStrahler::RemoveStrahler()
 {
 	this->junctions = DM::View("JUNCTION", DM::NODE, DM::MODIFY);
-	this->junctions.addAttribute("number_of_inlets");
+	this->junctions.addAttribute("number_of_inlets", DM::Attribute::DOUBLE, DM::WRITE);
 
 	this->catchments = DM::View("CATCHMENT", DM::FACE, DM::READ);
-	this->catchments.addAttribute("id_junction");
+	this->catchments.addAttribute("id_junction", DM::Attribute::DOUBLE, DM::WRITE);
 
 	this->conduits = DM::View("CONDUIT", DM::EDGE, DM::MODIFY);
 	this->inlets = DM::View("INLET", DM::NODE, DM::READ);
-	this->conduits.getAttribute("strahler");
+	this->conduits.addAttribute("strahler", DM::Attribute::DOUBLE, DM::READ);
 	until = 1;
 	this->addParameter("StrahlerNumber", DM::INT,&until);
 
@@ -48,10 +48,7 @@ RemoveStrahler::RemoveStrahler()
 	data.push_back(this->catchments);
 	data.push_back(this->inlets);
 
-
 	this->addData("SEWER", data);
-
-
 }
 
 
@@ -59,94 +56,83 @@ void RemoveStrahler::run()
 {
 	DM::System * sys = this->getData("SEWER");
 
-	std::vector<std::string> condis = sys->getUUIDsOfComponentsInView(conduits);
-	std::vector<std::string> inlet_uuids = sys->getUUIDs(inlets);
+	std::vector<DM::Component*> inletCmps = sys->getAllComponentsInView(inlets);
 
 	std::map<DM::Node*, int> visitedNodes;
 	std::map<DM::Node *, DM::Edge*> startNodeMap;
 
-	foreach (std::string s, condis) {
-		DM::Edge * c = sys->getEdge(s);
-		if (c->getAttribute("existing")->getDouble() >0.01)
+	foreach(DM::Component* cmp, sys->getAllComponentsInView(conduits))
+	{
+		DM::Edge * e = (DM::Edge*)cmp;
+
+		if (e->getAttribute("existing")->getDouble() >0.01)
 			continue;
-		startNodeMap[sys->getNode(c->getStartpointName())] = c;
+
+		startNodeMap[e->getStartNode()] = e;
 	}
 
-	for (int i = 1; i <= until; i++) {
-		foreach (std::string s, inlet_uuids) {
-			DM::Component * n = sys->getComponent(s);
-			DM::Node * id = sys->getNode(n->getAttribute("JUNCTION")->getLink().uuid);
+	for (int i = 1; i <= until; i++) 
+	{
+		foreach(DM::Component* n, inletCmps)
+		{
+			const std::vector<DM::Component*>& links = n->getAttribute("JUNCTION")->getLinkedComponents();
+			DM::Node* id = links.size() > 0 ? (DM::Node*)links[0] : NULL;
 
-			while (id != 0 ) {
-
+			while (id != 0 ) 
+			{
 				DM::Edge * e = startNodeMap[id];
-				if (!e) {
-					id = 0;
-					continue;
+				if (!e)
+					break;
+
+				if (e->getAttribute("existing")->getDouble() > 0.01)
+				{
+					DM::Logger(DM::Standard) << "EEEEEEERRRROROORO";
+					break;
 				}
 
-				if (e->getAttribute("existing")->getDouble() > 0.01){
-					id = 0;
-					DM::Logger(DM::Standard) << "EEEEEEERRRROROORO";
-					continue;
-				}
-				int currentStrahler = (int) e->getAttribute("strahler")->getDouble();
-				if (currentStrahler > i) {
-					id = 0;
-					continue;
-				}
+				if (e->getAttribute("strahler")->getDouble() > i)
+					break;
 
 				sys->removeComponentFromView(e, conduits);
 
-				std::vector<DM::LinkAttribute> links = id->getAttribute("INLET")->getLinks();
-				DM::Attribute junction_link_attribute("INLET");
-				foreach (DM::LinkAttribute l, links) {
-					std::string uuid_inlet = l.uuid;
-					std::string uuid_new_junction = e->getEndpointName();
+				DM::Node * new_junction_inlet = e->getEndNode();
 
-					DM::Component * inlet = sys->getComponent(uuid_inlet);
-					DM::Attribute attr("JUNCTION");
-					attr.setLink("JUNCTION", uuid_new_junction);
-					inlet->changeAttribute(attr);
-					junction_link_attribute.setLink("INLET", inlet->getUUID());
+				DM::Attribute* junction_link_attribute = new_junction_inlet->getAttribute("INLET");
 
+				foreach(DM::Component* inlet, id->getAttribute("INLET")->getLinkedComponents())
+				{
+					DM::Attribute* linkAttribute = inlet->getAttribute("JUNCTION");
+					linkAttribute->clearLinks();
+					linkAttribute->addLink(e->getEndNode(), "JUNCTION");
 
+					junction_link_attribute->addLink(inlet, "INLET");
 				}
-				DM::Node * new_junction_inlet = sys->getNode(e->getEndpointName());
-				foreach(DM::LinkAttribute l_attr, junction_link_attribute.getLinks()) {
-					new_junction_inlet->getAttribute("INLET")->setLink(l_attr.viewname,l_attr.uuid);
-				}
-				new_junction_inlet->addAttribute("number_of_inlets",new_junction_inlet->getAttribute("INLET")->getLinks().size());
+
+				new_junction_inlet->addAttribute("number_of_inlets", junction_link_attribute->getLinkedComponents().size());
 
 				sys->removeComponentFromView(id, junctions);
-				if (visitedNodes[id] > 0) {
-					id = 0;
+				if (visitedNodes[id] > 0) 
+				{
 					DM::Logger(DM::Debug) << "reviste node";
-					continue;
+					break;
 				}
 
 				visitedNodes[id]+=1;
 				id = new_junction_inlet;
-
 			}
-
 		}
 	}
 
-	foreach (std::string s, inlet_uuids) {
-		DM::Component * inlet = sys->getComponent(s);
-		std::string c_uuid = inlet->getAttribute("CATCHMENT")->getLink().uuid;
-		std::string j_uuid = inlet->getAttribute("JUNCTION")->getLink().uuid;
+	foreach(DM::Component* inlet, inletCmps)
+	{
+		std::vector<DM::Component*> cLinks = inlet->getAttribute("CATCHMENT")->getLinkedComponents();
+		std::vector<DM::Component*> jLinks = inlet->getAttribute("JUNCTION")->getLinkedComponents();
 
-		DM::Component * catchment = sys->getComponent(c_uuid);
-		DM::Component * junction = sys->getComponent(j_uuid);
-		if (!catchment || !junction)
+		if (cLinks.size() == NULL || cLinks[0] == NULL || jLinks.size() == NULL || jLinks[0] == NULL)
 			continue;
 
-		double id = junction->getAttribute("id")->getDouble();
-		catchment->addAttribute("id_catchment", id);
+		double id = jLinks[0]->getAttribute("id")->getDouble();
+		jLinks[0]->addAttribute("id_catchment", id);
 		DM::Logger(DM::Debug) << "Set " << id;
-
 	}
-
 }

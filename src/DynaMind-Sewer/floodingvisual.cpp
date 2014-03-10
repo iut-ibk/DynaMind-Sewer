@@ -8,13 +8,13 @@ FloodingVisual::FloodingVisual()
 	radius = 2;
 	scaling = 1;
 	view_junctions = DM::View("JUNCTION", DM::NODE, DM::READ);
-	view_junctions.getAttribute("flooding_V");
+	view_junctions.addAttribute("flooding_V", DM::Attribute::DOUBLE, DM::READ);
 	view_junction_flooding = DM::View("JUNCTION_VISUAL", DM::FACE, DM::WRITE);
-	view_junction_flooding.addAttribute("flooding_V");
-	view_junction_flooding.addAttribute("color_r");
-	view_junction_flooding.addAttribute("color_g");
-	view_junction_flooding.addAttribute("color_b");
-	view_junction_flooding.addAttribute("color_alpha");
+	view_junction_flooding.addAttribute("flooding_V", DM::Attribute::DOUBLE, DM::WRITE);
+	view_junction_flooding.addAttribute("color_r", DM::Attribute::DOUBLE, DM::WRITE);
+	view_junction_flooding.addAttribute("color_g", DM::Attribute::DOUBLE, DM::WRITE);
+	view_junction_flooding.addAttribute("color_b", DM::Attribute::DOUBLE, DM::WRITE);
+	view_junction_flooding.addAttribute("color_alpha", DM::Attribute::DOUBLE, DM::WRITE);
 
 	std::vector<DM::View> datastream;
 	datastream.push_back(view_junctions);
@@ -24,34 +24,35 @@ FloodingVisual::FloodingVisual()
 	this->addData("city", datastream);
 }
 
-void FloodingVisual::run() {
+void FloodingVisual::run() 
+{
 	DM::System * city = this->getData("city");
 
-	std::vector<std::string> uuids = city->getUUIDs(view_junctions);
+	std::vector<DM::Component*> junctions = city->getAllComponentsInView(view_junctions);
 
 	double max_flooding = 0;
 
-	foreach (std::string uuid, uuids) {
-		DM::Node * n = city->getNode(uuid);
+	foreach(DM::Component* cmp, junctions)
+	{
+		DM::Node * n = (DM::Node*)cmp;
 		double flooding_volume = n->getAttribute("flooding_V")->getDouble();
-		if (flooding_volume > max_flooding) {
+		if (flooding_volume > max_flooding)
 			max_flooding = flooding_volume;
-		}
 	}
 
 
-
-	foreach (std::string uuid, uuids) {
-		DM::Node * n = city->getNode(uuid);
+	foreach(DM::Component* cmp, junctions)
+	{
+		DM::Node * n = (DM::Node*)cmp;
 		double flooding_volume = n->getAttribute("flooding_V")->getDouble();
 
-		if (flooding_volume > 0) {
+		if (flooding_volume > 0) 
+		{
 			std::vector<DM::Node> circle = TBVectorData::CreateCircle(n, radius, 6);
 
 			std::vector<DM::Node*> circle_face;
-			foreach (DM::Node n, circle) {
+			foreach (DM::Node n, circle)
 				circle_face.push_back(city->addNode(n));
-			}
 
 			DM::Face * visual = city->addFace(circle_face, view_junction_flooding);
 			visual->addAttribute("flooding_V", flooding_volume * scaling);

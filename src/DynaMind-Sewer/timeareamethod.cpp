@@ -30,52 +30,50 @@
 DM_DECLARE_NODE_NAME(TimeAreaMethod, Sewer)
 TimeAreaMethod::TimeAreaMethod()
 {
-
 	combinedSystem = false;
 	conduit = DM::View("CONDUIT", DM::EDGE, DM::READ);
-	conduit.addAttribute("Diameter");
-	conduit.addAttribute("Length");
-	conduit.addAttribute("JUNCTION");
+	conduit.addAttribute("Diameter", DM::Attribute::DOUBLE, DM::WRITE);
+	conduit.addAttribute("Length", DM::Attribute::DOUBLE, DM::WRITE);
+	conduit.addAttribute("JUNCTION", "JUNCTION", DM::WRITE);
 
 	inlet = DM::View("INLET", DM::NODE, DM::READ);
-	inlet.getAttribute("Connected");
-	inlet.addAttribute("WasteWater");
-	inlet.addAttribute("InfiltrationWater");
-	inlet.addAttribute("Area");
-	inlet.addAttribute("QrKrit");
-	inlet.addAttribute("Impervious");
-	inlet.getAttribute("CATCHMENT");
+	inlet.addAttribute("Connected", DM::Attribute::DOUBLE, DM::READ);
+	inlet.addAttribute("WasteWater", DM::Attribute::DOUBLE, DM::WRITE);
+	inlet.addAttribute("InfiltrationWater", DM::Attribute::DOUBLE, DM::WRITE);
+	inlet.addAttribute("Area", DM::Attribute::DOUBLE, DM::WRITE);
+	inlet.addAttribute("QrKrit", DM::Attribute::DOUBLE, DM::WRITE);
+	inlet.addAttribute("Impervious", DM::Attribute::DOUBLE, DM::WRITE);
+	inlet.addAttribute("CATCHMENT", "CITYBLOCKS", DM::READ);
 
 	shaft = DM::View("JUNCTION", DM::NODE, DM::READ);
-	shaft.addAttribute("WasteWaterPerShaft");
-	shaft.addAttribute("InfiltrationWaterPerShaft");
-	shaft.addAttribute("QrKritPerShaft");
-	shaft.addAttribute("AreaPerShaft");
+	shaft.addAttribute("WasteWaterPerShaft", DM::Attribute::DOUBLE, DM::WRITE);
+	shaft.addAttribute("InfiltrationWaterPerShaft", DM::Attribute::DOUBLE, DM::WRITE);
+	shaft.addAttribute("QrKritPerShaft", DM::Attribute::DOUBLE, DM::WRITE);
+	shaft.addAttribute("AreaPerShaft", DM::Attribute::DOUBLE, DM::WRITE);
 
 	wwtps = DM::View("WWTP", DM::NODE, DM::READ);
 	catchment = DM::View("CATCHMENT", DM::FACE, DM::READ);
 
-
 	storage = DM::View("STORAGE", DM::NODE, DM::READ);
-	storage.addAttribute("StorageV");
-	storage.addAttribute("Storage");
-	storage.addAttribute("StorageA");
-	storage.addAttribute("ConnectedStorageArea");
+	storage.addAttribute("StorageV", DM::Attribute::DOUBLE, DM::WRITE);
+	storage.addAttribute("Storage", DM::Attribute::DOUBLE, DM::WRITE);
+	storage.addAttribute("StorageA", DM::Attribute::DOUBLE, DM::WRITE);
+	storage.addAttribute("ConnectedStorageArea", DM::Attribute::DOUBLE, DM::WRITE);
 
-	catchment.getAttribute("Population");
-	catchment.getAttribute("Area");
-	catchment.getAttribute("Impervious");
-	catchment.getAttribute("WasteWater");
+	catchment.addAttribute("Population", DM::Attribute::DOUBLE, DM::READ);
+	catchment.addAttribute("Area", DM::Attribute::DOUBLE, DM::READ);
+	catchment.addAttribute("Impervious", DM::Attribute::DOUBLE, DM::READ);
+	catchment.addAttribute("WasteWater", DM::Attribute::DOUBLE, DM::READ);
 
 	std::vector<DM::View> views;
 
 	outfalls= DM::View("OUTFALL", DM::NODE, DM::WRITE);
 	weir = DM::View("WEIR", DM::NODE, DM::WRITE);
-	weir.addAttribute("InletOffset");
+	weir.addAttribute("InletOffset", DM::Attribute::DOUBLE, DM::WRITE);
 
 	globals = DM::View("CITY", DM::COMPONENT, DM::READ);
-	globals.addAttribute("CONNECTEDPOP");
-	globals.addAttribute("CONNECTEDAREA");
+	globals.addAttribute("CONNECTEDPOP", DM::Attribute::DOUBLE, DM::WRITE);
+	globals.addAttribute("CONNECTEDAREA", DM::Attribute::DOUBLE, DM::WRITE);
 
 	views.push_back(conduit);
 	views.push_back(inlet);
@@ -95,10 +93,6 @@ TimeAreaMethod::TimeAreaMethod()
 	this->addParameter("combined system", DM::BOOL, &this->combinedSystem);
 
 	this->addData("City", views);
-
-
-
-
 }
 
 void TimeAreaMethod::init() {
@@ -142,67 +136,50 @@ double TimeAreaMethod::caluclateAPhi(DM::Component * attr, double r15)  const {
 void TimeAreaMethod::run() {
 
 	DM::System *city= this->getData("City");
-	std::vector<std::string> InletNames;
-	InletNames = city->getUUIDsOfComponentsInView(inlet);
-	std::vector<std::string> ConduitNames;
-	ConduitNames = city->getUUIDsOfComponentsInView(conduit);
+
+	std::vector<DM::Component*> inletCmps = city->getAllComponentsInView(inlet);
+	std::vector<DM::Component*> conduitCmps = city->getAllComponentsInView(conduit);
 
 	//Create Connection List
-	foreach(std::string name , ConduitNames)  {
-		DM::Edge * e = city->getEdge(name);
+	foreach(DM::Component* cmp, conduitCmps)
+	{
+		DM::Edge * e = (DM::Edge*)cmp;
 		if (e->getAttribute("existing")->getDouble() > 0.01)
 			continue;
-		DM::Node * startnode = city->getNode(e->getStartpointName());
-		std::vector<DM::Edge*> v = ConnectedEdges[startnode];
-		v.push_back(e);
-		ConnectedEdges[startnode] = v;
 
-		DM::Node * Endnode = city->getNode(e->getEndpointName());
-		v = ConnectedEdges[Endnode];
-		v.push_back(e);
-		ConnectedEdges[Endnode] = v;
+		ConnectedEdges[e->getStartNode()].push_back(e);
+		ConnectedEdges[e->getEndNode()].push_back(e);
 	}
 
-
-	foreach(std::string name , ConduitNames)  {
-		DM::Edge * e = city->getEdge(name);
+	foreach(DM::Component* cmp, conduitCmps)
+	{
+		DM::Edge * e = (DM::Edge*)cmp;
 		if (e->getAttribute("existing")->getDouble() > 0.01)
 			continue;
-		DM::Node * startnode = city->getNode(e->getStartpointName());
-		std::vector<DM::Edge*> v = StartNodeSortedEdges[startnode];
-		v.push_back(e);
-		StartNodeSortedEdges[startnode] = v;
 
-
-		DM::Node * Endnode = city->getNode(e->getEndpointName());
-		v = EndNodeSortedEdges[Endnode];
-		v.push_back(e);
-		EndNodeSortedEdges[Endnode] = v;
-
+		StartNodeSortedEdges[e->getStartNode()].push_back(e);
+		EndNodeSortedEdges[e->getEndNode()].push_back(e);
 	}
+
 	//Calculate Waste Water
 	double Population_sum = 0;
 	double area_sum = 0;
 	double WasterWaterPerPerson = 0.0052;
 	double InfiltrationWater =  0.003;
 
-
 	//Calculate Water Water per Node
-	foreach(std::string id_inlet, InletNames) {
-
-		DM::Component *  inlet_attr = city->getComponent(id_inlet);
+	foreach(DM::Component* inlet_attr, inletCmps)
+	{
 		if (inlet_attr->getAttribute("Connected")->getDouble() < 0.01 )
 			continue;
-		DM::Component *  catchment_attr = city->getComponent(inlet_attr->getAttribute("CATCHMENT")->getLink().uuid);
 
-
+		DM::Component* catchment_attr = inlet_attr->getAttribute("CATCHMENT")->getLinkedComponents()[0];
 
 		double pop =  catchment_attr->getAttribute("Population")->getDouble();
 		double area = catchment_attr->getAttribute("Area")->getDouble();
 		double imp = catchment_attr->getAttribute("Impervious")->getDouble();
-		if(imp < 0.2) {
+		if(imp < 0.2)
 			imp = 0.2;
-		}
 
 		inlet_attr->addAttribute("InfiltrationWater", pop * InfiltrationWater);
 		inlet_attr->addAttribute("WasterWater",  pop * WasterWaterPerPerson);
@@ -212,16 +189,14 @@ void TimeAreaMethod::run() {
 
 		Population_sum += catchment_attr->getAttribute("Population")->getDouble();
 		area_sum += catchment_attr->getAttribute("Area")->getDouble();
-
 	}
 
-
-
-	foreach (std::string s, city->getUUIDsOfComponentsInView(globals)) {
-		DM::Component * sg = city->getComponent(s);
+	int nOutfalls = city->getAllComponentsInView(outfalls).size();
+	foreach(DM::Component * sg, city->getAllComponentsInView(globals))
+	{
 		sg->addAttribute("CONNECTEDPOP", Population_sum);
 		sg->addAttribute("CONNECTEDAREA", area_sum);
-		sg->addAttribute("CSOs", city->getUUIDsOfComponentsInView(outfalls).size());
+		sg->addAttribute("CSOs", nOutfalls);
 	}
 
 	//AddStorageToWWtp
@@ -234,21 +209,21 @@ void TimeAreaMethod::run() {
 		city->addComponentToView(p,storage);
 	}*/
 
-	foreach (std::string name, city->getUUIDsOfComponentsInView(conduit)) {
-		DM::Edge * con = city->getEdge(name);
-		DM::Node * start = city->getNode(con->getStartpointName());
-		DM::Node * end = city->getNode(con->getEndpointName());
+	foreach(DM::Component* cmp, conduitCmps)
+	{
+		DM::Edge* con = (DM::Edge*)cmp;
+		DM::Node* start = con->getStartNode();
+		DM::Node* end = con->getEndNode();
 		DM::Node dp = *(start) - *(end);
+
 		double l = sqrt(dp.getX()*dp.getX() + dp.getY()*dp.getY() + dp.getZ()*dp.getZ());
 		con->addAttribute("Length", l);
-
 	}
 
-	foreach(std::string name, InletNames) {
+	std::vector<DM::Component*> storageCmps = city->getAllComponentsInView(storage);
 
-		DM::Component * inlet_attr;
-		inlet_attr = city->getComponent(name);
-
+	foreach(DM::Component* inlet_attr, inletCmps)
+	{
 		double wastewater = inlet_attr->getAttribute("WasterWater")->getDouble();
 		double infiltreationwater = inlet_attr->getAttribute("InfiltrationWater")->getDouble();
 		double area = inlet_attr->getAttribute("Area")->getDouble();
@@ -264,19 +239,25 @@ void TimeAreaMethod::run() {
 		double DeltaA = 0;
 		double DeltaStorage = 0;
 
-		DM::Logger(DM::Debug) << "JUNCTION " << inlet_attr->getAttribute("JUNCTION")->getLink().uuid;
-		if ( inlet_attr->getAttribute("JUNCTION")->getLink().uuid.empty()) {
+		//DM::Logger(DM::Debug) << "JUNCTION " << inlet_attr->getAttribute("JUNCTION")->getLink().uuid;
+		std::vector<DM::Component*> links = inlet_attr->getAttribute("JUNCTION")->getLinkedComponents();
+		if (links.size() == 0 || links[0] == NULL)
+		{
 			DM::Logger(DM::Debug) << "Inlet not connected to junction";
-		}
-		DM::Node * id = city->getNode(inlet_attr->getAttribute("JUNCTION")->getLink().uuid);
-		if (!id)
 			continue;
+		}
+		DM::Node * id = (DM::Node*)links[0];
 
-		do {
-			id->getAttribute("WasteWaterPerShaft")->setDouble(id->getAttribute("WasteWaterPerShaft")->getDouble() + wastewater);
-			id->getAttribute("InfiltrationWaterPerShaft")->setDouble(id->getAttribute("InfiltrationWaterPerShaft")->getDouble() + infiltreationwater);
-			id->getAttribute("AreaPerShaft")->setDouble(id->getAttribute("AreaPerShaft")->getDouble() + area);
-			id->getAttribute("QrKritPerShaft")->setDouble(id->getAttribute("QrKritPerShaft")->getDouble() + QrKrit);
+		do 
+		{
+			DM::Attribute* a;
+
+#define INC(att, value) a = id->getAttribute(att); a->setDouble(a->getDouble() + value);
+
+			INC("WasteWaterPerShaft", wastewater)
+			INC("InfiltrationWaterPerShaft", infiltreationwater)
+			INC("AreaPerShaft", area)
+			INC("QrKritPerShaft", QrKrit)
 
 			if (idPrev != 0) {
 				DM::Node dp = *(idPrev) - *(id);
@@ -291,7 +272,8 @@ void TimeAreaMethod::run() {
 				QKrit =  id->getAttribute("QrKritPerShaft")->getDouble();
 				DeltaA = id->getAttribute("AreaPerShaft")->getDouble();
 
-				if (id->isInView(storage)) {
+				if (vector_contains(&storageCmps, (DM::Component*)id)) 
+				{
 					//Storage Capacity
 					if (area > 0.01) {
 						double capacity = id->getAttribute("Storage")->getDouble();
@@ -325,10 +307,13 @@ void TimeAreaMethod::run() {
 
 			std::vector<DM::Edge*>  downstreamEdges = StartNodeSortedEdges[id];
 			//o---o---x
-			if (downstreamEdges.size() == 1) {
-				DM::Edge * e = downstreamEdges[0];
-				if (city->getNode(e->getEndpointName()) != id) {
-					nextid_tmp = city->getNode(e->getEndpointName());
+			if (downstreamEdges.size() == 1) 
+			{
+				DM::Edge* e = downstreamEdges[0];
+				DM::Node* endnode = e->getEndNode();
+				if (endnode != id)
+				{
+					nextid_tmp = endnode;
 					outgoing_id = e;
 				}
 			}
@@ -368,10 +353,11 @@ void TimeAreaMethod::run() {
 	}
 
 	//Write Data to shaft
-	std::vector<std::string> junctionnames = city->getUUIDsOfComponentsInView(shaft);
+	std::vector<DM::Component*> junctionnames = city->getAllComponentsInView(shaft);
 
-	for (int i = 0; i <junctionnames.size(); i++) {
-		DM::Node * p = city->getNode(junctionnames[i]);
+	foreach (DM::Component* c, junctionnames)
+	{
+		DM::Node * p = (DM::Node*)c;
 
 		p->getAttribute("Time")->setDouble( p->getAttribute("StrangLength")->getDouble()/this->v + 1*60);
 		p->getAttribute("TimeTotal")->setDouble( p->getAttribute("StrangLengthTotal")->getDouble()/this->v + 1*60);
@@ -389,12 +375,12 @@ void TimeAreaMethod::run() {
 	}
 
 	//Dimensioning
-	std::vector<std::string> edgesname = city->getUUIDsOfComponentsInView(conduit);
-	foreach(std::string  en, edgesname) {
-		DM::Edge * e = city->getEdge(en);
+	foreach(DM::Component* c, conduitCmps) 
+	{
+		DM::Edge * e = (DM::Edge*)c;
 		if (e->getAttribute("existing")->getDouble() > 0.01)
 			continue;
-		DM::Node * attr = city->getNode(e->getStartpointName());
+		DM::Node * attr = e->getStartNode();
 		double QWasteWater = attr->getAttribute("WasteWaterPerShaft")->getDouble() +  attr->getAttribute("InfiltrationWaterPerShaft")->getDouble();
 		double QRainWater =  attr->getAttribute("Area_total")->getDouble()*attr->getAttribute("APhi")->getDouble()*this->r15/10000. +  attr->getAttribute("QrKrit_total")->getDouble();
 		double Area_tot = attr->getAttribute("Area_total")->getDouble();
@@ -418,13 +404,12 @@ void TimeAreaMethod::run() {
 	}
 
 	//Dimensioning of Outfalls
-	std::vector<std::string> outfallconduits = city->getUUIDsOfComponentsInView(weir);
-
-	foreach (std::string of, outfallconduits) {
-		DM::Edge * weir = city->getEdge(of);
+	foreach(DM::Component* c, city->getAllComponentsInView(weir))
+	{
+		DM::Edge * weir = (DM::Edge*)c;
 		if (weir->getAttribute("existing")->getDouble() > 0.01)
 			continue;
-		DM::Node * StartNode = city->getNode(weir->getStartpointName());
+		DM::Node * StartNode = weir->getStartNode();
 
 		//Get Upstream Nodes
 
@@ -445,8 +430,6 @@ void TimeAreaMethod::run() {
 				minDiameter = c->getAttribute("Diameter")->getDouble();
 		}
 
-
-
 		double inletOffset = 0;
 		//If storage
 
@@ -466,8 +449,9 @@ void TimeAreaMethod::run() {
 	}
 
 	//Dimensiong Pipe to WWTP
-	foreach (std::string nwwtp, city->getUUIDsOfComponentsInView(wwtps)) {
-		DM::Node * wwtp = city->getNode(nwwtp);
+	foreach(DM::Component* c, city->getAllComponentsInView(wwtps)) 
+	{
+		DM::Node* wwtp = (DM::Node*)c;
 		if (wwtp->getAttribute("existing")->getDouble() > 0.01)
 			continue;
 		std::vector<DM::Edge*> edges = this->StartNodeSortedEdges[wwtp];
@@ -481,8 +465,9 @@ void TimeAreaMethod::run() {
 	}
 
 	//Dimensioning Storage
-	foreach (std::string nstorage, city->getUUIDsOfComponentsInView(storage)) {
-		DM::Node * storage = city->getNode(nstorage);
+	foreach(DM::Component* c, city->getAllComponentsInView(storage)) 
+	{
+		DM::Node* storage = (DM::Node*)c;
 		if (storage->getAttribute("existing")->getDouble() > 0.01)
 			continue;
 		std::vector<DM::Edge*> edges = this->EndNodeSortedEdges[storage];

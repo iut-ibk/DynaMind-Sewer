@@ -396,14 +396,14 @@ GenerateSewerNetwork::GenerateSewerNetwork() : mMutex()
 	std::vector<DM::View> city;
 
 	Inlets = DM::View("INLET", DM::NODE, DM::READ);
-	Inlets.modifyAttribute("New");
+	Inlets.addAttribute("New", DM::Attribute::DOUBLE, DM::MODIFY);
 
-	Inlets.getAttribute("CATCHMENT");
-	Inlets.addAttribute("success");
+	Inlets.addAttribute("CATCHMENT", "CITYBLOCKS", DM::READ);
+	Inlets.addAttribute("success", DM::Attribute::DOUBLE, DM::WRITE);
 
 
 	catchment = DM::View("CATCHMENT", DM::FACE, DM::READ);
-	catchment.getAttribute("Active");
+	catchment.addAttribute("Active", DM::Attribute::DOUBLE, DM::READ);
 
 	city.push_back(Topology);
 	city.push_back(Inlets);
@@ -516,12 +516,11 @@ void GenerateSewerNetwork::run() {
 
 
 	std::vector<DM::Node*> StartPos;
-	foreach (std::string inlet, city->getUUIDsOfComponentsInView(Inlets))  {
-		DM::Node * n = city->getNode(inlet);
-		std::string ID_CA = n->getAttribute("CATCHMENT")->getLink().uuid;
-		DM::Face * catchment = city->getFace(ID_CA);
+	foreach (DM::Component* cmp, city->getAllComponentsInView(Inlets))  {
+		DM::Node * n = (Node*)cmp;
+		DM::Face * catchment = (DM::Face*)n->getAttribute("CATCHMENT")->getLinkedComponents()[0];
 		if (!catchment) {
-			Logger(Warning) << "Inlet without Catchment ID " << ID_CA;;
+			Logger(Warning) << "Inlet without Catchment";
 			continue;
 		}
 		n->changeAttribute("New", 0);
