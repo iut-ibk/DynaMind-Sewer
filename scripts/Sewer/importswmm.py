@@ -31,24 +31,24 @@ class ImportSWMM(Module):
     def __init__(self):
         Module.__init__(self)
         self.conduits = View("CONDUIT", EDGE, WRITE)
-        self.conduits.addAttribute("Diameter")
-        self.conduits.addAttribute("built_year")
+        self.conduits.addAttribute("Diameter", DOUBLE, WRITE)
+        self.conduits.addAttribute("built_year", DOUBLE, WRITE)
         
         self.xsections = View("XSECTION",COMPONENT,WRITE)     
-        self.xsections.addAttribute("type")
-        self.xsections.addAttribute("shape")
+        self.xsections.addAttribute("type", STRING, WRITE)
+        self.xsections.addAttribute("shape", STRING, WRITE)
         
         
-        self.conduits.addLinks("XSECTION", self.xsections)
+        self.conduits.addLinkAttribute("XSECTION", "XSECTION", WRITE)
         
         self.junctions = View("JUNCTION", NODE, WRITE)
-        self.junctions.addAttribute("Z")
-        self.junctions.addAttribute("D")
-        self.junctions.addAttribute("invert_elevation")
-        self.junctions.addAttribute("built_year")
+        self.junctions.addAttribute("Z", DOUBLE, WRITE)
+        self.junctions.addAttribute("D", DOUBLE, WRITE)
+        self.junctions.addAttribute("invert_elevation", DOUBLE, WRITE)
+        self.junctions.addAttribute("built_year", DOUBLE, WRITE)
 
         self.outfalls = View("OUTFALL", NODE, WRITE)
-        self.outfalls.addAttribute("Z")
+        self.outfalls.addAttribute("Z", DOUBLE, WRITE)
         #Not imported
         #self.inlets = View("INLET", NODE, WRITE)
 
@@ -56,22 +56,22 @@ class ImportSWMM(Module):
         self.wwtps = View("WWTP", NODE, WRITE)
         
         self.storages = View("STORAGE", NODE, WRITE)
-        self.storages.addAttribute("Z")
-        self.storages.addAttribute("max_depth")
-        self.storages.addAttribute("type")
-        self.storages.addAttribute("storage_x")
-        self.storages.addAttribute("storage_y")
+        self.storages.addAttribute("Z", DOUBLE, WRITE)
+        self.storages.addAttribute("max_depth", DOUBLE, WRITE)
+        self.storages.addAttribute("type", STRING, WRITE)
+        self.storages.addAttribute("storage_x", DOUBLE, WRITE)
+        self.storages.addAttribute("storage_y", DOUBLE, WRITE)
 
         self.weirs = View("WEIR", EDGE, WRITE)
-        self.weirs.addAttribute("type")
-        self.weirs.addAttribute("crest_height")
-        self.weirs.addAttribute("discharge_coefficient")
-        self.weirs.addAttribute("end_coefficient")
+        self.weirs.addAttribute("type", STRING, WRITE)
+        self.weirs.addAttribute("crest_height", DOUBLE, WRITE)
+        self.weirs.addAttribute("discharge_coefficient", DOUBLE, WRITE)
+        self.weirs.addAttribute("end_coefficient", DOUBLE, WRITE)
         
         self.pumps = View("PUMPS", EDGE, WRITE)
-        self.pumps.addAttribute("type")
-        self.pumps.addAttribute("pump_x")
-        self.pumps.addAttribute("pump_y")
+        self.pumps.addAttribute("type", STRING, WRITE)
+        self.pumps.addAttribute("pump_x", DOUBLE, WRITE)
+        self.pumps.addAttribute("pump_y", DOUBLE, WRITE)
         
         views = []
         views.append(self.conduits)

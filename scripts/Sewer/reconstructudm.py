@@ -47,12 +47,12 @@ class ReconstructUDM(Module):
     def __init__(self):
         Module.__init__(self)
         self.conduits = View("CONDUIT", EDGE, READ)
-        self.conduits.getAttribute("Strahler")
-        self.conduits.getAttribute("CONYEAR")
+        self.conduits.addAttribute("Strahler", DOUBLE, READ)
+        self.conduits.addAttribute("CONYEAR", DOUBLE, READ)
 
 
         self.cityblock = View("CITYBLOCK", FACE, READ)
-        self.cityblock.addAttribute("BuildYear")
+        self.cityblock.addAttribute("BuildYear", DOUBLE, WRITE)
 
         
         viewvector = []

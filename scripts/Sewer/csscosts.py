@@ -47,24 +47,24 @@ class CSSCosts(Module):
     def __init__(self):
         Module.__init__(self)
         self.conduits = View("CONDUIT", EDGE, READ)
-        self.conduits.getAttribute("Diameter")
-        self.conduits.getAttribute("Length")
-        self.conduits.getAttribute("Strahler")
-        self.conduits.addAttribute("ConstructionCost")
-        self.conduits.addAttribute("ConstructionCostPerMeter")
+        self.conduits.addAttribute("Diameter", DOUBLE, READ)
+        self.conduits.addAttribute("Length", DOUBLE, READ)
+        self.conduits.addAttribute("Strahler", DOUBLE, READ)
+        self.conduits.addAttribute("ConstructionCost", DOUBLE, WRITE)
+        self.conduits.addAttribute("ConstructionCostPerMeter", DOUBLE, WRITE)
         
         self.inlets = View("JUNCTION", NODE, READ)
-        self.inlets.getAttribute("D")
+        self.inlets.addAttribute("D", DOUBLE, READ)
 
         self.storage1 = View("STORAGE", NODE, READ)
-        self.storage1.getAttribute("StorageV")
-        self.storage1.addAttribute("ConstructionCost")
-        self.storage1.addAttribute("ConstructionCostPerCubicMeter")
-	self.storage1.addAttribute("Storages")
+        self.storage1.addAttribute("StorageV", DOUBLE, READ)
+        self.storage1.addAttribute("ConstructionCost", DOUBLE, WRITE)
+        self.storage1.addAttribute("ConstructionCostPerCubicMeter", DOUBLE, WRITE)
+        self.storage1.addAttribute("Storages", DOUBLE, WRITE)
 
         self.globals = View("GLOBALS_SEWER", NODE, READ)
-        self.globals.addAttribute("TotalConstructionCost")
-        self.globals.addAttribute("TotalConstructionStorage")
+        self.globals.addAttribute("TotalConstructionCost", DOUBLE, WRITE)
+        self.globals.addAttribute("TotalConstructionStorage", DOUBLE, WRITE)
         
         viewvector = []
         viewvector.append(self.conduits)
