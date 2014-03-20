@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 project(swmm)
 
-option(SWMM_LIB "compile as library" OFF)
+option(SWMM_LIB "compile as library" ON)
 
 find_package(OpenMP REQUIRED)
 
@@ -11,7 +11,16 @@ file(GLOB SRCS *.c *.h)
 
 if (SWMM_LIB)
     message(STATUS "Compiling as library")
-    add_definitions(-DDLL)
+
+    IF(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
+        ADD_DEFINITIONS(/D _CRT_SECURE_NO_WARNINGS)
+        ADD_DEFINITIONS(/D DLL)
+    ELSE()
+        ADD_DEFINITIONS(-Wno-format-security -Wno-format -fPIC)
+        ADD_DEFINITIONS(-DSOL)
+    ENDIF()
+
+    message(STATUS "Compiling as library")
     add_library(swmm STATIC ${SRCS})
 else (SWMM_LIB)
     message(STATUS "Compiling as standalone CLI application")
