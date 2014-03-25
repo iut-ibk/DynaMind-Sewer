@@ -23,7 +23,6 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """
-
 import sys
 
 from pydynamind import *
@@ -170,21 +169,20 @@ class ImportSWMM(Module):
             self.readCurves()
             
             "Create Nodes"
-            UUIDTranslator = {}
+            nodes = {}
             
             #Add Coordinates
             ress = results["[COORDINATES]"]
             for c in ress:
                 coords = ress[c]
-                n = sewer.addNode(float(coords[0]), float(coords[1]),0.)
-                UUIDTranslator[c] = n.getUUID()
+                nodes[c] = sewer.addNode(float(coords[0]), float(coords[1]),0.)
 
 
             #Add Nodes
             junctions = results["[JUNCTIONS]"]
             for c in junctions:
                 attributes = junctions[c]
-                juntion = sewer.getNode(UUIDTranslator[c])
+                juntion = nodes[c]
                 sewer.addComponentToView(juntion, self.junctions) 
                 
                 juntion.addAttribute("SWMM_ID", str(c))
@@ -200,7 +198,7 @@ class ImportSWMM(Module):
             for o in outfalls:
                 vals = outfalls[o]
                 attributes = outfalls[o]
-                outfall = sewer.getNode(UUIDTranslator[o])
+                outfall = nodes[o]
                 sewer.addComponentToView(outfall, self.outfalls) 
                 outfall.addAttribute("Z", float(vals[0]))
                 if (o == self.NameWWTP):  
@@ -212,7 +210,7 @@ class ImportSWMM(Module):
                 storages = results["[STORAGE]"]
                 for s in storages:
                     vals = storages[s]
-                    storage = sewer.getNode(UUIDTranslator[s])
+                    storage = nodes[s]
                     sewer.addComponentToView(storage, self.storages) 
                     storage.addAttribute("Z", float(vals[0]))
                     storage.addAttribute("max_depth", float(vals[1]))
@@ -235,8 +233,8 @@ class ImportSWMM(Module):
             ress = results["[CONDUITS]"]            
             for c in ress:
                 vals = ress[c]
-                end = sewer.getNode(UUIDTranslator[vals[0]])
-                start = sewer.getNode(UUIDTranslator[vals[1]])
+                end = nodes[vals[0]]
+                start = nodes[vals[1]]
                 e = sewer.addEdge(start, end, self.conduits)
                 e.addAttribute("SWMM_ID", str(c))
                 #Create XSection
@@ -247,14 +245,14 @@ class ImportSWMM(Module):
                 if c in xsections:
                     e.addAttribute("Diameter", float(xsections[c][1]))
                     xsection = self.createXSection(sewer, xsections[c])
-                    e.getAttribute("XSECTION").setLink("XSECTION", xsection.getUUID())
+                    e.getAttribute("XSECTION").addLink(xsection, "XSECTION")
                 
             if "[WEIRS]" in results:
                 c_weirs = results["[WEIRS]"]     
                 for c in c_weirs:
                     vals = c_weirs[c]
-                    start = sewer.getNode(UUIDTranslator[vals[0]])
-                    end = sewer.getNode(UUIDTranslator[vals[1]])
+                    start = nodes[vals[0]]
+                    end = nodes[vals[1]]
                     e = sewer.addEdge(start, end, self.weirs)
                     
                     e.addAttribute("type",vals[2] )
@@ -265,14 +263,14 @@ class ImportSWMM(Module):
                     e.addAttribute("Diameter", float(xsections[c][1]))
                     
                     xsection = self.createXSection(sewer, xsections[c])
-                    e.getAttribute("XSECTION").setLink("XSECTION", xsection.getUUID())                
+                    e.getAttribute("XSECTION").addLink(xsection, "XSECTION")                
                 
             if "[PUMPS]" in results:
                 c_pumps = results["[PUMPS]"]     
                 for c in c_pumps:
                     vals = c_pumps[c]
-                    start = sewer.getNode(UUIDTranslator[vals[0]])
-                    end = sewer.getNode(UUIDTranslator[vals[1]])
+                    start = nodes[vals[0]]
+                    end = nodes[vals[1]]
                     e = sewer.addEdge(start, end, self.pumps)
                     
                     e.addAttribute("type", self.curves_types[vals[2]] )                
