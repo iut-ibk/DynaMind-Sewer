@@ -71,10 +71,10 @@ void ReduceJunctions::createJunctions(DM::System * city, std::vector<DM::Node *>
 	//move all inlet connections to the end and remove junctions
 	foreach (DM::Node * n, r_nodes) 
 	{
-		DM::Attribute junction_link_attribute("INLET");
+		DM::Attribute junction_link_attribute("INLET", DM::Attribute::LINK);
 		foreach(DM::Component* inlet, n->getAttribute("INLET")->getLinkedComponents())
 		{
-			DM::Attribute attr("JUNCTION");
+			DM::Attribute attr("JUNCTION", DM::Attribute::LINK);
 			attr.addLink(lastNode, "JUNCTION");
 			inlet->changeAttribute(attr);
 			junction_link_attribute.addLink(inlet, "INLET");
