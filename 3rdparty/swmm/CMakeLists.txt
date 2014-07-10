@@ -3,7 +3,7 @@ project(swmm)
 
 option(SWMM_LIB "compile as library" ON)
 
-find_package(OpenMP REQUIRED)
+find_package(OpenMP)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
 
