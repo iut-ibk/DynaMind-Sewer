@@ -26,6 +26,8 @@ else (SWMM_LIB)
     message(STATUS "Compiling as standalone CLI application")
     add_definitions(-DCLE)
     add_executable(swmm ${SRCS})
+
 endif(SWMM_LIB)
 
 target_link_libraries(swmm -lm)
+
