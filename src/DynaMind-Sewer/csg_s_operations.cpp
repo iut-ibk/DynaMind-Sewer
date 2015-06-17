@@ -181,7 +181,7 @@ void csg_s::csg_s_operations::exportRaster(QString name, DM::dataLayer * layer_,
 
         QString fullFileName = name + extension;
         fstream txtout;
-        txtout.open(fullFileName.toAscii(),ios::out);
+        txtout.open(fullFileName.toLatin1(),ios::out);
 
         //header for ARCGIS import
         txtout<<"ncols "<<layer_->getwidth()<<"\n";
@@ -212,7 +212,7 @@ void csg_s::csg_s_operations::writePath(string Text, QString name)
         QString fullFileName = name +"_Path"+ extension;
 
 
-        ofstream txtout (fullFileName.toAscii(),ios_base::app);
+        ofstream txtout (fullFileName.toLatin1(),ios_base::app);
 
         txtout << Text;
         txtout << flush;
