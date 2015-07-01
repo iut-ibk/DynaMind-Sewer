@@ -36,9 +36,9 @@
 #include <fstream>
 #include <string>
 
-#include <QtGui>
 #include <QLine>
 #include <QPainterPath>
+#include <QTextStream>
 
 #include "def.h"
 //#include "vSys.h"
